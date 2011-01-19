@@ -1,0 +1,1 @@
+Library guide - using Benedikt K. (benedikt) library on Arduino platform   + Assume you already have arduino IDE on your computer   + copy RF12_1 folder into ...arduino-0021\libraries\ (Windows machine,      yeah, under Linux you 'll find it somewhere else...) - using Jeelab library (comming soon) 'll be the same
