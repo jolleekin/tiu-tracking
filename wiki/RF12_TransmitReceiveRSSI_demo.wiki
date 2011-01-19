@@ -1,5 +1,6 @@
 = Demo package: transmit/receive/Analog-RSSI using RFM12 module - version 1.0 posted =
 
+source https://tiu-tracking.googlecode.com/svn/trunk/
 
 This package demonstrates wireless communication on hobby frequency 
 band (i.e 433MHz...) using RFM12B transceiver modules and ATMega328 uC.
