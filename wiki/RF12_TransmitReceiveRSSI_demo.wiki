@@ -11,7 +11,7 @@ There are two different approaches will be introduced:
     * interrupt with checksum based on RF12 arduino library by Jeelabs 
 	
 
-= Notes: =
+== Notes: ==
  * No collision avoidance is considered yet in this version
  * To get ARSSI output, you may have to manually solder on a wire to a resistor to access this pad (see picture on schematic folder, location shown in red circle)(thanks to Stephen Eaton).
  * Schematic provided by Jeelabs, used for both transmiting receiving modules
