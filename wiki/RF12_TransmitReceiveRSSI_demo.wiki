@@ -12,7 +12,7 @@ Our purpose is testing these RFM12B module functions: transmit/receive data and 
 
 There are two different approaches will be introduced:
     * polling, no checksum based on Benedikt's library
-    * interrupt with checksum based on RF12 arduino library by Jeelabs(coming soon)
+    * interrupt with checksum based on RF12 arduino library by Jeelabs
 	
 
 === Notes: ===
@@ -23,3 +23,7 @@ There are two different approaches will be introduced:
  * Yeah, I used arduino board to program the chips and monitor the serial outputs
 
 https://tiu-tracking.googlecode.com/svn/trunk/rf12_tx_rx_v1/schematic/arssi.png
+
+
+_* update: code version 2 posted: *_
+https://tiu-tracking.googlecode.com/svn/trunk/rf12_tx_rx_v2
