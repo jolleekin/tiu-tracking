@@ -29,7 +29,7 @@ We have this on the assumption that we _ignore the sleep current_. This is reaso
 Example : 
 
 
-||PicoPower Attiny13A||HOPE RFM12 ||
+||Pico Power ATtiny13A||HOPE RFM12 ||
 ||3.9-10 μA||0.3μA||
 
 http://www.atmel.com/dyn/resources/prod_documents/doc8126_105.pdf
