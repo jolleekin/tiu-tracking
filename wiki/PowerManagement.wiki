@@ -19,10 +19,17 @@ Assume:
 In general:
   * C = capacity `[`mAh`]`
   * I = active current `[`mA`]`
-  * T = active/sleep ratio
-
+  * T = transmit/sleep ratio
 
         ||=> battery life (hours) = C/(I x T)||
+{{{
+    _ _                       _ _   
+   |   | transmission time   |   |
+ ->|   |<-                   |   |
+_ _|   |_ _ _ _ _ _ _ _ _ _ _|   |_ _ _ _
+       |<----sleep time----->|
+   
+}}}
 We have this on the assumption that we _ignore the sleep current_. This is reasonable if RF modules and uC support sleep mode that leak current is only a couple of uA.
 
 Example : 
@@ -37,7 +44,7 @@ http://www.hoperf.com/upfile/RFM12.pdf
 
   
 ===2. Transmission time===
-It is good to know the transmission time of the module so that we can calculate the active/sleep ratio. Also, knowing transmission time is vital to avoiding collision.
+It is good to know the transmission time of the module so that we can calculate the active/sleep ratio. Also, transmission time place an important role in collision avoidance(the shorter transmission time, the smaller chance of collision).
 
 Tested:
 
@@ -57,16 +64,21 @@ delay(10); // 'll be replaced with sleep mode later
 
 
 }}}
-Results:
+
+Theoretically, at 19200 baud rate, no start/stop bit, we have 19200/8 = 2400 byte per second, or *416us/byte*.
+
+Test Results:
 ||sent||transmission time||
 ||10 bytes||6220 us||
 ||20 bytes||10164 us||
 ||30 bytes||14108 us||
 ||40 bytes||18060 us||
 
-=> ~ 400us/byte , overhead ~2000us
-
-Theoretically, at 19200 baud rate, no start/stop bit, we have 19200/8 = 2400 byte per second, or 416us/byte.
+=> *~400us/byte* , overhead ~2000us. This confirms the theory.
 
 in conclusion: 
  ||transmission time = overhead + (number of transmitted byte x 8/baudrate)||
+
+Now taking this result and applying to calculate battery life, e.g send 20 bytes will take about 10ms. Assuming 100mA active current, 10s of transmit interval:
+
+ _=> battery life = 1000mAh /(100mA x 10ms/10s) = 10.000 hours_
