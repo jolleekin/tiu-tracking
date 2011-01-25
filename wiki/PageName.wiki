@@ -38,7 +38,7 @@ http://www.hoperf.com/upfile/RFM12.pdf
 
   
 ===2. Transmission time===
- it is good to know the transmission time of the module so that we can calculate the active/sleep ratio. Also, knowing transmission time is vital to avoiding collision.
+It is good to know the transmission time of the module so that we can calculate the active/sleep ratio. Also, knowing transmission time is vital to avoiding collision.
 
 Tested:
 
