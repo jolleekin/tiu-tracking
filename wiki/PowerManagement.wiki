@@ -14,7 +14,7 @@ Assume:
   * current 100mA (RF + uC)
   * ignore sleep current 
 
-         _=> battery life = (1000mAh/100mA) / (100ms/10s) = 1000 hrs_
+         _=> battery life = (1000mAh) / (100mA x 100ms/10s) = 1000 hrs_
 
 In general:
   * C = capacity `[`mAh`]`
