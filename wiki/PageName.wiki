@@ -1,10 +1,8 @@
 = Power Management =
 
-== PART 1 - BATTERY ==
+===1. Battery===
 
-http://en.wikipedia.org/wiki/File:Battery-lithium-cr2032.jpg
-
-===1. A quick battery life calculation===
+http://andrew.svp.co.uk/custom/images/products/CR2025_300.png
 
 Using this battery from digikey (0.96" Diameter,3V-1000mAh)
 
