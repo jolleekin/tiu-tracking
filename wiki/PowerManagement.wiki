@@ -10,7 +10,7 @@ Using this battery from digikey (0.96" Diameter,3V-1000mAh)
 http://search.digikey.com/scripts/DkSearch/dksus.dll?Detail&name=P126-ND
 
 Assume:
-  * transmission time: 100ms every 10s
+  * transmission time: 100ms every 10s period
   * current 100mA (RF + uC)
   * ignore sleep current 
 
@@ -19,7 +19,7 @@ Assume:
 In general:
   * C = capacity `[`mAh`]`
   * I = active current `[`mA`]`
-  * T = transmit/sleep ratio
+  * T = transmit ratio
 
         ||=> battery life (hours) = C/(I x T)||
 {{{
@@ -27,7 +27,7 @@ In general:
    |   | transmission time   |   |
  ->|   |<-                   |   |
 _ _|   |_ _ _ _ _ _ _ _ _ _ _|   |_ _ _ _
-       |<----sleep time----->|
+       |<--- sleep time  --->|
    
 }}}
 We have this on the assumption that we _ignore the sleep current_. This is reasonable if RF modules and uC support sleep mode that leak current is only a couple of uA.
