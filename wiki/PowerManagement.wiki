@@ -84,8 +84,8 @@ Now taking this result and applying to calculate battery life, e.g send 20 bytes
  _=> battery life = 1000mAh /(100mA x 10ms/10s) = 10.000 hours_
 
 
-===3. 328P - Bed Time===
-As said, the ATMega328P is PicoPower (hence, the P?) technology version. Other chip such as ATTiny13A also has PicoPower capability. While the ATTiny13A obviously consumes less power than ATMega328P in active mode (at 8MHz-5V, 6mA v.s 9mA; 4MHz-3V, 1.8mA v.s 2.5mA), at power down mode (in sleep mode) both chips consume approximately the same amount of current (3.2-10uA). We 'll discuss implementation power-down mode in ATMega328P with watchdog timer(I haven't get to the ATTiny yet, need a programmer).
+===3. ATmega328P - Bed Time===
+As said, the ATMega328P is Pico Power (hence, the P?) version. Other chip such as ATTiny13A also has Pico Power capability. While the ATTiny13A obviously consumes less power than ATMega328P in active mode (at 8MHz-5V, 6mA v.s 9mA; 4MHz-3V, 1.8mA v.s 2.5mA), at power down mode (in sleep mode) both chips consume approximately the same amount of current (3.2-10uA). We 'll discuss implementation power-down mode in ATMega328P with watchdog timer(I haven't get to the ATTiny yet, need a programmer).
 
 Here's the DC characteristic from datasheet:
 
