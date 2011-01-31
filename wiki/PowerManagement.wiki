@@ -44,7 +44,9 @@ http://www.hoperf.com/upfile/RFM12.pdf
 
   
 ===2. Transmission time===
-It is good to know the transmission time of the module so that we can calculate the transmission ratio. Also, transmission time place an important role in collision avoidance(the shorter transmission time, the smaller chance of collision).
+It is good to know the transmission time of the module so that we can calculate the transmission ratio. 
+
+Also, transmission time place an important role in collision avoidance (the shorter transmission time, the smaller chance of collision).
 
 Tested:
 
@@ -95,14 +97,15 @@ Quote:
 {{{
 The Power-down mode saves the register contents but freezes the Oscillator, disabling all other chip functions until the next interrupt or hardware reset. 
 
-In Power-save mode, the asynchronous timer continues to run, allowing the user to maintain a timer base while the rest of the device is sleeping. The ADC Noise Reduction mode stops the CPU and all I/O modules except asynchronous timer and ADC, to minimize switching noise during ADC conversions. 
+In Power-save mode, the asynchronous timer continues to run, allowing the user to maintain a timer base while the rest of the device is sleeping. 
+The ADC Noise Reduction mode stops the CPU and all I/O modules except asynchronous timer and ADC, to minimize switching noise during ADC conversions. 
 
 In Standby mode, the crystal/resonator Oscillator is running while the rest of the device is sleeping. This allows very fast start-up combined with low power consumption.
 }}}
 
 (It is interesting that power-save mode consumes even less power).
 
-At this moment, I haven't implemented RF sleep mode yet, but the perspective scheme on the tag device is: transmit data -> MCU and RF go to sleep -> WDT on MCU wake-up ->...
+At this moment, I haven't implemented RF sleep mode yet, but the perspective scheme on the tag device is: transmit data -> MCU and RF go to sleep -> WDT on MCU wake-up -> so on...
 
 Below is the reference for sleep mode and wake up source, using WDT seems to be a good choice.
 
