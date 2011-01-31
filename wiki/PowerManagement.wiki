@@ -105,7 +105,7 @@ In Standby mode, the crystal/resonator Oscillator is running while the rest of t
 
 (It is interesting that power-save mode consumes even less power).
 
-At this moment, I haven't implemented RF sleep mode yet, but the perspective scheme on the tag device is: transmit data -> MCU and RF go to sleep -> WDT on MCU wake-up -> so on...
+At this moment, I haven't implemented RF sleep mode yet, but the basic scheme usually is: transmit data -> MCU and RF go to sleep -> WDT on MCU wake-up -> so on... However if we allow the tag to be waked up by external sources (e.g when tag receives a report call from system), the MCU will need interrupt from RF module. This will be discussed later.
 
 Below is the reference for sleep mode and wake up source, using WDT seems to be a good choice.
 
