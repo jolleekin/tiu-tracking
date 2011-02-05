@@ -25,5 +25,8 @@ There are two different approaches will be introduced:
 https://tiu-tracking.googlecode.com/svn/trunk/rf12_tx_rx_v1/schematic/arssi.png
 
 
-_* update: code version 2 posted: *_
-https://tiu-tracking.googlecode.com/svn/trunk/rf12_tx_rx_v2
+_* update: *_
+  * 1. code version 2 posted: https://tiu-tracking.googlecode.com/svn/trunk/rf12_tx_rx_v2
+  * 2. fuse setting for chips that are off-arduino and 3.3V rail: (you need a programmer, and probably avrStudio)
+
+https://tiu-tracking.googlecode.com/svn/trunk/power/fuse.png
