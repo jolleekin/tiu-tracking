@@ -186,7 +186,7 @@ bitSet(PINB, 0);
 	{
         uint8_t in = rf12_xfer(RF_RX_FIFO_READ); // DDL: read FIFO buffer
 		
-		if((++count%8) == 1 ) 
+		if((++count%3) == 1 ) 
 		{
 			if(count == 1)
 				RSSI = 0;
@@ -255,7 +255,7 @@ uint8_t rf12_recvDone () {
                 rf12_seq = -1;
 			
 			/* DDL: alculate avg RSSI */
-			int temp = count/8 + 1;
+			int temp = count/3 + 1;
 			RSSI = RSSI/temp;
 			count = 0;
 						
