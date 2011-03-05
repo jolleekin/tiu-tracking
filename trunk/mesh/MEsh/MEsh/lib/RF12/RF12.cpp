@@ -535,7 +535,7 @@ void rf12_encrypt (const uint8_t* key) {
 }
 
 // DDL: get recorded RSSI
-int readRSSI()
+unsigned char readRSSI()
 {
-	return RSSI;
+	return (unsigned char)RSSI;
 }

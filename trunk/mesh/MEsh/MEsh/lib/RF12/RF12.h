@@ -92,6 +92,6 @@ void rf12_encrypt(const uint8_t*);
 // low-level control of the RFM12B via direct register access
 uint16_t rf12_control(uint16_t cmd);
 
-int readRSSI();
+unsigned char readRSSI();
 
 #endif
