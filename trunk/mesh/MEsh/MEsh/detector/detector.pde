@@ -23,15 +23,14 @@
 // E.G 0x010100FF = FROM DETECTOR#1 "DETECTOR#1 SAID, TAG#0 HAS RSSI 255"
 
 
-#define BASE_MODE		1
 #define FROM_TAG 		0
-#define PAYLOAD_SIZE 	8
+#define PAYLOAD_SIZE 	        8
 #define MyID			4
 unsigned char payload[PAYLOAD_SIZE];
 
 unsigned char routing_table[] = {
 	4
-}
+};
 
 
 void setup () 
@@ -65,17 +64,17 @@ void loop ()
 			payload[5] = rf12_data[5];		//Tag ID
 			payload[6] = rf12_data[6];		//Message ID 
 			payload[7] = payload[0] ^ 		//Checksum - Changes because of updated DID
-						 payload[1] ^ 
-						 payload[2] ^ 
-						 payload[3] ^ 
-						 payload[4] ^ 
-						 payload[5] ^ 
-						 payload[6];
+				     payload[1] ^ 
+				     payload[2] ^ 
+		                     payload[3] ^ 
+				     payload[4] ^ 
+				     payload[5] ^ 
+				     payload[6];
 	   
 		}else if (rf12_data[1] == 0){//From Tag			
 			
 			// get RSSI        
-			rssi = readRSSI();      
+			int rssi = readRSSI();      
 			payload[0] = rf12_data[0];		//Start Delimiter
 			payload[1] = MyID;				//Source ID
 			payload[2] = MyID;				//Detector ID
@@ -84,32 +83,20 @@ void loop ()
 			payload[5] = rf12_data[5];		//Tag ID
 			payload[6] = rf12_data[6];		//Message ID 
 			payload[7] = payload[0] ^ 		//Checksum
-						 payload[1] ^ 
-						 payload[2] ^ 
-						 payload[3] ^ 
-						 payload[4] ^ 
-						 payload[5] ^ 
-						 payload[6];
+				     payload[1] ^ 
+				     payload[2] ^ 
+				     payload[3] ^ 
+				     payload[4] ^ 
+				     payload[5] ^ 
+				     payload[6];
 		}
 		
 		
-	#if BASE_MODE
-		//If From Detector, then just relay received data.
-		//If from Tag, then relay payload that was prepared above..
-		Serial.print(payload[0],BYTE);//Start delimiter
-		Serial.print(payload[1],BYTE);//DID
-		Serial.print(payload[2],BYTE);//SID
-		Serial.print(payload[3],BYTE);//Reserved   
-		Serial.print(payload[4],BYTE);//RSSI
-		Serial.print(payload[5],BYTE);//TID
-		Serial.print(payload[6],BYTE);//MID
-		Serial.print(payload[7],BYTE);//Checksum    
-	#else
+
 		digitalWrite(5,HIGH);
 		delay(random(rssi));
 		rf12_sendStart(0, payload, PAYLOAD_SIZE);
 		digitalWrite(5,LOW);
-	#endif
     
 	}
 }

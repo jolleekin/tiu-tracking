@@ -60,8 +60,8 @@ void loop()
 		payload[5] = TagID;			//Tag ID
 		payload[6] = MessageID;		//Message ID	
 		payload[7] = payload[0] ^	//Checksum; omitted Zero's, no affect on checksum.
-					 payload[5] ^ 
-					 payload[6];	
+			     payload[5] ^ 
+			     payload[6];	
 		
 		MessageID++;
 		
