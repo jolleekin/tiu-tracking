@@ -33,16 +33,15 @@
 // MINUMUM 2 BYTES
 
 // this will be retrieved eeprom in later development:
-byte TagID = 1; // 1...30 only, 0 is not allow in this lib
+byte TagID = 7; // 1...30 only, 0 is not allow in this lib
 byte MessageID=0;                
 
 //char payload[]= "bumble beeeeeeeeeeeeeeeee...";
-char payload[10];
+char payload[8];
 
 void setup()
 {
 	pinMode(5,OUTPUT);
-	sei();
 	rf12_initialize(1, RF12_433MHZ, 33);
 }
 
@@ -51,7 +50,7 @@ void loop()
     rf12_recvDone();
     if (rf12_canSend()) 
     {     
-		char payload[8];
+		
 		payload[0] = '$';			//Start1
 		payload[1] = 0;				//Source ID
 		payload[2] = 0;				//Detector ID
