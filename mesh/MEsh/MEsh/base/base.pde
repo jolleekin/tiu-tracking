@@ -1,5 +1,7 @@
 /*****************************************************************
- * Example detector Code using RFM12 Module                      *
+ * Example base Code using RFM12 Module                          *
+ * by Dung Dang Le, Daniel Ferguson,                             *
+ * This code is licensed under GPL v.2                           *
  *****************************************************************
  * Set up:                                                       *
  * RFM12B (REVISION B) ->  ATMEGA328                             *
@@ -9,16 +11,16 @@
  *              nSel   ->  SS   (PB2)                            *
  *              IRQ    ->  INT0 (PD2)                            *
  * ARSSI (at resistor) ->  PC0  (analog input 0)                 *
+ *              VCC    ->  AVCC                                  *
  *****************************************************************/
 #include <RF12.h>
 #include <Ports.h>
 
 #define FROM_TAG 		0
-#define PAYLOAD_SIZE 	        8
-#define MyID			6
+#define PAYLOAD_SIZE 	        6
+#define MyID			255
 
 #define FASTADC 1
-
 // defines for setting and clearing register bits
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -27,9 +29,8 @@
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif
 
+unsigned char payload[PAYLOAD_SIZE+1];
 
-unsigned char payload[PAYLOAD_SIZE];
-unsigned char rssi=0;
 //
 void setup () 
 {
@@ -46,7 +47,6 @@ void setup ()
 
 void loop () 
 {    
-
   if (rf12_recvDone() && rf12_crc == 0) 
   {
     //Serial.print("rf12_len=");
@@ -61,54 +61,55 @@ void loop ()
     //	if rf12_data[1] == entry then
     //		accept=true
     //endfor
-      if (rf12_data[1] != FROM_TAG)//From Detector
+    
+    //If From Detector, then just relay received data.
+    //If from Tag, then relay payload 
+
+      if (rf12_data[0] != FROM_TAG)//From Detector
       {
-        payload[0] = 13;		//Start Delimiter
-        payload[1] = MyID;				//Source ID
-        payload[2] = rf12_data[2];		//Detector ID
-        payload[3] = rf12_data[3];		//Reserved
-        payload[4] = rf12_data[4];		//RSSI value 
-        payload[5] = rf12_data[5];		//Tag ID
-        payload[6] = rf12_data[6];		//Message ID 
-        payload[7] = payload[0] ^ 		//Checksum - Changes because of updated DID
-                     payload[1] ^ 
-                     payload[2] ^ 
-                     payload[3] ^ 
-                     payload[4] ^ 
-                     payload[5] ^ 
-                     payload[6];
-
+       // payload[0] = 13;		//Start Delimiter
+        payload[0] = MyID;			//Source ID
+        payload[1] = rf12_data[1];		//Detector ID        
+        payload[2] = rf12_data[2];		//RSSI value 
+        payload[3] = rf12_data[3];		//Tag ID
+        payload[4] = rf12_data[4];		//Message ID 
+        payload[5] = rf12_data[5];		//Reserved
+       
+        // debug        
+        Serial.print("from detector:");
+        Serial.print(payload[1],DEC);
+        Serial.print(" tag:");
+        Serial.print(payload[3],DEC);
+        Serial.print(" has RSSI:");
+        Serial.print(payload[2],DEC);
+        Serial.println();    
       }
-      else if (rf12_data[1] == FROM_TAG){//From Tag			
-
-        // get RSSI              
-        payload[0] = 14;		//Start Delimiter
-        payload[1] = MyID;				//Source ID
-        payload[2] = MyID;				//Detector ID
-        payload[3] = 0;					//Reserved - put batter level here
-        payload[4] = readRSSI();				//RSSI value - we are the tag, we don't know this value.
-        payload[5] = rf12_data[5];		//Tag ID
-        payload[6] = rf12_data[6];		//Message ID 
-        payload[7] = payload[0] ^ 		//Checksum
-                     payload[1] ^ 
-                     payload[2] ^ 
-                     payload[3] ^ 
-                     payload[4] ^ 
-                     payload[5] ^ 
-                     payload[6];
-      }
-
-
-      //If From Detector, then just relay received data.
-      //If from Tag, then relay payload that was prepared above..
-      Serial.print(payload[0],BYTE);//Start delimiter
-      Serial.print(payload[1],BYTE);//DID
-      Serial.print(payload[2],BYTE);//SID
-      Serial.print(payload[3],BYTE);//Reserved   
-      Serial.print(payload[4],BYTE);//RSSI
-      Serial.print(payload[5],BYTE);//TID
-      Serial.print(payload[6],BYTE);//MID
-      Serial.print(payload[7],BYTE);//Checksum    
+      else if (rf12_data[0] == FROM_TAG)//From Tag	
+      {		
+        // get RSSI
+        int rssi = readRSSI()/2;            
+        payload[0] = MyID;				//Source ID
+        payload[1] = MyID;				//Detector ID        
+        payload[2] = (unsigned char)rssi;		//RSSI value - we are the tag, we don't know this value.
+        payload[3] = rf12_data[3];		        //Tag ID
+        payload[4] = rf12_data[4];		        //Message ID 
+        payload[5] = rf12_data[5];			//Reserved - put batter level here
+       
+       // debug        
+        Serial.print("tag:");
+        Serial.print(payload[3],DEC);
+        Serial.print(" has RSSI:");
+        Serial.print(payload[2],DEC);
+        Serial.println();        
+        
+      } 
+        // to proxy
+//      Serial.print(payload[0],BYTE);
+//      Serial.print(payload[1],BYTE);
+//      Serial.print(payload[2],BYTE);
+//      Serial.print(payload[3],BYTE);
+//      Serial.print(payload[4],BYTE);
+//      Serial.print(payload[5],BYTE);
     }
 }
 
