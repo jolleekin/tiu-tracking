@@ -90,7 +90,8 @@ volatile uint16_t rf12_crc;         // running crc value
 volatile uint8_t rf12_buf[RF_MAX];  // recv/xmit buf, including hdr & crc bytes
 long rf12_seq;                      // seq number of encrypted packet (or -1)
 
-volatile uint8_t rf12_rssi;
+int RSSI = 0;						// DDL: received signal strength 
+int count = 0;
 
 static uint32_t seqNum;             // encrypted send sequence number
 static uint32_t cryptKey[4];        // encryption key to use
@@ -173,11 +174,10 @@ uint16_t rf12_control(uint16_t cmd) {
 #endif
     return r;
 }
-static volatile uint8_t count=0;
 
 static void rf12_interrupt() 
 {
-//bitSet(PINB, 0);
+bitSet(PINB, 0);
     // a transfer of 2x 16 bits @ 2 MHz over SPI takes 2x 8 us inside this ISR
     rf12_xfer(0x0000);
     
@@ -186,20 +186,25 @@ static void rf12_interrupt()
 	{
         uint8_t in = rf12_xfer(RF_RX_FIFO_READ); // DDL: read FIFO buffer
 		
-		if (count++ == 1)
-			rf12_rssi = analogRead(A0);
+		if((++count) == 2 ) 
+		{
+		
+			RSSI = analogRead(A0);
+		} // DDL: sampling RSSI when count == 2 
+/* DDL: get the maximum value of RSSI or average?
+ * reserved:
+ */
 		if (rxfill == 0 && group != 0)
             rf12_buf[rxfill++] = group;
             
         rf12_buf[rxfill++] = in;
         rf12_crc = _crc16_update(rf12_crc, in);
 
-        if (rxfill >= rf12_len + 5 || rxfill >= RF_MAX){
+        if (rxfill >= rf12_len + 5 || rxfill >= RF_MAX)
             rf12_xfer(RF_IDLE_MODE);
-			count=0;
-		}
     } 
-	else /* DDL: send */
+	/* DDL: send */
+	else 
 	{
         uint8_t out;
 
@@ -248,7 +253,11 @@ uint8_t rf12_recvDone () {
             else
                 rf12_seq = -1;
 			
-			
+			/* DDL: alculate avg RSSI */
+			//int temp = count/8 + 1;
+			//RSSI = RSSI/temp;
+			count = 0;
+						
             return 1; // it's a broadcast packet or it's addressed to this node
         }
     }
@@ -268,7 +277,6 @@ uint8_t rf12_canSend () {
         // rf12_xfer(RF_RX_FIFO_READ); // fifo read
         rxstate = TXIDLE;
         rf12_grp = group;
-		
         return 1;
     }
     return 0;
@@ -324,7 +332,7 @@ void rf12_sendWait (uint8_t mode) {
 void rf12_initialize (uint8_t id, uint8_t band, uint8_t g) {
     nodeid = id;
     group = g;
-	
+    
     spi_initialize();
     
     pinMode(RFM_IRQ, INPUT);
@@ -525,6 +533,8 @@ void rf12_encrypt (const uint8_t* key) {
         crypter = 0;
 }
 
-uint8_t readRSSI(){
-	return rf12_rssi;
+// DDL: get recorded RSSI
+int readRSSI()
+{
+	return RSSI;
 }
