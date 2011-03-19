@@ -76,13 +76,13 @@ void loop ()
         payload[5] = rf12_data[5];		//Reserved
        
         // debug        
-        Serial.print("from detector:");
-        Serial.print(payload[1],DEC);
-        Serial.print(" tag:");
-        Serial.print(payload[3],DEC);
-        Serial.print(" has RSSI:");
-        Serial.print(payload[2],DEC);
-        Serial.println();    
+//        Serial.print("from detector:");
+//        Serial.print(payload[1],DEC);
+//        Serial.print(" tag:");
+//        Serial.print(payload[3],DEC);
+//        Serial.print(" has RSSI:");
+//        Serial.print(payload[2],DEC);
+//        Serial.println();    
       }
       else if (rf12_data[0] == FROM_TAG)//From Tag	
       {		
@@ -96,20 +96,20 @@ void loop ()
         payload[5] = rf12_data[5];			//Reserved - put batter level here
        
        // debug        
-        Serial.print("tag:");
-        Serial.print(payload[3],DEC);
-        Serial.print(" has RSSI:");
-        Serial.print(payload[2],DEC);
-        Serial.println();        
+//        Serial.print("tag:");
+//        Serial.print(payload[3],DEC);
+//        Serial.print(" has RSSI:");
+//        Serial.print(payload[2],DEC);
+//        Serial.println();        
         
       } 
         // to proxy
-//      Serial.print(payload[0],BYTE);
-//      Serial.print(payload[1],BYTE);
-//      Serial.print(payload[2],BYTE);
-//      Serial.print(payload[3],BYTE);
-//      Serial.print(payload[4],BYTE);
-//      Serial.print(payload[5],BYTE);
+      Serial.print(payload[0],BYTE);
+      Serial.print(payload[1],BYTE);
+      Serial.print(payload[2],BYTE);
+      Serial.print(payload[3],BYTE);
+      Serial.print(payload[4],BYTE);
+      Serial.print(payload[5],BYTE);
     }
 }
 
