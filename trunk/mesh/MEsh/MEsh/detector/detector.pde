@@ -18,8 +18,13 @@
 
 
 #define FROM_TAG 		0
+<<<<<<< .mine
+#define PAYLOAD_SIZE 	        8
+#define MyID			10
+=======
 #define PAYLOAD_SIZE 	        6
 #define MyID			8
+>>>>>>> .r54
 
 #define FASTADC 1
 
