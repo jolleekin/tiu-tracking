@@ -1,0 +1,16 @@
+software
+- python v2.7 http://www.python.org/download/
+- pyserial lib http://pypi.python.org/pypi/pyserial
+
+hardware
+- proxy/base connect to usb/serial port
+- proxy output data format: 7 bytes
+	 byte 1 : '$'
+	 byte 2 : sourceID
+	 byte 3 : detectorID
+	 byte 4 : RSSI
+	 byte 5 : tagID
+	 byte 6 : msg ID
+	 byte 7 : reserved
+	 
+	 
