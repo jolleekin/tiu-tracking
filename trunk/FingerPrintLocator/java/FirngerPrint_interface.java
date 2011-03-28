@@ -1,3 +1,9 @@
+// interface for FingerPrint locator
+// class : FingerPrint
+// dependencies classes : Block, rssi_list, statistics...
+
+// underconstruction note:  if you guys have any idea on this interface please add your comments 
+// at bottom and commit, thanks.
 
 class rssi_list
 {
@@ -78,7 +84,7 @@ class FingerPrint
 // - a column is a block 
 // - 1,2,3,4... is the detector id used to index to the RSSI value of block
 // - each cell in the table is the stats value of the RSSI LIST
-// - notice that RSSI is a list but has one element only (stats value)
+//
 
 	Block FingerPrintTable[];					// fingerprint table, of Block type
 	type? length;								// number of block
@@ -124,4 +130,6 @@ class FingerPrint
 // destructor	
 //++++++++++++++++++++++++++++++++++++++++++++ end_FingerPrint ++++++++++++++++++++++++++++++++++++++++++++ 
 }
-  
+// underconstruction notes
+// comments go here:
+// 1.
