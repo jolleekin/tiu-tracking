@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public class Statistics {
 	public static int mean(ArrayList<Integer> data) {
 		int sum = 0;
-		for (int i = 0; i < data.size(); i++) {
+		for (int i = data.size() - 1; i >= 0; i--) {
 			sum += data.get(i);
 		}
 		return sum / data.size();
@@ -17,7 +17,7 @@ public class Statistics {
 			count[i] = 0;
 		}
 		
-		for (int i = 0; i < data.size(); i++) {
+		for (int i = data.size() - 1; i >= 0; i--) {
 			count[data.get(i)]++;
 		}
 		
