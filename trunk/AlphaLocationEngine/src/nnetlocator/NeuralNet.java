@@ -11,14 +11,15 @@ public class NeuralNet implements LocationEngine {
 	public double learningRate; //learning rate, which can be modified by the controller
 	private ArrayList<Neuron> neurons;
 	private final int NEURON_NUMBER = 30;
-	private final int INPUT_SIZE = 4;
-	private final double SIGMA = 1.0;
+	private final int INPUT_LENGTH = 4;
+	private static double sigma; //SIGMA constant is an empirical value
 	
 	//Constructors
 	
 	//Construct a new neural network
 	public NeuralNet() {
 		learningRate = 0.2;
+		sigma = 1.0;
 		neurons = new ArrayList<Neuron>(NEURON_NUMBER);
 		
 	}
@@ -54,32 +55,59 @@ public class NeuralNet implements LocationEngine {
 		 * Generate different input patterns which will be applied to neural net
 		 * An input pattern is an ordered list of RSSI values corresponding to detector 1, 2, 3, and so on
 		 * The fixed number of detectors is four
-		 * Variants of input patterns from raw data are MAX, MIN, MODE, MEDIAN
+		 * Variants of input patterns from raw data are MAX, MIN, MEAN, MEDIAN
 		 * Each input pattern is an integer ArrayList which has fixed length
 		 */
 		ArrayList<Double> patternMax = new ArrayList<Double>();
-		ArrayList<Double> patternMin;
-		ArrayList<Double> patternMode;
-		ArrayList<Double> patternMedian;
+		ArrayList<Double> patternMin = new ArrayList<Double>();
+		ArrayList<Double> patternMean = new ArrayList<Double>();
+		ArrayList<Double> patternMedian = new ArrayList<Double>();
 		
 		int index = 0;
-		for (Map.Entry<Integer, ArrayList<Integer>> e: rssiTable.entrySet()) {
-			patternMax.add(index, (double)Collections.max(e.getValue()));
+		
+		for (ArrayList<Integer> v: rssiTable.values()) {
+			patternMax.add(index, (double)Collections.max(v)); 		//MAX pattern
+			patternMin.add(index, (double)Collections.min(v)); 		//MIN pattern
+			patternMean.add(index, (double)Statistics.mean(v)); 	//MEAN pattern
+			patternMedian.add(index, (double)Statistics.median(v)); //MEDIAN pattern
 		}
 		
+		
 		//Serve the request from controller
+		
+		//If reference location is null, the neural network operates in locating mode
 		if (refLocation == null) {
 			System.out.println("Locating mode...");
+			
+			//Initialize result vector
 			result.x = 0;
 			result.y = 0;
+			
+			//Try with different input patterns
+			Vector2D resultMax = new Vector2D(0, 0);
+			Vector2D resultMin = new Vector2D(0, 0);
+			Vector2D resultMean = new Vector2D(0 ,0);
+			Vector2D resultMedian = new Vector2D(0, 0);
+			
+			locating(resultMax, patternMax);
+			locating(resultMin, patternMin);
+			locating(resultMean, patternMean);
+			locating(resultMedian, patternMedian);
+			
+			/* Decision making process
+			 * At the level of location engine
+			 * The returned result for location of the asset tag will be averaged
+			 */
+			result.x = (resultMax.x + resultMin.x + resultMean.x + resultMedian.x)/4;
+			result.y = (resultMax.y + resultMin.y + resultMean.y + resultMedian.y)/4;
 
-			double h;
-			for (Neuron neuron : neurons) {
-				h = gaussian(distance(neuron.instar, patternMax));
-				result.x += h * neuron.outstar.x;
-				result.y += h * neuron.outstar.y;
-			}
+			
 		}
+		
+		/* Else, switch the neural network to learning mode
+		 * Choose patternMax as input for learning
+		 * Note that we can choose other patterns to teach the neural network
+		 */
 		else {
 			System.out.println("Learning mode...");
 			for (Neuron neuron : neurons) {
@@ -98,10 +126,20 @@ public class NeuralNet implements LocationEngine {
 		 */
 		
 		
-		System.out.println(tagID);
-		
 	}
 	
+	/* Calculate the location of asset tag corresponding to the applied input
+	 * and return result
+	 * for later use in decision making process
+	 */
+	public void locating(Vector2D result, ArrayList<Double> pattern) {
+		double h;
+		for (Neuron neuron : neurons) {
+			h = gaussian(distance(neuron.instar, pattern));
+			result.x += h * neuron.outstar.x;
+			result.y += h * neuron.outstar.y;
+		}
+	}
 	
 	// result = a + (b - a) * factor;
 	public void linearInterpolate(ArrayList<Double> result, ArrayList<Double> a, ArrayList<Double> b, double factor) {
@@ -129,7 +167,7 @@ public class NeuralNet implements LocationEngine {
 	}
 	
 	public double gaussian(double distance) {
-		return Math.exp(-(distance * distance)/(2 * SIGMA * SIGMA));
+		return Math.exp(-(distance * distance)/(2 * sigma * sigma));
 	}
 	
 }
