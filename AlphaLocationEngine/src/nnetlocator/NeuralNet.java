@@ -14,6 +14,7 @@ public class NeuralNet implements LocationEngine {
 	private final int INPUT_LENGTH = 4;
 	private static double sigma; //sigma is an empirical value
 	public Hashtable<Integer, Weights> myWeightTable;
+	private boolean isChanged = false;
 	
 	//Constructors
 	
@@ -136,6 +137,7 @@ public class NeuralNet implements LocationEngine {
 				Weights extraNeuron = new Weights(patternMax, refLocation);
 				int neuronID = myWeightTable.size();
 				myWeightTable.put(neuronID + 1, extraNeuron);
+				isChanged = true;
 		}
 		
 		
@@ -187,4 +189,8 @@ public class NeuralNet implements LocationEngine {
 		return Math.exp(-(distance * distance)/(2 * sigma * sigma));
 	}
 	
+	
+	public boolean isChanged() {
+		return isChanged;
+	}
 }
