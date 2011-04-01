@@ -11,7 +11,7 @@ public class Transaction {
 	public float     y;
 	public int       batteryLevel;
 	public long      time;
-	public Hashtable<Integer, ArrayList<Integer>> rssiLists;
+	public Hashtable<Integer, ArrayList<Integer>> rssiLists;// keys: detectorIDs
 	//public ArrayList<ArrayList<Integer>> rssiList;
 	public Transaction()
 	{
