@@ -12,7 +12,8 @@ public class NeuralNet implements LocationEngine {
 	private ArrayList<Neuron> neurons;
 	private final int NEURON_NUMBER = 30;
 	private final int INPUT_LENGTH = 4;
-	private static double sigma; //SIGMA constant is an empirical value
+	private static double sigma; //sigma is an empirical value
+	public Hashtable<Integer, Weights> myWeightTable;
 	
 	//Constructors
 	
@@ -29,14 +30,27 @@ public class NeuralNet implements LocationEngine {
 	 * which is specified by instar weight vectors 
 	 * and outstar weight vectors
 	 */
-	public NeuralNet(Hashtable<Integer, ArrayList<Double>> instarTable, Hashtable<Integer, ArrayList<Vector2D>> outstarTable) {
+
+	public NeuralNet(Hashtable<Integer, Weights> weightTable) {
 		learningRate = 0.2;
+		sigma = 1.0;
+		neurons = new ArrayList<Neuron>();
+		//Load configuration of the neural net
+		//Get each element
+		myWeightTable = weightTable;
+		for (Weights w: myWeightTable.values()) {
+			neurons.add(new Neuron(w.instarList, w.location));
+		}
+		
 	}
 	
 	//Load an existed neural network by name (extension: *.nnet)
 	public NeuralNet (String fileName) {
 		
 		learningRate = 0.2;
+		sigma = 1.0;
+		//Read file's content
+		
 	}
 	
 	
@@ -119,11 +133,11 @@ public class NeuralNet implements LocationEngine {
 		
 				// Oops, there’s no such neuron :( So, we add one :)
 				neurons.add(new Neuron(patternMax, refLocation));
+				Weights extraNeuron = new Weights(patternMax, refLocation);
+				int neuronID = myWeightTable.size();
+				myWeightTable.put(neuronID + 1, extraNeuron);
 		}
 		
-		/* Save the modified configuration into file
-		 * 
-		 */
 		
 		
 	}
@@ -133,12 +147,15 @@ public class NeuralNet implements LocationEngine {
 	 * for later use in decision making process
 	 */
 	public void locating(Vector2D result, ArrayList<Double> pattern) {
+		double hsum = 0;
 		double h;
 		for (Neuron neuron : neurons) {
 			h = gaussian(distance(neuron.instar, pattern));
+			hsum += h;
 			result.x += h * neuron.outstar.x;
 			result.y += h * neuron.outstar.y;
 		}
+		result.mult(1 / hsum);
 	}
 	
 	// result = a + (b - a) * factor;
