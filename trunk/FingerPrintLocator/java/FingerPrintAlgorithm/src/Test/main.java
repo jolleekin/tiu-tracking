@@ -46,7 +46,7 @@ public class main {
 		testList1.add(123);
 		testList1.add(124);
 		testList1.add(125);
-		b1.rssiLists.put(1, testList1);
+		b1.rssiLists.put(0, testList1);
 		
 		ArrayList<Transaction> fp = new ArrayList<Transaction>();
 		fp.add(b0);
@@ -61,10 +61,9 @@ public class main {
 		//bx.x = 1;
 		//bx.y = 1;
 		bx.rssiLists = new Hashtable<Integer, ArrayList<Integer>>();
-		testListx.add(121);
+		testListx.add(111);
 		
 		bx.rssiLists.put(0, testListx);
-		bx.rssiLists.put(1, testListx);
 		
 		FP.locate(bx,"mean");
 		FP.locate(bx,"median");
