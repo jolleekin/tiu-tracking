@@ -64,7 +64,6 @@ public class main {
 		testListx.add(121);
 		
 		bx.rssiLists.put(0, testListx);
-		
 		bx.rssiLists.put(1, testListx);
 		
 		FP.locate(bx,"mean");
