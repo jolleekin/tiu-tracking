@@ -60,10 +60,13 @@ public class FingerPrint
 			while(detIDs.hasMoreElements())
 			{
 				int currentDetID = detIDs.nextElement();       // detectorID
-				eu_sum = (eu_sum + Math.pow(
-						(this.statTable.get(currentBlockID)).get(currentDetID)
-						- t.rssiLists.get(currentDetID).get(0)
-						, 2));
+				if(this.statTable.get(currentBlockID).get(currentDetID) != null )
+				{
+					eu_sum = (eu_sum + Math.pow(
+							(this.statTable.get(currentBlockID)).get(currentDetID)
+							- t.rssiLists.get(currentDetID).get(0)
+							, 2));
+				}
 			}	
 			eu_sum = Math.sqrt(eu_sum);
 			ED_list.put(eu_sum,currentBlockID);    // put eucledean results on the list
