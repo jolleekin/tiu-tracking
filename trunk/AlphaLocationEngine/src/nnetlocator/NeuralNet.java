@@ -46,13 +46,15 @@ public class NeuralNet implements LocationEngine {
 	}
 	
 	//Load an existed neural network by name (extension: *.nnet)
-	public NeuralNet (String fileName) {
+	/* public NeuralNet (String fileName) {
 		
 		learningRate = 0.2;
 		sigma = 1.0;
 		//Read file's content
 		
 	}
+	
+	*/
 	
 	
 	/**
@@ -125,25 +127,34 @@ public class NeuralNet implements LocationEngine {
 		 */
 		else {
 			System.out.println("Learning mode...");
+			isChanged = true;
 			for (Neuron neuron : neurons) {
 				if (neuron.outstar.equals(refLocation)) {
 					linearInterpolate(neuron.instar, neuron.instar, patternMax, learningRate);
 					return;
 				}
 				}
-		
+				
 				// Oops, there’s no such neuron :( So, we add one :)
 				neurons.add(new Neuron(patternMax, refLocation));
-				Weights extraNeuron = new Weights(patternMax, refLocation);
-				int neuronID = myWeightTable.size();
-				myWeightTable.put(neuronID + 1, extraNeuron);
-				isChanged = true;
+				
 		}
 		
-		
-		
+		//Update configuration of the neural network
+		if (isChanged) {
+			updateWeights(); //Update weights which will be stored back to database
+		}
 	}
 	
+	public void updateWeights() {
+		
+		myWeightTable.clear(); //clear the obsolete weights
+		for (int index = 0; index < neurons.size(); index++) {
+			Weights w = new Weights(neurons.get(index).instar, neurons.get(index).outstar);
+			myWeightTable.put(index + 1, w);
+		}
+		
+	}
 	/* Calculate the location of asset tag corresponding to the applied input
 	 * and return result
 	 * for later use in decision making process
