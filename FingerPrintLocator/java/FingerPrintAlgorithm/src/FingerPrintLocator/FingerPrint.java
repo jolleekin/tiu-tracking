@@ -9,7 +9,7 @@ public class FingerPrint
 	public int                                               fingerPrintID;
 	private ArrayList<Transaction>                           fingerPrintTable;
 	private boolean                                          dirty;
-	//private ArrayList<Hashtable<Integer,Integer>>    statTable;	// this table holds stats mode values of the fingerPrintTable
+	
 	private Hashtable<Integer,Hashtable<Integer,Integer>>    statTable;	// this table holds stats mode values of the fingerPrintTable
                                                                         // first key(blockID) index to a block, second key(detectorID)
 	                                                                    // indexes to the rssi value (stats) 
@@ -31,6 +31,7 @@ public class FingerPrint
 		this.statmode = "mean";
 		this.dirty    = false;
 		fingerPrintTable = fp;
+	 
 		this.fill_stat(this.statmode);
 	}
 	
@@ -60,7 +61,7 @@ public class FingerPrint
 			{
 				int currentDetID = detIDs.nextElement();       // detectorID
 				eu_sum = (eu_sum + Math.pow(
-						this.statTable.get(currentBlockID).get(currentDetID)
+						(this.statTable.get(currentBlockID)).get(currentDetID)
 						- t.rssiLists.get(currentDetID).get(0)
 						, 2));
 			}	
@@ -86,6 +87,7 @@ public class FingerPrint
 	}
 	private void fill_stat(String mode)
 	{
+		this.statTable = new Hashtable<Integer, Hashtable<Integer,Integer>>();
 		for(Transaction block : this.fingerPrintTable) // the table is a list of blocks
 		{
 			this.statTable.put(block.blockID, new Hashtable<Integer, Integer>()); // create block pattern
