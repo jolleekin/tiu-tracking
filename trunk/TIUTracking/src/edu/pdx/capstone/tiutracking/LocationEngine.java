@@ -17,7 +17,7 @@ public abstract class LocationEngine {
 	/**
 	 *	Locate an asset tag based on measured RSSI values.
 	 *
-	 *	@param	tag			The tag whose location is to be determined.
+	 *	@param	tag		The tag whose location is to be determined.
 	 */
 	public abstract void locate(Tag tag);
 
