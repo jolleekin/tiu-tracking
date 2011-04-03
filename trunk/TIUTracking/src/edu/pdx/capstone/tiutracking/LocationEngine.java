@@ -21,4 +21,17 @@ public abstract class LocationEngine {
 	 */
 	public abstract void locate(Tag tag);
 
+	/**
+	 * Retrieve a configuration table for this engine.
+	 * 
+	 * @return	A hash table which contains the engine's configuration.
+	 */
+	public abstract Hashtable<String, String> getConfiguration();
+	
+	/**
+	 * Apply configuration to the engine.
+	 * 
+	 * @param config	A hash table which contains the engine's configuration.
+	 */
+	public abstract void setConfiguration(Hashtable<String, String> config);
 }
