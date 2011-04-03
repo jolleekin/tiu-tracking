@@ -47,6 +47,7 @@ public final class Tag {
 		} else {
 			this.location = new Vector2D(location);
 		}
+		this.battery = 100;
 		this.rssiTable = new Hashtable<Integer, ArrayList<Integer>>();
 	}
 }
