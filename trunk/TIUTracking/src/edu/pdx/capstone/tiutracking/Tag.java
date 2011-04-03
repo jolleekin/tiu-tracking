@@ -8,23 +8,40 @@ public final class Tag {
 	public final int id;
 
 	/**
-	 * Location of the tag. This field is modified by the location engine.
-	 * After calling the locate() method of the location engine, the controller
-	 * will save this field in the database.
+	 * Location of the tag.
+	 * <p>
+	 * In calibration mode, this field is initialized by the controller. In
+	 * operation mode, it is modified by the location engine in the locate()
+	 * method.
+	 * </p>
 	 */
-	public final Vector2D location;
-	
+	public Vector2D location;
+
 	/**
-	 * <p>rssiTable[DID] is a list of RSSI values measured by detector <b>DID</b>
-	 * for this tag.</p>
-	 * 
-	 * <p>To traverse the table, please use rssiTable.entrySet().iterator().</p>
+	 * A table which contains RSSI values associated with this tag for each
+	 * detector.
+	 * <p>
+	 * To traverse the table, please use rssiTable.entrySet().iterator().
+	 * </p>
 	 */
 	public final Hashtable<Integer, ArrayList<Integer>> rssiTable;
-	
-	public Tag(int id) {
+
+	/**
+	 * Creates a instance of Tag class.
+	 * 
+	 * @param id
+	 *            Id of the tag
+	 * @param location
+	 *            Location of the tag. If this field is NOT <b>null</b>, we are
+	 *            in calibration mode.
+	 */
+	public Tag(int id, Vector2D location) {
 		this.id = id;
-		this.location = new Vector2D();
+		if (location == null) {
+			this.location = new Vector2D();
+		} else {
+			this.location = new Vector2D(location);
+		}
 		this.rssiTable = new Hashtable<Integer, ArrayList<Integer>>();
 	}
 }

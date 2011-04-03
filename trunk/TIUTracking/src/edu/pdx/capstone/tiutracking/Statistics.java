@@ -5,12 +5,12 @@ import java.util.Collections;
 
 /**
  * A utility class that calculates various statistic values of an integer array.
- * All functions in this class assume that the data given are valid, i.e. containing
- * at least one element.
+ * All functions in this class assume that the data given are valid, i.e.
+ * containing at least one element.
  * 
- * @version	1.0
+ * @version 1.0
  * 
- * @author	Kin
+ * @author Kin
  * 
  */
 public class Statistics {
@@ -31,7 +31,8 @@ public class Statistics {
 		case svMin:
 			return Collections.min(data);
 		default:
-			throw new IllegalArgumentException("Invalid value type: " + valueType);
+			throw new IllegalArgumentException("Invalid value type: "
+					+ valueType);
 		}
 	}
 
@@ -64,7 +65,8 @@ public class Statistics {
 			sumOfSquares += x * x;
 		}
 
-		return Math.sqrt((double) (n * sumOfSquares - sum * sum) / ( n * (n - 1)));
+		return Math.sqrt((double) (n * sumOfSquares - sum * sum)
+				/ (n * (n - 1)));
 	}
 
 }
