@@ -1,22 +1,24 @@
 package edu.pdx.capstone.tiutracking;
 
-import java.util.ArrayList;
 import java.util.Hashtable;
 
-public interface LocationEngine {
-
+public abstract class LocationEngine {
+	
 	/**
-	 *	Calculate the location of an asset tag based on RSSI values.
-	 *
-	 *	@param	rssiTable	A table containing RSSI lists. Each list corresponds to one detector.
-	 *
-	 *	@param	detectors	A table containing detectors' information.
-	 *
-	 *	@param	result		Vector which will hold the result. Must not be null.
+	 * Abstract constructor. Any class derived from this class must
+	 * override this constructor.
+	 * 
+	 * @param detectors		A table containing the locations of all detectors.
 	 */
-	public void locate(
-		Hashtable<Integer, ArrayList<Integer>> rssiTable,
-		Hashtable<Integer, Detector> detectors,
-		Vector2D result);
+	public LocationEngine(/* raw data goes here, */Hashtable<Integer, Vector2D> detectors) {
+		
+	}
+	
+	/**
+	 *	Locate an asset tag based on measured RSSI values.
+	 *
+	 *	@param	tag			The tag whose location is to be determined.
+	 */
+	public abstract void locate(Tag tag);
 
 }
