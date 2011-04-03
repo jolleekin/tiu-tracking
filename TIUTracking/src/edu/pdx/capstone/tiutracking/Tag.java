@@ -18,6 +18,11 @@ public final class Tag {
 	public Vector2D location;
 
 	/**
+	 * Battery level of the tag, ranging from 0 to 100.
+	 */
+	public int battery;
+	
+	/**
 	 * A table which contains RSSI values associated with this tag for each
 	 * detector.
 	 * <p>
