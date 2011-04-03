@@ -9,6 +9,8 @@ public final class Tag {
 
 	/**
 	 * Location of the tag. This field is modified by the location engine.
+	 * After calling the locate() method of the location engine, the controller
+	 * will save this field in the database.
 	 */
 	public final Vector2D location;
 	
