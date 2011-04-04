@@ -1,10 +1,12 @@
 package edu.pdx.capstone.tiutracking;
 
 public class Vector2D {
+
 	public double x, y;
 
 	public Vector2D() {
-		this(0, 0);
+		this.x = 0;
+		this.y = 0;
 	}
 
 	public Vector2D(double x, double y) {
@@ -13,20 +15,28 @@ public class Vector2D {
 	}
 
 	public Vector2D(Vector2D v) {
-		this(v.x, v.y);
+		this.x = v.x;
+		this.y = v.y;
 	}
 
+	public void set(Vector2D v) {
+		this.x = v.x;
+		this.y = v.y;
+	}
+
+	public void add(Vector2D v) {
+		this.x += v.x;
+		this.y += v.y;
+	}
+	
 	public void add(double x, double y) {
 		this.x += x;
 		this.y += y;
 	}
 
-	public void add(Vector2D v) {
-		add(v.x, v.y);
-	}
-
 	public void sub(Vector2D v) {
-		sub(v.x, v.y);
+		this.x -= v.x;
+		this.y -= v.y;
 	}
 
 	public void sub(double x, double y) {
@@ -34,27 +44,30 @@ public class Vector2D {
 		this.y -= y;
 	}
 
-	public void mult(double x, double y) {
-		this.x *= x;
-		this.y *= y;
-	}
-
-	public void mult(Vector2D v) {
-		mult(v.x, v.y);
+	public void mult(double sx, double sy) {
+		this.x *= sx;
+		this.y *= sy;
 	}
 
 	public void mult(double c) {
-		mult(c, c);
+		this.x *= c;
+		this.y *= c;
 	}
 
 	public void lerp(Vector2D other, double factor) {
-		x += (other.x - x) * factor;
-		y += (other.y - y) * factor;
+		this.x += (other.x - this.x) * factor;
+		this.y += (other.y - this.y) * factor;
 	}
 
 	public void lerp(Vector2D a, Vector2D b, double factor) {
-		x = a.x + (b.x - a.x) * factor;
-		y = b.y + (b.y - a.y) * factor;
+		this.x = a.x + (b.x - a.x) * factor;
+		this.y = b.y + (b.y - a.y) * factor;
+	}
+
+	public double distanceTo(Vector2D v) {
+		double dx = this.x - v.x;
+		double dy = this.x - v.y;
+		return Math.sqrt(dx * dx + dy * dy);
 	}
 
 	public double mag() {
@@ -66,11 +79,6 @@ public class Vector2D {
 
 	public double magSquared() {
 		return x * x + y * y;
-	}
-
-	public void set(Vector2D v) {
-		x = v.x;
-		y = v.y;
 	}
 
 	public static Vector2D sub(Vector2D a, Vector2D b) {
