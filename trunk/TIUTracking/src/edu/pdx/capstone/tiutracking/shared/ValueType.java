@@ -14,7 +14,7 @@ public enum ValueType {
 		case INTEGER:
 			return Integer.class;
 		case STATISTIC_VALUE:
-			return StatisticValue.class;
+			return StatisticMode.class;
 		default:
 			return String.class;
 		}
