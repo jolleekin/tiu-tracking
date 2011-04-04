@@ -23,7 +23,7 @@ public final class DataPacket implements Serializable {
 	 * method.
 	 * </p>
 	 */
-	public Vector2D location;
+	public final Vector2D location;
 
 	/**
 	 * Battery level of the tag, ranging from 0 to 100.
@@ -48,7 +48,8 @@ public final class DataPacket implements Serializable {
 	 *            Location of the tag. If this field is NOT <b>null</b>, we are
 	 *            in calibration mode.
 	 */
-	public DataPacket(int tagId, Vector2D location) {
+	public DataPacket(int blockId, int tagId, Vector2D location) {
+		this.blockId = blockId;
 		this.tagId = tagId;
 		this.timestamp = new Date();
 		if (location == null) {
