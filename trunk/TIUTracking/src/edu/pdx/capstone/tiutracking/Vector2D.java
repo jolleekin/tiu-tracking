@@ -1,7 +1,11 @@
 package edu.pdx.capstone.tiutracking;
 
-public class Vector2D {
+import java.io.Serializable;
 
+public class Vector2D implements Serializable {
+
+	private static final long serialVersionUID = -4810635128540403129L;
+	
 	public double x, y;
 
 	public Vector2D() {
