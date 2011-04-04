@@ -10,7 +10,7 @@ import edu.pdx.capstone.tiutracking.LocationEngine;
 import edu.pdx.capstone.tiutracking.shared.ConfigurationElement;
 import edu.pdx.capstone.tiutracking.shared.DataPacket;
 import edu.pdx.capstone.tiutracking.shared.ObjectFiler;
-import edu.pdx.capstone.tiutracking.shared.StatisticValue;
+import edu.pdx.capstone.tiutracking.shared.StatisticMode;
 import edu.pdx.capstone.tiutracking.shared.Statistics;
 import edu.pdx.capstone.tiutracking.shared.ValueType;
 import edu.pdx.capstone.tiutracking.shared.Vector2D;
@@ -29,7 +29,7 @@ public class KEngine implements LocationEngine {
 
 	private int cycleCount = 10;
 	private double learningRate = 0.3;
-	private StatisticValue statValue = StatisticValue.MEDIAN;
+	private StatisticMode statValue = StatisticMode.MEDIAN;
 
 	@SuppressWarnings("unchecked")
 	public KEngine() {
@@ -47,13 +47,14 @@ public class KEngine implements LocationEngine {
 						ValueType.DOUBLE, 0.3));
 
 				configuration.put(CFG_LEARNING_CYCLE, new ConfigurationElement(
-						"Number of cyles that a list of raw data packets is used to adjust the models.",
+						"Number of cyles that a list of raw data packets is used " +
+						"to adjust the models.",
 						ValueType.INTEGER, 10));
 
 				configuration.put(CFG_STATISTIC_VALUE, new ConfigurationElement(
 						"Statistic value used to calculate the 'average' RSSI.",
 						ValueType.STATISTIC_VALUE,
-						StatisticValue.MEDIAN));
+						StatisticMode.MEDIAN));
 			}
 
 			// Load data file if exists
@@ -84,17 +85,16 @@ public class KEngine implements LocationEngine {
 
 				for (Entry<Integer, ArrayList<Integer>> entry : set) {
 
+					// TODO: Implement your learning algorithm here
+					
 					int detectorId = entry.getKey();
-					double distance = packet.location.distanceTo(detectors
-							.get(detectorId));
-					int rssi = Statistics
-							.calculate(entry.getValue(), statValue);
+					double distance = packet.location.distanceTo(detectors.get(detectorId));
+					int rssi = Statistics.calculate(entry.getValue(), statValue);
 
 					PathLossModel model;
 
 					if (pathLossModels.containsKey(detectorId) == false) {
-						model = pathLossModels.put(detectorId,
-								new PathLossModel());
+						model = pathLossModels.put(detectorId, new PathLossModel());
 					} else {
 						model = pathLossModels.get(detectorId);
 					}
@@ -113,8 +113,12 @@ public class KEngine implements LocationEngine {
 
 	@Override
 	public void locate(DataPacket dataPacket) {
-		// To be done soon :D
 
+		Set<Entry<Integer, ArrayList<Integer>>> set = dataPacket.rssiTable.entrySet();
+
+		for (Entry<Integer, ArrayList<Integer>> entry : set) {
+			
+		}
 	}
 
 	@Override
@@ -127,7 +131,7 @@ public class KEngine implements LocationEngine {
 
 		cycleCount = (Integer) configuration.get(CFG_LEARNING_RATE).value;
 		learningRate = (Double) configuration.get(CFG_LEARNING_RATE).value;
-		statValue = (StatisticValue) configuration.get(CFG_STATISTIC_VALUE).value;
+		statValue = (StatisticMode) configuration.get(CFG_STATISTIC_VALUE).value;
 
 		try {
 			ObjectFiler.save(CONFIG_FILE_NAME, configuration);
