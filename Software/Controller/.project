@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>Controller</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>src/edu/pdx/capstone/tiutracking/common/Transaction.java</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/Common/edu/pdx/capstone/tiutracking/common/Transaction.java</locationURI>
+		</link>
+	</linkedResources>
+</projectDescription>
