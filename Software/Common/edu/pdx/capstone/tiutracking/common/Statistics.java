@@ -1,4 +1,4 @@
-package edu.pdx.capstone.tiutracking.shared;
+package edu.pdx.capstone.tiutracking.common;
 
 import java.util.ArrayList;
 import java.util.Collections;
