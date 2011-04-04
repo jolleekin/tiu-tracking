@@ -1,4 +1,4 @@
-package edu.pdx.capstone.tiutracking.shared;
+package edu.pdx.capstone.tiutracking.common;
 
 import java.io.Serializable;
 
@@ -8,7 +8,7 @@ public final class ConfigurationParam implements Serializable {
 
 	public final String description;
 	public final ValueType type;
-	public Object value;
+	private Object value;
 
 	/**
 	 * Creates an instance of ConfigurationParam class.
@@ -31,6 +31,10 @@ public final class ConfigurationParam implements Serializable {
 		this.value = value;
 	}
 
+	public Object getValue() {
+		return value;
+	}
+	
 	/**
 	 * Sets the value from a string. This method shoudl ease the life of the
 	 * controller writer ;)
