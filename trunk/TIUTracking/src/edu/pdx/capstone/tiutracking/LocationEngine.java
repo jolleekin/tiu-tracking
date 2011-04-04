@@ -27,7 +27,7 @@ public interface LocationEngine {
 	 * @throws IOException
 	 */
 	public void learn(ArrayList<DataPacket> rawData,
-			Hashtable<Integer, Vector2D> detectors) throws IOException;
+			Hashtable<Integer, Vector2D> detectors);
 
 	/**
 	 * Locates an asset tag based on measured RSSI values.
@@ -53,5 +53,5 @@ public interface LocationEngine {
 	 * 
 	 * @throws IOException
 	 */
-	public void onConfigurationChanged() throws IOException;
+	public void onConfigurationChanged();
 }
