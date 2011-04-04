@@ -31,7 +31,8 @@ public abstract class LocationEngine {
 	 * Locates an asset tag based on measured RSSI values.
 	 * 
 	 * @param dataPacket
-	 *            The tag whose location is to be determined.
+	 *            A data packet which contains various information about the tag
+	 *            whose location is to be determined.
 	 */
 	public abstract void locate(DataPacket dataPacket);
 
