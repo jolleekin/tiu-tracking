@@ -14,6 +14,7 @@ public class AlphaEngine implements LocationEngine {
 	private double learningRate;
 	private ArrayList<Neuron> neurons;
 	private double sigma;
+	private final String CONFIG_FILENAME = "AlphaEngine.dat";
 	
 	
 	/** 
@@ -37,7 +38,7 @@ public class AlphaEngine implements LocationEngine {
 		 * Create an ArrayList of neurons with instar and outstar weights
 		 */
 		try {
-			neurons = (ArrayList<Neuron>) ObjectFiler.load("neurons.txt");
+			neurons = (ArrayList<Neuron>) ObjectFiler.load(CONFIG_FILENAME);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
