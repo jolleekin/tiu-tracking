@@ -24,7 +24,6 @@ public interface LocationEngine {
 	 *            The data collected during calibration.
 	 * @param detectors
 	 *            A table containing the locations of all detectors.
-	 * @throws IOException
 	 */
 	public void learn(ArrayList<DataPacket> rawData,
 			Hashtable<Integer, Vector2D> detectors);
@@ -51,7 +50,6 @@ public interface LocationEngine {
 	 * engine has been changed. The engine can capture this event to update its
 	 * states and save the configuration to a file.
 	 * 
-	 * @throws IOException
 	 */
 	public void onConfigurationChanged();
 }
