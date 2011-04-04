@@ -25,6 +25,7 @@
 
 package edu.pdx.capstone.tiutracking.controller;
 
+import edu.pdx.capstone.tiutracking.common.*;
 import java.awt.EventQueue;
 
 import javax.swing.JFrame;
@@ -64,7 +65,7 @@ import javax.swing.border.TitledBorder;
 import javax.swing.UIManager;
 
 import java.sql.*;
-import edu.pdx.capstone.tiutracking.common.*;
+
 public class Main {
 
 	private enum AppViewMode{
@@ -621,8 +622,7 @@ public class Main {
 			}catch (IOException e){
 				e.printStackTrace();
 			}catch (RuntimeException e){
-				e.printStackTrace();
-			
+				e.printStackTrace();			
 			}
 		}
 	}
@@ -659,7 +659,7 @@ public class Main {
 				String query = String.format("select * from CalibrationBlock;");
 				ResultSet calBlocks = statementOuter.executeQuery(query);
 
-				ArrayList<Transaction> fingerPrintTable = new ArrayList<Transaction>();
+				ArrayList<DataPacket> fingerPrintTable = new ArrayList<DataPacket>();
 				while (calBlocks.next()){
 					int detectorID = calBlocks.getInt("DetectorID");
 					int blockNumber = calBlocks.getInt("BlockNumber");
@@ -669,25 +669,23 @@ public class Main {
 					Statement statementInner = connect.createStatement();
 					ResultSet blockData = statementInner.executeQuery(query);
 					
-					Transaction t = new Transaction();
-					t.blockID = blockNumber;
-					t.x = x;
-					t.y = y;
+					//TODO: change second parameter to DataPacket constructor to TagId
+					DataPacket t = new DataPacket(blockNumber, blockNumber, new Vector2D(x,y));
 					ArrayList<Integer> detectorRSSI = new ArrayList<Integer>();
 					while (blockData.next()){
 						int rssi = blockData.getInt("RSSI");
 						detectorRSSI.add(rssi);
 					}
 					statementInner.close();
-					t.rssiLists.put(detectorID, detectorRSSI);
+					t.rssiTable.put(detectorID, detectorRSSI);
 					fingerPrintTable.add(t);
 				}
 				statementOuter.close();
 				
 				System.out.println("FingerPrintTable:");
-				for(Transaction t: fingerPrintTable){
-					System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagID, t.blockID));
-					for (Map.Entry<Integer, ArrayList<Integer>> e: t.rssiLists.entrySet()){						
+				for(DataPacket t: fingerPrintTable){
+					System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagId, t.blockId));
+					for (Map.Entry<Integer, ArrayList<Integer>> e: t.rssiTable.entrySet()){						
 						System.out.print(String.format("DetectorID %1$d: ", e.getKey()));
 						for (Integer rssi: e.getValue()){
 							System.out.print(String.format("%1$d  ", rssi));
@@ -722,16 +720,12 @@ public class Main {
 							ArrayList<Sample> sampleVals = rssiData.get(e.getKey());
 							if (sampleVals.size() >= 2)
 							{		
-								Transaction t = new Transaction();
-								t.batteryLevel = sampleVals.get(0).reserved;
-								t.tagID = sampleVals.get(0).tagID;
-								t.x = -999;
-								t.y = -999;
+								DataPacket t = new DataPacket(-1,sampleVals.get(0).tagID,new Vector2D(-999,-999) );
 								for (int s = 0;s < sampleVals.size();s++)
 								{
 									ArrayList<Integer> rssiSingle =  new ArrayList<Integer>();
 									rssiSingle.add(sampleVals.get(s).rssi);//Only one
-									t.rssiLists.put(sampleVals.get(s).detectorID,rssiSingle );
+									t.rssiTable.put(sampleVals.get(s).detectorID,rssiSingle );
 								}
 								System.out.println(t);
 								//TODO: pass fingerPrintTable and transaction to locator calculate method
