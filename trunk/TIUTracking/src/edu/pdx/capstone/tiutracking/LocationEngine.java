@@ -22,7 +22,7 @@ public abstract class LocationEngine {
 	 * @param detectors
 	 *            A table containing the locations of all detectors.
 	 */
-	public LocationEngine(ArrayList<Tag> rawData,
+	public LocationEngine(ArrayList<DataPacket> rawData,
 			Hashtable<Integer, Vector2D> detectors) {
 
 	}
@@ -30,10 +30,10 @@ public abstract class LocationEngine {
 	/**
 	 * Locates an asset tag based on measured RSSI values.
 	 * 
-	 * @param tag
+	 * @param dataPacket
 	 *            The tag whose location is to be determined.
 	 */
-	public abstract void locate(Tag tag);
+	public abstract void locate(DataPacket dataPacket);
 
 	/**
 	 * Retrieves a configuration table for this engine.
