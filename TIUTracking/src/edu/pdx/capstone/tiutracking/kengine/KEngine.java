@@ -74,7 +74,7 @@ public class KEngine implements LocationEngine {
 
 	@Override
 	public void learn(ArrayList<DataPacket> rawData,
-			Hashtable<Integer, Vector2D> detectors) throws IOException {
+			Hashtable<Integer, Vector2D> detectors) {
 
 		for (int cycle = cycleCount - 1; cycle >= 0; cycle--) {
 
@@ -104,7 +104,11 @@ public class KEngine implements LocationEngine {
 			}
 		}
 
-		ObjectFiler.save(DATA_FILE_NAME, pathLossModels);
+		try {
+			ObjectFiler.save(DATA_FILE_NAME, pathLossModels);
+		} catch (IOException e) {
+			System.out.println("Failed to save " + DATA_FILE_NAME);
+		}
 	}
 
 	@Override
@@ -119,13 +123,17 @@ public class KEngine implements LocationEngine {
 	}
 
 	@Override
-	public void onConfigurationChanged() throws IOException {
+	public void onConfigurationChanged() {
 
 		cycleCount = (Integer) configuration.get(CFG_LEARNING_RATE).value;
 		learningRate = (Double) configuration.get(CFG_LEARNING_RATE).value;
 		statValue = (StatisticValue) configuration.get(CFG_STATISTIC_VALUE).value;
 
-		ObjectFiler.save(CONFIG_FILE_NAME, configuration);
+		try {
+			ObjectFiler.save(CONFIG_FILE_NAME, configuration);
+		} catch (IOException e) {
+			System.out.println("Failed to save " + CONFIG_FILE_NAME);
+		}
 	}
 
 }
