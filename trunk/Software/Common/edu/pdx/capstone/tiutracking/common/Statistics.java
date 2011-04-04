@@ -1,4 +1,4 @@
-package edu.pdx.capstone.tiutracking.common;
+package edu.pdx.capstone.tiutracking.shared;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,8 +15,10 @@ import java.util.Collections;
  */
 public class Statistics {
 
-	public static int calculate(ArrayList<Integer> data, StatisticValue valueType) {
-		switch (valueType) {
+	public static int calculate(ArrayList<Integer> data,
+			StatisticMode mode) {
+		
+		switch (mode) {
 		case MAX:
 			return Collections.max(data);
 		case MEDIAN:
@@ -26,12 +28,12 @@ public class Statistics {
 		case MIN:
 			return Collections.min(data);
 		default:
-			throw new IllegalArgumentException("Invalid value type: "
-					+ valueType);
+			throw new IllegalArgumentException("Invalid argument: " + mode);
 		}
 	}
 
 	public static int mean(ArrayList<Integer> data) {
+		
 		int sum = 0;
 		for (int x : data) {
 			sum += x;
@@ -40,6 +42,7 @@ public class Statistics {
 	}
 
 	public static int median(ArrayList<Integer> data) {
+		
 		Collections.sort(data);
 		int i = data.size() >> 1;
 		if ((data.size() & 1) == 1) {
@@ -49,6 +52,7 @@ public class Statistics {
 	}
 
 	public static double stdDev(ArrayList<Integer> data) {
+		
 		int n = data.size();
 		if (n == 1) {
 			return 0;
@@ -60,8 +64,8 @@ public class Statistics {
 			sumOfSquares += x * x;
 		}
 
-		return Math.sqrt((double) (n * sumOfSquares - sum * sum)
-				/ (n * (n - 1)));
+		return Math.sqrt(
+				(double) (n * sumOfSquares - sum * sum) / (n * (n - 1)));
 	}
 
 }
