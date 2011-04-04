@@ -1,12 +1,9 @@
-package edu.pdx.capstone.tiutracking.shared;
+package edu.pdx.capstone.tiutracking.common;
 
 public enum ValueType {
-	
-	DOUBLE,
-	INTEGER,
-	STATISTIC_MODE,
-	STRING;
-	
+
+	DOUBLE, INTEGER, STATISTIC_MODE, STRING;
+
 	public Class<?> getJavaClass() {
 		switch (this) {
 		case DOUBLE:
