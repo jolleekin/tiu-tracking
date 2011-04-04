@@ -1,3 +1,28 @@
+/* Controller
+ * This application fills the role as mediator between 
+ * the Proxy, LocationEngine, and Database.
+ * 
+ * Key Aspects:
+ * 	Three modes of operation
+ * 		1) Collect; Saves data coming from proxy into a csv file
+ * 		2) Calibrate; Saves data coming from proxy into Database.
+ * 		3) Locate; Provides previously collected calibration data to location engines.
+ * 			Formats data coming from proxy into a format suitable for a Location Engine to
+ * 			calculate a location.
+ * 
+ * Architecture:
+ * 	The GUI has 3 buttons; Collect, Calibrate, and Locate. Each has their own event handler.
+ * 	There are 3 runnable thread objects; CollectReader, CalibrateReader, and LocateReader. They are responsible for
+ *  reading data from a Port, and providing the functionality that is associated with each mode of operation. Each of the 3 buttons starts their 
+ *  respective Reader. Each Reader inherits from the PortReader class. The PortReader class provides base 
+ *  functionality for reading and parsing incoming data from a proxy.
+ *  
+ *  CalibrateReader, and LocateReader access a Database.
+ * 
+ *  Authors: Daniel Ferguson,
+ *  Version: 0.9
+ */
+
 package edu.pdx.capstone.tiutracking.controller;
 
 import java.awt.EventQueue;
