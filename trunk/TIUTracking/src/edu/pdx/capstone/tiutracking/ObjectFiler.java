@@ -17,7 +17,7 @@ import java.io.ObjectOutputStream;
 public class ObjectFiler {
 
 	/**
-	 * Reads an object from a file
+	 * Loads an object from a file
 	 * 
 	 * @param fileName
 	 *            Name of the file to be read
@@ -26,7 +26,7 @@ public class ObjectFiler {
 	 * @throws IOException
 	 * @throws ClassNotFoundException
 	 */
-	public static Object readObjectFromFile(String fileName)
+	public static Object load(String fileName)
 			throws IOException, ClassNotFoundException {
 
 		File f = new File(fileName);
@@ -40,7 +40,7 @@ public class ObjectFiler {
 	}
 
 	/**
-	 * Writes an object to a file
+	 * Saves an object to a file
 	 * 
 	 * @param fileName
 	 *            Name of the file to be written
@@ -48,7 +48,7 @@ public class ObjectFiler {
 	 *            The object to be written
 	 * @throws IOException
 	 */
-	public static void writeObjectToFile(String fileName, Object obj)
+	public static void save(String fileName, Object obj)
 			throws IOException {
 
 		ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(
