@@ -21,6 +21,11 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>src/edu/pdx/capstone/tiutracking/locator</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
 			<name>src/edu/pdx/capstone/tiutracking/common/ConfigurationElement.java</name>
 			<type>1</type>
 			<locationURI>WORKSPACE_LOC/Common/edu/pdx/capstone/tiutracking/common/ConfigurationElement.java</locationURI>
@@ -54,6 +59,11 @@
 			<name>src/edu/pdx/capstone/tiutracking/common/Vector2D.java</name>
 			<type>1</type>
 			<locationURI>WORKSPACE_LOC/Common/edu/pdx/capstone/tiutracking/common/Vector2D.java</locationURI>
+		</link>
+		<link>
+			<name>src/edu/pdx/capstone/tiutracking/locator/FingerPrint.java</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/FingerPrintLocator/edu/pdx/capstone/tiutracking/locator/FingerPrint.java</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
