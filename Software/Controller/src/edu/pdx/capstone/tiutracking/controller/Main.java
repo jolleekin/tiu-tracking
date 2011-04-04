@@ -25,6 +25,8 @@
 
 package edu.pdx.capstone.tiutracking.controller;
 import edu.pdx.capstone.tiutracking.common.*;
+import edu.pdx.capstone.tiutracking.locator.FingerPrint;
+
 import java.awt.EventQueue;
 
 import javax.swing.JFrame;
@@ -102,6 +104,7 @@ public class Main {
 	private JLabel lblNewLabel_3;
 	private JPanel pnlLocating;
 	private JPanel panel_3;
+	private JScrollPane scrollPane;
 	/**
 	 * Launch the application.
 	 */
@@ -146,9 +149,12 @@ public class Main {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 		
+		scrollPane = new JScrollPane();
+		scrollPane.setBounds(10, 8, 553, 443);
+		frame.getContentPane().add(scrollPane);
+		
 		txtOutput = new JTextArea();
-		txtOutput.setBounds(10, 8, 553, 443);
-		frame.getContentPane().add(txtOutput);
+		scrollPane.setViewportView(txtOutput);
 		
 		JPanel pnlCalibrating = new JPanel();
 		pnlCalibrating.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Calibrate", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
@@ -642,6 +648,7 @@ public class Main {
 			super(in);
 		}
 		
+		
 		public void run(){
 			try{				
 				this.done=false;
@@ -649,8 +656,10 @@ public class Main {
 				Hashtable<Integer, ArrayList<Sample>> rssiData = new Hashtable<Integer, ArrayList<Sample>>();
 				Hashtable<Integer, Calendar> ttl = new Hashtable<Integer, Calendar>();
 				ArrayList<DataPacket> fingerPrintTable = new ArrayList<DataPacket>();
+				
 				loadCalibrationData(fingerPrintTable);
 				
+				FingerPrint locator = new FingerPrint(fingerPrintTable); 
 				while (!done){				
 					Sample newSample = new Sample();
 					int bufferSize = 6;
@@ -658,7 +667,7 @@ public class Main {
 					if (list.size() >= bufferSize){												
 						
 						parseSample(list, newSample);						
-						printSample(newSample);
+						//printSample(newSample);
 						
 						int key = newSample.tagID + newSample.messageID;
 						saveSample(key, rssiData, newSample);
@@ -669,8 +678,8 @@ public class Main {
 							currentMoment.add(Calendar.SECOND, 2);
 							ttl.put(key, currentMoment);						
 						}
-					}					
-					
+					}				
+					ArrayList<Integer> expiredItems = new ArrayList<Integer>();
 					for (Map.Entry<Integer, Calendar> e: ttl.entrySet()){
 						Calendar savedMoment = e.getValue();
 						if (savedMoment.before(Calendar.getInstance())){
@@ -684,16 +693,25 @@ public class Main {
 									rssiSingle.add(sampleVals.get(s).rssi);//Only one
 									t.rssiTable.put(sampleVals.get(s).detectorID,rssiSingle );
 								}
-								System.out.println(t);
-								//TODO: pass fingerPrintTable and transaction to locator calculate method
-								//locatorObject.locate(fingerPrintTable, transaction);
-									
+
+								locator.locate(t,StatisticValue.MEAN);
+								String displayString = String.format("TagId=%1$d at (%2$f, %3$f), Block=%4$d\n", t.tagId, t.location.x, t.location.y, t.blockId);
+								txtOutput.append(displayString);
+								txtOutput.setCaretPosition(txtOutput.getDocument().getLength());
 							}
 							//Remove entries in samples and ttl
-							rssiData.remove(e.getKey());
-							ttl.remove(e.getKey());							
+							//rssiData.remove(e.getKey());
+							//ttl.remove(e.getKey());
+							expiredItems.add(e.getKey());
+							
 						}
-					}				
+					}
+					
+					for (Integer key:expiredItems){
+						rssiData.remove(key);
+						ttl.remove(key);
+					}
+					expiredItems.clear();
 				}
 			
 			}catch (IOException e){
