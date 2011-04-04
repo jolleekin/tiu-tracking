@@ -3,29 +3,28 @@ package edu.pdx.capstone.tiutracking;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
+import edu.pdx.capstone.tiutracking.shared.DataPacket;
+import edu.pdx.capstone.tiutracking.shared.Vector2D;
+
 /**
- * A base class for all location engines. Any class derived from this class must
- * override the constructor and all the abstract methods.
+ * An interface for all location engines.
  * 
  * @author Kin
  * 
  */
-public abstract class LocationEngine {
+public interface LocationEngine {
 
 	/**
-	 * Creates an instance of LocationEngine class. The engine uses the provided
-	 * raw calibration data and detectors' locations to "learn" how to locate
-	 * the tags.
+	 * Learns how to locate the tags given raw calibration data and detectors'
+	 * locations.
 	 * 
 	 * @param rawData
 	 *            The data collected during calibration.
 	 * @param detectors
 	 *            A table containing the locations of all detectors.
 	 */
-	public LocationEngine(ArrayList<DataPacket> rawData,
-			Hashtable<Integer, Vector2D> detectors) {
-
-	}
+	public void learn(ArrayList<DataPacket> rawData,
+			Hashtable<Integer, Vector2D> detectors);
 
 	/**
 	 * Locates an asset tag based on measured RSSI values.
@@ -34,14 +33,14 @@ public abstract class LocationEngine {
 	 *            A data packet which contains various information about the tag
 	 *            whose location is to be determined.
 	 */
-	public abstract void locate(DataPacket dataPacket);
+	public void locate(DataPacket dataPacket);
 
 	/**
 	 * Retrieves a configuration table for this engine.
 	 * 
 	 * @return A hash table which contains the engine's configuration.
 	 */
-	public abstract Hashtable<String, String> getConfiguration();
+	public Hashtable<String, String> getConfiguration();
 
 	/**
 	 * Applies configuration to the engine.
@@ -49,5 +48,5 @@ public abstract class LocationEngine {
 	 * @param config
 	 *            A hash table which contains the engine's configuration.
 	 */
-	public abstract void setConfiguration(Hashtable<String, String> config);
+	public void setConfiguration(Hashtable<String, String> config);
 }
