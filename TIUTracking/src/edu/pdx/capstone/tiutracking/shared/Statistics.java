@@ -15,20 +15,15 @@ import java.util.Collections;
  */
 public class Statistics {
 
-	/**
-	 * Statistic Value Type Enumeration
-	 */
-	public static final int svMin = 0, svMean = 1, svMedian = 2, svMax = 3;
-
-	public static int calculate(ArrayList<Integer> data, int valueType) {
+	public static int calculate(ArrayList<Integer> data, StatisticValue valueType) {
 		switch (valueType) {
-		case svMax:
+		case MAX:
 			return Collections.max(data);
-		case svMedian:
+		case MEDIAN:
 			return median(data);
-		case svMean:
+		case MEAN:
 			return mean(data);
-		case svMin:
+		case MIN:
 			return Collections.min(data);
 		default:
 			throw new IllegalArgumentException("Invalid value type: "

@@ -47,6 +47,7 @@ public class PathLossModel implements Serializable {
 		 * Activation func:	phi(t) = t
 		 * Output RSSI:	 	y = phi(x dot w) = c - n * ln d
 		 * Desired RSSI: 	t
+		 * Learning Rate:	eta
 		 * dy/dc = (t - y) * (d phi/dt) * x[1]
 		 * dy/dn = (t - y) * (d phi/dt) * x[2]
 		 * c += eta * dy/dc
@@ -59,6 +60,6 @@ public class PathLossModel implements Serializable {
 	}
 	
 	public String toString() {
-		return "<c = " + c + ", n = " + n + ">";
+		return "<c: " + c + ", n: " + n + ">";
 	}
 }
