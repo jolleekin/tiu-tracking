@@ -24,7 +24,6 @@
  */
 
 package edu.pdx.capstone.tiutracking.controller;
-
 import edu.pdx.capstone.tiutracking.common.*;
 import java.awt.EventQueue;
 

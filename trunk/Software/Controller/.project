@@ -16,9 +16,44 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>src/edu/pdx/capstone/tiutracking/common/Transaction.java</name>
+			<name>src/edu/pdx/capstone/tiutracking/common</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>src/edu/pdx/capstone/tiutracking/common/ConfigurationElement.java</name>
 			<type>1</type>
-			<locationURI>WORKSPACE_LOC/Common/edu/pdx/capstone/tiutracking/common/Transaction.java</locationURI>
+			<locationURI>WORKSPACE_LOC/Common/edu/pdx/capstone/tiutracking/common/ConfigurationElement.java</locationURI>
+		</link>
+		<link>
+			<name>src/edu/pdx/capstone/tiutracking/common/DataPacket.java</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/Common/edu/pdx/capstone/tiutracking/common/DataPacket.java</locationURI>
+		</link>
+		<link>
+			<name>src/edu/pdx/capstone/tiutracking/common/ObjectFiler.java</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/Common/edu/pdx/capstone/tiutracking/common/ObjectFiler.java</locationURI>
+		</link>
+		<link>
+			<name>src/edu/pdx/capstone/tiutracking/common/StatisticValue.java</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/Common/edu/pdx/capstone/tiutracking/common/StatisticValue.java</locationURI>
+		</link>
+		<link>
+			<name>src/edu/pdx/capstone/tiutracking/common/Statistics.java</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/Common/edu/pdx/capstone/tiutracking/common/Statistics.java</locationURI>
+		</link>
+		<link>
+			<name>src/edu/pdx/capstone/tiutracking/common/ValueType.java</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/Common/edu/pdx/capstone/tiutracking/common/ValueType.java</locationURI>
+		</link>
+		<link>
+			<name>src/edu/pdx/capstone/tiutracking/common/Vector2D.java</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/Common/edu/pdx/capstone/tiutracking/common/Vector2D.java</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
