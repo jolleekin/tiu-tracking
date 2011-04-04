@@ -50,16 +50,23 @@ public class AlphaEngine implements LocationEngine {
 		 * the training set The learning process is supervised by using the
 		 * known locations of asset tags provided in rawData
 		 */
+		
+		
+	}
+	
+	public void learn(ArrayList<DataPacket> rawData,
+			Hashtable<Integer, Vector2D> detectors) {
+		
 		System.out.println("Learning mode...");
 		for (int index = 0; index < rawData.size(); index++) {
 			Hashtable<Integer, ArrayList<Integer>> rssiTable = rawData.get(index).rssiTable;
 			Vector2D refLocation = rawData.get(index).location;
-			learn(rssiTable, refLocation);
+			learnRefined(rssiTable, refLocation);
 		}
 		System.out.println("Learning successful!");
 	}
 
-	@Override
+	
 	/** 
 	 * Locates asset tags base on measured RSSI values
 	 * 
@@ -74,7 +81,7 @@ public class AlphaEngine implements LocationEngine {
 		
 	}
 
-	@Override
+	
 	/** 
 	 * Gets configuration of the neural net
 	 * 
@@ -86,7 +93,7 @@ public class AlphaEngine implements LocationEngine {
 		return null;
 	}
 
-	@Override
+
 	/** 
 	 * Load configuration of the neural network
 	 * 
@@ -101,7 +108,7 @@ public class AlphaEngine implements LocationEngine {
 	}
 
 	
-	private void learn(Hashtable<Integer, ArrayList<Integer>> rssiTable, Vector2D refLocation) {
+	private void learnRefined(Hashtable<Integer, ArrayList<Integer>> rssiTable, Vector2D refLocation) {
 		Pattern pattern = new Pattern();
 		preprocess(rssiTable, pattern);
 		
