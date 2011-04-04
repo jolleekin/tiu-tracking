@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
 
-
 import edu.pdx.capstone.tiutracking.LocationEngine;
 import edu.pdx.capstone.tiutracking.shared.*;
 
@@ -15,6 +14,7 @@ public class AlphaEngine implements LocationEngine {
 	private ArrayList<Neuron> neurons;
 	private double sigma;
 	private final String CONFIG_FILENAME = "AlphaEngine.dat";
+	private final double NEARNESS = 0.1;
 	
 	
 	/** 
@@ -45,16 +45,18 @@ public class AlphaEngine implements LocationEngine {
 			e.printStackTrace();
 		}
 		
-		
-		/*
-		 * Learning process The neural network processes rawData and generates
-		 * the training set The learning process is supervised by using the
-		 * known locations of asset tags provided in rawData
-		 */
-		
-		
 	}
-	
+	/** 
+	 * Learning process The neural network processes rawData and generates
+	 * the training set The learning process is supervised by using the
+	 * known locations of asset tags provided in rawData
+	 * 
+	 * @param rawData
+	 * 			An ArrayList of DataPacket type which contains RSSI values
+	 * 			and reference location for each asset tag
+	 * @param detectors
+	 * 			A hash table which contains known locations of detectors 
+	 */
 	public void learn(ArrayList<DataPacket> rawData,
 			Hashtable<Integer, Vector2D> detectors) {
 		
@@ -63,8 +65,18 @@ public class AlphaEngine implements LocationEngine {
 			Hashtable<Integer, ArrayList<Integer>> rssiTable = rawData.get(index).rssiTable;
 			Vector2D refLocation = rawData.get(index).location;
 			learnRefined(rssiTable, refLocation);
+		
 		}
-		System.out.println("Learning successful!");
+		System.out.println("Learning successful!");		
+		
+		//Save the configuration of the neural network
+		try {
+			ObjectFiler.save(CONFIG_FILENAME, neurons);
+			System.out.println("Saved configuration.");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 	}
 
 	
@@ -79,6 +91,21 @@ public class AlphaEngine implements LocationEngine {
 	public void locate(DataPacket dataPacket) {
 		Pattern pattern = new Pattern();
 		preprocess(dataPacket.rssiTable, pattern);
+		
+		Vector2D resultMax = new Vector2D();
+		Vector2D resultMin = new Vector2D();
+		Vector2D resultMean = new Vector2D();
+		Vector2D resultMedian = new Vector2D();
+		
+		recall(resultMax, pattern.max);
+		recall(resultMin, pattern.min);
+		recall(resultMean, pattern.mean);
+		recall(resultMedian, pattern.median);
+		
+		/* Modified location variable in dataPacket
+		 * In this case, location is determined by applying pattern.max 
+		 */
+		dataPacket.location.set(resultMax);
 		
 	}
 
@@ -116,7 +143,7 @@ public class AlphaEngine implements LocationEngine {
 		//Learns pattern.max
 		for (Neuron neuron : neurons) {
 			//if the reference location is around one existed outstar Vector2D
-			if (neuron.outstar.equals(refLocation)) {
+			if (neuron.outstar.distanceTo(refLocation) <= NEARNESS) {
 				linearInterpolate(neuron.instar, neuron.instar, pattern.max, learningRate);
 				return;
 			}
@@ -167,7 +194,15 @@ public class AlphaEngine implements LocationEngine {
 	}
 	
 	private void recall(Vector2D result, ArrayList<Double> input) {
-		
+		double hsum = 0;
+		double h;
+		for (Neuron neuron : neurons) {
+			h = gaussian(distance(neuron.instar, input));
+			hsum += h;
+			result.x += h * neuron.outstar.x;
+			result.y += h * neuron.outstar.y;
+		}
+		result.mult(1 / hsum);
 	}
 	
 }
