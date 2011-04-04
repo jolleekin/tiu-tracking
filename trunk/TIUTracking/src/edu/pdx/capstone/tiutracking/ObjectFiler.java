@@ -32,7 +32,9 @@ public class ObjectFiler {
 		File f = new File(fileName);
 		if (f.exists()) {
 			ObjectInputStream in = new ObjectInputStream(new FileInputStream(f));
-			return in.readObject();
+			Object result = in.readObject();
+			in.close();
+			return result;
 		}
 		return null;
 	}
