@@ -454,42 +454,7 @@ public class Main {
 		public void requestStop(){
 			done=true;
 		}		
-		protected void storeCalibrationData(
-				Hashtable<Integer, ArrayList<Sample>> rssiData)
-				throws ClassNotFoundException, SQLException {
-			Connection connect;
-			Statement statement;
-			//Open a connection to a database					
-			// This will load the MySQL driver, each DB has its own driver
-			Class.forName("com.mysql.jdbc.Driver");
-			// Setup the connection with the DB
-			connect = DriverManager.getConnection("jdbc:mysql://db.cecs.pdx.edu/hoangman?" + 
-			 "user=hoangman&password=c@p2011$#tT");
-			// Statements allow to issue SQL queries to the database
-			statement = connect.createStatement();	
-			
-			//Remove rows from CalibrateBlock and BlockDate where BlockNumber == User Specified BlockNumber 
-			String query1 = String.format("delete from CalibrationBlock where BlockNumber=%1$s",txtCalibrateBlockNumber.getText());
-			statement.executeUpdate(query1);
-			query1 = String.format("delete from BlockData where BlockNumber=%1$s",txtCalibrateBlockNumber.getText());
-			statement.executeUpdate(query1);
-			
-			for (Map.Entry<Integer, ArrayList<Sample>> e: rssiData.entrySet()){
-				int detectorID = e.getKey();
-				//Insert a new CalibrateBlock
-				String query2 = String.format("insert into CalibrationBlock values(%1$d, %2$s, %3$s, %4$s);", detectorID, txtCalibrateBlockNumber.getText(), txtCalibrateX.getText(), txtCalibrateY.getText());
-				System.out.println(query2);
-				statement.executeUpdate(query2);
-				for (Sample sample : e.getValue()){
-					String query3 = String.format("insert into BlockData values(%1$d, %2$s, %3$d);",detectorID, txtCalibrateBlockNumber.getText(),sample.rssi );
-					System.out.println(query3);
-					statement.executeUpdate(query3);
-				}
-			}
-			
-			statement.close();
-			connect.close();
-		}
+		
 		protected void saveSample(int key, Hashtable<Integer, ArrayList<Sample>> rssiData,
 				Sample newSample) {
 			//Hash incoming data based on detector ID
@@ -586,6 +551,44 @@ public class Main {
 				e.printStackTrace();
 			}
 		} 
+		protected void storeCalibrationData(
+				Hashtable<Integer, ArrayList<Sample>> rssiData)
+				throws ClassNotFoundException, SQLException {
+			
+			
+			Connection connect;
+			Statement statement;
+			//Open a connection to a database					
+			// This will load the MySQL driver, each DB has its own driver
+			Class.forName("com.mysql.jdbc.Driver");
+			// Setup the connection with the DB
+			connect = DriverManager.getConnection("jdbc:mysql://db.cecs.pdx.edu/hoangman?" + 
+			 "user=hoangman&password=c@p2011$#tT");
+			// Statements allow to issue SQL queries to the database
+			statement = connect.createStatement();	
+			
+			//Remove rows from CalibrateBlock and BlockDate where BlockNumber == User Specified BlockNumber 
+			String query1 = String.format("delete from CalibrationBlock where BlockNumber=%1$s",txtCalibrateBlockNumber.getText());
+			statement.executeUpdate(query1);
+			query1 = String.format("delete from BlockData where BlockNumber=%1$s",txtCalibrateBlockNumber.getText());
+			statement.executeUpdate(query1);
+			
+			for (Map.Entry<Integer, ArrayList<Sample>> e: rssiData.entrySet()){
+				int detectorID = e.getKey();
+				//Insert a new CalibrateBlock
+				String query2 = String.format("insert into CalibrationBlock values(%1$d, %2$s, %3$s, %4$s);", detectorID, txtCalibrateBlockNumber.getText(), txtCalibrateX.getText(), txtCalibrateY.getText());
+				System.out.println(query2);
+				statement.executeUpdate(query2);
+				for (Sample sample : e.getValue()){
+					String query3 = String.format("insert into BlockData values(%1$d, %2$s, %3$d);",detectorID, txtCalibrateBlockNumber.getText(),sample.rssi );
+					System.out.println(query3);
+					statement.executeUpdate(query3);
+				}
+			}
+			
+			statement.close();
+			connect.close();
+		}
 		
 	}
 	
@@ -645,53 +648,8 @@ public class Main {
 				ArrayList<Byte> list = new ArrayList<Byte>();
 				Hashtable<Integer, ArrayList<Sample>> rssiData = new Hashtable<Integer, ArrayList<Sample>>();
 				Hashtable<Integer, Calendar> ttl = new Hashtable<Integer, Calendar>();
-
-				Connection connect;
-				//Open a connection to a database					
-				// This will load the MySQL driver, each DB has its own driver
-				Class.forName("com.mysql.jdbc.Driver");
-				// Setup the connection with the DB
-				connect = DriverManager.getConnection("jdbc:mysql://db.cecs.pdx.edu/hoangman?" + 
-				 "user=hoangman&password=c@p2011$#tT");
-				// Statements allow to issue SQL queries to the database
-				Statement statementOuter = connect.createStatement();			
-				String query = String.format("select * from CalibrationBlock;");
-				ResultSet calBlocks = statementOuter.executeQuery(query);
-
 				ArrayList<DataPacket> fingerPrintTable = new ArrayList<DataPacket>();
-				while (calBlocks.next()){
-					int detectorID = calBlocks.getInt("DetectorID");
-					int blockNumber = calBlocks.getInt("BlockNumber");
-					float x = calBlocks.getFloat("X");
-					float y = calBlocks.getFloat("Y");
-					query = String.format("select * from BlockData where DetectorID=%1$d and BlockNumber=%2$d;",detectorID,blockNumber);
-					Statement statementInner = connect.createStatement();
-					ResultSet blockData = statementInner.executeQuery(query);
-					
-					//TODO: change second parameter to DataPacket constructor to TagId
-					DataPacket t = new DataPacket(blockNumber, blockNumber, new Vector2D(x,y));
-					ArrayList<Integer> detectorRSSI = new ArrayList<Integer>();
-					while (blockData.next()){
-						int rssi = blockData.getInt("RSSI");
-						detectorRSSI.add(rssi);
-					}
-					statementInner.close();
-					t.rssiTable.put(detectorID, detectorRSSI);
-					fingerPrintTable.add(t);
-				}
-				statementOuter.close();
-				
-				System.out.println("FingerPrintTable:");
-				for(DataPacket t: fingerPrintTable){
-					System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagId, t.blockId));
-					for (Map.Entry<Integer, ArrayList<Integer>> e: t.rssiTable.entrySet()){						
-						System.out.print(String.format("DetectorID %1$d: ", e.getKey()));
-						for (Integer rssi: e.getValue()){
-							System.out.print(String.format("%1$d  ", rssi));
-						}
-					}
-					System.out.println();
-				}
+				loadCalibrationData(fingerPrintTable);
 				
 				while (!done){				
 					Sample newSample = new Sample();
@@ -749,6 +707,56 @@ public class Main {
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+			}
+		}
+
+		private void loadCalibrationData(ArrayList<DataPacket> fingerPrintTable)
+				throws ClassNotFoundException, SQLException {
+			Connection connect;
+			//Open a connection to a database					
+			// This will load the MySQL driver, each DB has its own driver
+			Class.forName("com.mysql.jdbc.Driver");
+			// Setup the connection with the DB
+			connect = DriverManager.getConnection("jdbc:mysql://db.cecs.pdx.edu/hoangman?" + 
+			 "user=hoangman&password=c@p2011$#tT");
+			// Statements allow to issue SQL queries to the database
+			Statement statementOuter = connect.createStatement();			
+			String query = String.format("select * from CalibrationBlock;");
+			ResultSet calBlocks = statementOuter.executeQuery(query);
+
+			
+			while (calBlocks.next()){
+				int detectorID = calBlocks.getInt("DetectorID");
+				int blockNumber = calBlocks.getInt("BlockNumber");
+				float x = calBlocks.getFloat("X");
+				float y = calBlocks.getFloat("Y");
+				query = String.format("select * from BlockData where DetectorID=%1$d and BlockNumber=%2$d;",detectorID,blockNumber);
+				Statement statementInner = connect.createStatement();
+				ResultSet blockData = statementInner.executeQuery(query);
+				
+				//TODO: change second parameter to DataPacket constructor to TagId
+				DataPacket t = new DataPacket(blockNumber, blockNumber, new Vector2D(x,y));
+				ArrayList<Integer> detectorRSSI = new ArrayList<Integer>();
+				while (blockData.next()){
+					int rssi = blockData.getInt("RSSI");
+					detectorRSSI.add(rssi);
+				}
+				statementInner.close();
+				t.rssiTable.put(detectorID, detectorRSSI);
+				fingerPrintTable.add(t);
+			}
+			statementOuter.close();
+			
+			System.out.println("FingerPrintTable:");
+			for(DataPacket t: fingerPrintTable){
+				System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagId, t.blockId));
+				for (Map.Entry<Integer, ArrayList<Integer>> e: t.rssiTable.entrySet()){						
+					System.out.print(String.format("DetectorID %1$d: ", e.getKey()));
+					for (Integer rssi: e.getValue()){
+						System.out.print(String.format("%1$d  ", rssi));
+					}
+				}
+				System.out.println();
 			}
 		}
 	}
