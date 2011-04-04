@@ -1,5 +1,6 @@
 
 package edu.pdx.capstone.tiutracking.locator;
+import edu.pdx.capstone.tiutracking.common.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -23,7 +24,7 @@ public class FingerPrint
 	/**
 	 * FingerPrint table, ArrayList of Block patterns (Transaction type)
 	 */
-	private ArrayList<Transaction>                           fingerPrintTable;
+	private ArrayList<DataPacket>                           fingerPrintTable;
 	
 	private boolean                                          dirty;
 	
@@ -37,16 +38,16 @@ public class FingerPrint
 	/** 
 	 * current stats mode used in locating engine
 	 */
-	private String                                           statmode;
+	private StatisticValue                                           statmode;
 	
 	/**
 	 * Create class instance with fingerPrintTable passed in
 	 * This must be done before calling the locate() method.  
 	 * @param table: ArrayList of Transactions
 	 */
-	public FingerPrint(ArrayList<Transaction> table)
+	public FingerPrint(ArrayList<DataPacket> table)
 	{
-		this.statmode = "mean";
+		this.statmode = StatisticValue.MEAN;
 		this.dirty    = false;
 		fingerPrintTable = table;
 		this.fill_stat(this.statmode);
@@ -63,11 +64,11 @@ public class FingerPrint
 	 *               : "mean", "median", "mode"
 	 * @return true if success, false otherwise
 	 */
-	public boolean locate(Transaction t, String mode)	
+	public boolean locate(DataPacket t, StatisticValue mode)	
 	{
-		if (!this.statmode.equals(mode))
+		if (this.statmode != mode)
 		{
-			this.statmode = mode.toString();
+			this.statmode = mode;
 			this.fill_stat(mode);
 		}
 		
@@ -78,7 +79,7 @@ public class FingerPrint
 		{
 			int currentBlockID = blockIDs.nextElement();       // get a block ID
 			double eu_sum = 0;
-			Enumeration<Integer> detIDs = t.rssiLists.keys();  // get detector id list, from the transaction, not the block
+			Enumeration<Integer> detIDs = t.rssiTable.keys();  // get detector id list, from the transaction, not the block
 			while(detIDs.hasMoreElements())
 			{
 				int currentDetID = detIDs.nextElement();       // detectorID
@@ -86,7 +87,7 @@ public class FingerPrint
 				{
 					eu_sum = (eu_sum + Math.pow(
 							(this.statTable.get(currentBlockID)).get(currentDetID)
-							- t.rssiLists.get(currentDetID).get(0)
+							- t.rssiTable.get(currentDetID).get(0)
 							, 2));                            // do the sum first
 				}
 			}	
@@ -96,9 +97,10 @@ public class FingerPrint
 		}
 		Collections.sort(ED_mirror);                          // sort list to find the min value
 		                                                      // ascending order, according to the natural ordering of its elements
-		t.blockID = ED_list.get(ED_mirror.get(0));            // get the first element after sort, this will be the key to hash table
-		t.x = this.fingerPrintTable.get(t.blockID).x;         // map to its x and y coordinates
-		t.y = this.fingerPrintTable.get(t.blockID).y;
+		t.blockId = ED_list.get(ED_mirror.get(0));            // get the first element after sort, this will be the key to hash table
+		//t.x = this.fingerPrintTable.get(t.blockId).x;         // map to its x and y coordinates
+		//t.y = this.fingerPrintTable.get(t.blockId).y;
+		t.location.set(this.fingerPrintTable.get(t.blockId).location);
 		return true;
 		
 		//return false;
@@ -108,7 +110,7 @@ public class FingerPrint
 	 * commit new data to FingerPrint table
 	 * @return
 	 */
-	public ArrayList<Transaction> commit()
+	public ArrayList<DataPacket> commit()
 	{
 		return null;
 	}
@@ -124,34 +126,20 @@ public class FingerPrint
 	 * Fill the internal statsTable with stats value processed from raw data table
 	 * @param mode - stats mode : "mean", "median", "mode"
 	 */
-	private void fill_stat(String mode)
+	private void fill_stat(StatisticValue mode)
 	{
 		this.statTable = new Hashtable<Integer, Hashtable<Integer,Integer>>();
-		for(Transaction block : this.fingerPrintTable)                            // the table is a list of blocks
+		for(DataPacket block : this.fingerPrintTable)                            // the table is a list of blocks
 		{
-			this.statTable.put(block.blockID, new Hashtable<Integer, Integer>()); // create block pattern, with ID from input Block
-			Enumeration<Integer> mykeys = block.rssiLists.keys();                 // mykeys = detector id list
+			this.statTable.put(block.blockId, new Hashtable<Integer, Integer>()); // create block pattern, with ID from input Block
+			Enumeration<Integer> mykeys = block.rssiTable.keys();                 // mykeys = detector id list
 			while(mykeys.hasMoreElements())
 			{
 				int current_key = mykeys.nextElement();                           // current_key ; detectorID
-				ArrayList<Integer> current_list = (ArrayList<Integer>)block.rssiLists.get(current_key);
+				ArrayList<Integer> current_list = (ArrayList<Integer>)block.rssiTable.get(current_key);
 				if(!current_list.isEmpty())
-				{
-					if (mode.equals("mean"))
-					{
-						this.statTable.get(block.blockID).put(current_key, Statistics.mean(current_list));
-					}
-					else if(mode.equals("mode"))
-					{
-						this.statTable.get(block.blockID).put(current_key, Statistics.mode(current_list));
-						
-					}
-					else if(mode.equals("median"))
-					{
-						this.statTable.get(block.blockID).put(current_key, Statistics.median(current_list));
-						
-					}
-					
+				{			
+					this.statTable.get(block.blockId).put(current_key, Statistics.calculate(current_list,mode));
 				}
 			}
 		}
