@@ -1,4 +1,4 @@
-package edu.pdx.capstone.tiutracking.common;
+package edu.pdx.capstone.tiutracking.shared;
 
 import java.io.File;
 import java.io.FileInputStream;

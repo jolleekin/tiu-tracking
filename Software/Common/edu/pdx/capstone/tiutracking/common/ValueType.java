@@ -1,10 +1,10 @@
-package edu.pdx.capstone.tiutracking.common;
+package edu.pdx.capstone.tiutracking.shared;
 
 public enum ValueType {
 	
 	DOUBLE,
 	INTEGER,
-	STATISTIC_VALUE,
+	STATISTIC_MODE,
 	STRING;
 	
 	public Class<?> getJavaClass() {
@@ -13,8 +13,8 @@ public enum ValueType {
 			return Double.class;
 		case INTEGER:
 			return Integer.class;
-		case STATISTIC_VALUE:
-			return StatisticValue.class;
+		case STATISTIC_MODE:
+			return StatisticMode.class;
 		default:
 			return String.class;
 		}
