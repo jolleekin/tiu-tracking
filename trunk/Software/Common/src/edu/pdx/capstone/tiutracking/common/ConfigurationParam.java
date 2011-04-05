@@ -21,20 +21,21 @@ public final class ConfigurationParam implements Serializable {
 	 *            The value assigned to this element.
 	 */
 	public ConfigurationParam(String desc, ValueType type, Object value) {
-
-		if (type.getJavaClass() != value.getClass()) {
+	
+		this.description = desc;
+		this.type = type;
+		try {
+			setValue(value.toString());
+		} catch (Exception e) {
 			throw new IllegalArgumentException("Arguments unmatched: type = "
 					+ type + ", value = " + value);
 		}
-		this.description = desc;
-		this.type = type;
-		this.value = value;
 	}
 
 	public Object getValue() {
 		return value;
 	}
-	
+
 	/**
 	 * Sets the value from a string. This method shoudl ease the life of the
 	 * controller writer ;)
@@ -47,10 +48,13 @@ public final class ConfigurationParam implements Serializable {
 		switch (type) {
 		case DOUBLE:
 			value = Double.parseDouble(valueStr);
+			break;
 		case INTEGER:
 			value = Integer.parseInt(valueStr);
+			break;
 		case STATISTIC_MODE:
 			value = StatisticMode.valueOf(valueStr);
+			break;
 		default:
 			value = valueStr;
 		}
