@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
+	<classpathentry kind="lib" path="C:/Eclipse/eclipse-java-helios-SR1-win32-x86_64/eclipse/plugins/org.eclipse.wb.swing.FormLayout.lib_0.9.0.r36x201102111405/forms-1.3.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Daniel/workspace/Software/Controller/RXTXModules/64Bit/RXTXcomm.jar">
+		<attributes>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="Controller/RXTXModules/64Bit"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/Daniel/workspace/Software/Controller/MySQLModules/mysql-connector-java-5.1.15-bin.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Daniel/workspace/Software/Common/jar/common.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Daniel/workspace/Software/FingerPrint/jar/fingerprint.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
