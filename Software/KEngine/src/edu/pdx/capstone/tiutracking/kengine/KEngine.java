@@ -37,6 +37,8 @@ public class KEngine implements LocationEngine {
 	private static final String DATA_FILE_NAME = "KEngine.dat";
 	private static final String CONFIG_FILE_NAME = "KEngine.cfg";
 
+	// For descriptions of these configuration params, see the constructor.
+	
 	private static final String CFG_LEARNING_RATE = "Learning Rate";
 	private static final String CFG_LEARNING_CYCLE = "Learning Cycle";
 	private static final String CFG_MAX_ITERATIONS = "Max Iterations";
@@ -49,13 +51,16 @@ public class KEngine implements LocationEngine {
 	private StatisticMode cfgStatisticMode = StatisticMode.MEDIAN;
 	private double cfgThreshold = 1;
 
+	// Table containing all congiruation params of this engine.
 	private Hashtable<String, ConfigurationParam> configuration;
+	
+	// Table containing the path loss models for all detectors.
 	private Hashtable<Integer, PathLossModel> pathLossModels;
 
-	// Table holding the locations of all detectors
+	// Table holding the locations of all detectors.
 	private Hashtable<Integer, Vector2D> detectorLocations;
 
-	// List of detectors involved in the current data packet
+	// List of detectors involved in the current locating request.
 	private ArrayList<DetectorInfo> involvedDetectors = new ArrayList<DetectorInfo>();
 
 	@SuppressWarnings("unchecked")
@@ -68,6 +73,8 @@ public class KEngine implements LocationEngine {
 			// If file does not exist, intialized default configuration.
 			if (configuration == null) {
 
+				configuration = new Hashtable<String, ConfigurationParam>();
+				
 				configuration.put(CFG_LEARNING_RATE, new ConfigurationParam(
 						"Learning rate used to adjust the path loss models. It is also the interpolation " +
 						"factor used to update the location of a tag during the locating process.",
@@ -81,7 +88,7 @@ public class KEngine implements LocationEngine {
 				
 				configuration.put(CFG_MAX_ITERATIONS, new ConfigurationParam(
 						"The threshold below which the net force applied on a tag is considered zero.",
-						ValueType.DOUBLE,
+						ValueType.INTEGER,
 						cfgMaxIterations));
 				
 				configuration.put(CFG_STATISTIC_VALUE, new ConfigurationParam(
@@ -114,7 +121,7 @@ public class KEngine implements LocationEngine {
 	public void learn(ArrayList<DataPacket> rawData,
 			Hashtable<Integer, Vector2D> detectorLocations) {
 
-		// Save the detector table for later use.
+		// Save the locations of all detectors for later use.
 		this.detectorLocations = detectorLocations;
 
 		// Performs learning algorithm
@@ -126,25 +133,28 @@ public class KEngine implements LocationEngine {
 
 				for (Entry<Integer, ArrayList<Integer>> entry : set) {
 
-					// TODO: Implement your learning algorithm here
+					// TODO: Replace this block of code to implement your learning algorithm.
 
+					// Prepare data to train the path loss model.
 					int detectorId = entry.getKey();
 					double distance = packet.location.distanceTo(detectorLocations.get(detectorId));
 					int rssi = Statistics.calculate(entry.getValue(), cfgStatisticMode);
 
+					// Get the model for this detector if exists or create a new one.
 					PathLossModel model;
-
-					if (pathLossModels.containsKey(detectorId) == false) {
-						model = pathLossModels.put(detectorId, new PathLossModel());
-					} else {
+					if (pathLossModels.containsKey(detectorId)) {
 						model = pathLossModels.get(detectorId);
+					} else {
+						model = pathLossModels.put(detectorId, new PathLossModel());
 					}
 
+					// Train the model.
 					model.learn(rssi, distance, cfgLearningRate);
 				}
 			}
 		}
 
+		// Save the models to file.
 		try {
 			ObjectFiler.save(DATA_FILE_NAME, pathLossModels);
 		} catch (IOException e) {
@@ -159,11 +169,12 @@ public class KEngine implements LocationEngine {
 
 		if (set.size() > 0) {
 
+			// Clear the result first.
 			Vector2D result = dataPacket.location;
 			result.set(0, 0);
-
+			
+			// Gets a list of detectors involving in this locating request.
 			involvedDetectors.clear();
-
 			for (Entry<Integer, ArrayList<Integer>> entry : set) {
 				int key = entry.getKey();
 
@@ -180,31 +191,45 @@ public class KEngine implements LocationEngine {
 			// polygon formed by the involved detectors.
 			result.mult(1 / involvedDetectors.size());
 
+			// Initialize the iteration counter.
 			int count = 0;
 
-			for (;;) {
-				Vector2D netForce = new Vector2D();
+			// Creates the net force vector out here to optimize memory.
+			Vector2D netForce = new Vector2D();
+
+			while (true) {
 
 				// Calculate individual forces and net force imposed on the tag.
 				for (DetectorInfo info : involvedDetectors) {
 
 					// Get the vector pointing from the detector to the tag.
-					Vector2D v = Vector2D.sub(info.location, result);
+					Vector2D force = Vector2D.sub(info.location, result);
 
 					// Scale it by the percent of difference between the
-					// measured distance and the current distance.
-					v.mult(info.distance / v.mag() - 1);
+					// measured distance and the current distance, resulting
+					// in the force imposed by this detector.
+					// 
+					// The force's direction is from detector to tag, and its magnitude
+					// is propotional to the difference between the distance derived from
+					// RSSI and the current distance.
+					force.mult(info.distance / force.mag() - 1);
 
 					// Add to the net force.
-					netForce.add(v);
+					netForce.add(force);
 				}
 
+				// Update counter and result.
 				count++;
-				result.lerp(netForce, cfgLearningRate);
+				result.x += cfgLearningRate * netForce.x;
+				result.y += cfgLearningRate * netForce.y;
 
+				// If convergence criterion is met, stop locating.
 				if ((netForce.magSquared() < cfgThreshold) || (count >= cfgMaxIterations)) {
 					return;
 				}
+				
+				// Reset the net force to zero before next iteration.
+				netForce.set(0, 0);
 			}
 		}
 	}
@@ -217,12 +242,14 @@ public class KEngine implements LocationEngine {
 	@Override
 	public void onConfigurationChanged() {
 
+		// Update configuration params.
 		cfgLearningCycle = (Integer) configuration.get(CFG_LEARNING_RATE).getValue();
 		cfgLearningRate = (Double) configuration.get(CFG_LEARNING_RATE).getValue();
 		cfgMaxIterations = (Integer) configuration.get(CFG_MAX_ITERATIONS).getValue();
 		cfgStatisticMode = (StatisticMode) configuration.get(CFG_STATISTIC_VALUE).getValue();
 		cfgThreshold = (Double) configuration.get(CFG_THRESHOLD).getValue();
 
+		// Save the configuration to file.
 		try {
 			ObjectFiler.save(CONFIG_FILE_NAME, configuration);
 		} catch (IOException e) {
