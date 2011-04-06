@@ -3,7 +3,6 @@ package edu.pdx.capstone.tiutracking.common;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
@@ -23,18 +22,21 @@ public class ObjectFiler {
 	 *            Name of the file to be read
 	 * @return The object read from the file or <b>null</b> if the file does not
 	 *         exist.
-	 * @throws IOException
-	 * @throws ClassNotFoundException
 	 */
-	public static Object load(String fileName) throws IOException,
-			ClassNotFoundException {
+	public static Object load(String fileName) {
 
 		File f = new File(fileName);
 		if (f.exists()) {
-			ObjectInputStream in = new ObjectInputStream(new FileInputStream(f));
-			Object result = in.readObject();
-			in.close();
-			return result;
+			ObjectInputStream in;
+			try {
+				in = new ObjectInputStream(new FileInputStream(f));
+				Object result = in.readObject();
+				in.close();
+				return result;
+
+			} catch (Exception e) {
+				return null;
+			}
 		}
 		return null;
 	}
@@ -46,14 +48,20 @@ public class ObjectFiler {
 	 *            Name of the file to be written
 	 * @param obj
 	 *            The object to be written
-	 * @throws IOException
+	 * @return True if successful, else false.
 	 */
-	public static void save(String fileName, Object obj) throws IOException {
+	public static boolean save(String fileName, Object obj) {
 
-		ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(
-				fileName));
-		out.writeObject(obj);
-		out.close();
+		try {
+			ObjectOutputStream out = new ObjectOutputStream(
+					new FileOutputStream(fileName));
+			out.writeObject(obj);
+			out.close();
+		} catch (Exception e) {
+			return false;
+		}
+
+		return true;
 	}
 
 }
