@@ -26,8 +26,8 @@ public class ObjectFiler {
 	 * @throws IOException
 	 * @throws ClassNotFoundException
 	 */
-	public static Object load(String fileName)
-			throws IOException, ClassNotFoundException {
+	public static Object load(String fileName) throws IOException,
+			ClassNotFoundException {
 
 		File f = new File(fileName);
 		if (f.exists()) {
@@ -48,8 +48,7 @@ public class ObjectFiler {
 	 *            The object to be written
 	 * @throws IOException
 	 */
-	public static void save(String fileName, Object obj)
-			throws IOException {
+	public static void save(String fileName, Object obj) throws IOException {
 
 		ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(
 				fileName));

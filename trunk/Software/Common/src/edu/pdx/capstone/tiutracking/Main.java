@@ -1,20 +1,18 @@
 package edu.pdx.capstone.tiutracking;
 
+import java.util.ArrayList;
+
 import edu.pdx.capstone.tiutracking.common.ConfigurationParam;
-import edu.pdx.capstone.tiutracking.common.ValueType;
 
 public class Main {
 
-	/**
-	 * @param args
-	 */
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-		ConfigurationParam p = new ConfigurationParam(
-				"Learning rate used to adjust the path loss models. It is also the interpolation " +
-				"factor used to update the location of a tag during the locating process.",
-				ValueType.DOUBLE,
-				3);
+
+		ArrayList<ConfigurationParam> params = new ArrayList<ConfigurationParam>();
+		params.add(new ConfigurationParam("", null, 0.0));
+		params.add(new ConfigurationParam("A Double", null, 10));
+
+		System.out.println(params.get(0).getTypeName());
 	}
 
 }

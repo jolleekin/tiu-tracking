@@ -3,7 +3,6 @@ package edu.pdx.capstone.tiutracking.common;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
-
 /**
  * An interface for all location engines.
  * 
@@ -34,12 +33,11 @@ public interface LocationEngine {
 	public void locate(DataPacket dataPacket);
 
 	/**
-	 * Retrieves a reference to the configuration table of this engine. The
-	 * string key is the name of a configuration element.
+	 * Retrieves a list of this engine's configuration params.
 	 * 
-	 * @return A table containing the engine's configuration.
+	 * @return A list containing the engine's configuration params.
 	 */
-	public Hashtable<String, ConfigurationParam> getConfiguration();
+	public ArrayList<ConfigurationParam> getConfiguration();
 
 	/**
 	 * This method is called by the controller when the configuration of the
