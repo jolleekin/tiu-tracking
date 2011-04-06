@@ -461,41 +461,24 @@ public class Main {
 			done=true;
 		}		
 		
-		protected void saveSample(int key, Hashtable<Integer, ArrayList<Sample>> rssiData,
-				Sample newSample) {
-			//Hash incoming data based on detector ID
-			ArrayList<Sample> samples;
-			if (rssiData.containsKey(key)){
-				//If samples for this detectorID have already been received
-				samples = rssiData.get(key);
-			}else{
-				//If samples for this detectorID have NOT been received before.
-				samples = new ArrayList<Sample>();
-			}
-			samples.add(newSample);
-			rssiData.put(key, samples);
-		}
-		protected String printSample(Sample newSample) {
+		
+		protected String printRawSample(RawSample rawSample) {
 			DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 			Date date = new Date();
-			String time = dateFormat.format(date);				        
-			
-			String displayString = String.format("%1$s, D:%2$d, S:%3$d, T:%4$d, RSSI:%5$d, MsgID: %6$d, Reserved: %7$d\n",time, newSample.detectorID, newSample.sourceID, newSample.tagID, newSample.rssi, newSample.messageID, newSample.reserved);
-			
+			String time = dateFormat.format(date);			
+			String displayString = String.format("%1$s, D:%2$d, S:%3$d, T:%4$d, RSSI:%5$d, MsgID: %6$d, Reserved: %7$d\n",time, rawSample.detectorId, rawSample.sourceId, rawSample.tagId, rawSample.rssi, rawSample.messageId, rawSample.reserved);			
 			txtOutput.append(displayString);
 			txtOutput.setCaretPosition(txtOutput.getDocument().getLength());
 			return displayString;
 		}
-		protected void parseSample(ArrayList<Byte> list, Sample newSample) {
-			newSample.sourceID 		= list.get(0) & 0xff; 		list.remove(0);
-			newSample.detectorID 	= list.get(0) & 0xff; 		list.remove(0);
+		protected void parseRawSample(ArrayList<Byte> list, RawSample newSample) {
+			newSample.sourceId 		= list.get(0) & 0xff; 		list.remove(0);
+			newSample.detectorId 	= list.get(0) & 0xff; 		list.remove(0);
 			newSample.rssi 			= list.get(0) & 0xff;		list.remove(0);			
-			newSample.tagID 		= list.get(0) & 0xff;		list.remove(0);
-			newSample.messageID 	= list.get(0) & 0xff;		list.remove(0);
-			newSample.reserved 		= list.get(0) & 0xff;		list.remove(0);		
-
-			
-			System.out.println("Parsing Sample From "+newSample.detectorID);
+			newSample.tagId 		= list.get(0) & 0xff;		list.remove(0);
+			newSample.messageId 	= list.get(0) & 0xff;		list.remove(0);
+			newSample.reserved 		= list.get(0) & 0xff;		list.remove(0);			
+			System.out.println("Parsing Sample From "+newSample.detectorId);
 		}
 		protected void readPort(ArrayList<Byte> list, int bufferSize)
 				throws IOException {
@@ -511,13 +494,12 @@ public class Main {
 		}
 	}
 	
-	public class Sample
-	{
-		public int detectorID;
+	public class RawSample{
+		public int detectorId;
 		public int rssi;
-		public int sourceID;
-		public int tagID;
-		public int messageID;
+		public int sourceId;
+		public int tagId;
+		public int messageId;
 		public int reserved;	
 	}
 	
@@ -530,23 +512,30 @@ public class Main {
 		public void run() {
 			try{				
 				this.done=false;
-				ArrayList<Byte> list = new ArrayList<Byte>();					
-				Hashtable<Integer, ArrayList<Sample>> rssiData = new Hashtable<Integer, ArrayList<Sample>>();				
-						
+				ArrayList<Byte> list = new ArrayList<Byte>();				
+				DataPacket dataBlock = null;
+				boolean firstSample=true;
 				while (!done){		
-					Sample newSample = new Sample();
+					RawSample rawSample = new RawSample();
 					int bufferSize = 6;
 					readPort(list, bufferSize);					
 					if (list.size() >= bufferSize){						
-						parseSample(list, newSample);						
-						printSample(newSample);		
-						int key = newSample.detectorID;
-						saveSample(key, rssiData, newSample);
+						parseRawSample(list, rawSample);						
+						printRawSample(rawSample);						
+						int targetTagId = Integer.parseInt(txtCalibrateTagID.getText());
+						if (targetTagId == rawSample.tagId ){//Only calibrate for specified tag
+							if (firstSample){
+								int blockId = Integer.parseInt(txtCalibrateBlockNumber.getText());
+								double x = Double.parseDouble(txtCalibrateX.getText());
+								double y = Double.parseDouble(txtCalibrateY.getText());
+								dataBlock = new DataPacket(blockId, rawSample.tagId, new Vector2D(x,y));
+								firstSample = false;
+							}							
+							saveSample(dataBlock, rawSample);
+						}
 					}					
-				}
-				
-				storeCalibrationData(rssiData);				
-			
+				}				
+				storeCalibrationData(dataBlock);			
 			}catch (IOException e){
 				e.printStackTrace();
 			}catch (RuntimeException e){
@@ -557,49 +546,36 @@ public class Main {
 				e.printStackTrace();
 			}
 		} 
-		protected void storeCalibrationData(
-				Hashtable<Integer, ArrayList<Sample>> rssiData)
-				throws ClassNotFoundException, SQLException {
-			
-			
-			Connection connect;
-			Statement statement;
-			//Open a connection to a database					
-			// This will load the MySQL driver, each DB has its own driver
-			Class.forName("com.mysql.jdbc.Driver");
-			// Setup the connection with the DB
-			connect = DriverManager.getConnection("jdbc:mysql://db.cecs.pdx.edu/hoangman?" + 
-			 "user=hoangman&password=c@p2011$#tT");
-			// Statements allow to issue SQL queries to the database
-			statement = connect.createStatement();	
-			
-			//Remove rows from CalibrateBlock and BlockDate where BlockNumber == User Specified BlockNumber 
-			String query1 = String.format("delete from CalibrationBlock where BlockNumber=%1$s",txtCalibrateBlockNumber.getText());
-			statement.executeUpdate(query1);
-			query1 = String.format("delete from BlockData where BlockNumber=%1$s",txtCalibrateBlockNumber.getText());
-			statement.executeUpdate(query1);
-			
-			for (Map.Entry<Integer, ArrayList<Sample>> e: rssiData.entrySet()){
-				int detectorID = e.getKey();
-				//Insert a new CalibrateBlock
-				String query2 = String.format("insert into CalibrationBlock values(%1$d, %2$s, %3$s, %4$s);", detectorID, txtCalibrateBlockNumber.getText(), txtCalibrateX.getText(), txtCalibrateY.getText());
-				System.out.println(query2);
-				statement.executeUpdate(query2);
-				for (Sample sample : e.getValue()){
-					String query3 = String.format("insert into BlockData values(%1$d, %2$s, %3$d);",detectorID, txtCalibrateBlockNumber.getText(),sample.rssi );
-					System.out.println(query3);
-					statement.executeUpdate(query3);
-				}
+		protected void saveSample(DataPacket dataPacket, RawSample rawSample) {
+			//Hash incoming data based on detector ID
+			ArrayList<Integer> samples = null;
+			if (dataPacket.rssiTable.containsKey(rawSample.detectorId)){
+				//If samples for this detectorID have already been received
+				samples = dataPacket.rssiTable.get(rawSample.detectorId);
+			}else{
+				//If samples for this detectorID have NOT been received before.
+				samples = new ArrayList<Integer>();
 			}
-			
-			statement.close();
-			connect.close();
+			samples.add(rawSample.rssi);
+			dataPacket.rssiTable.put(rawSample.detectorId, samples);
 		}
-		
+		@SuppressWarnings("unchecked")
+		private void storeCalibrationData(DataPacket dataPacket)
+				throws ClassNotFoundException, SQLException, IOException {
+			//TODO: make cal data directory and data file configurable.
+			ArrayList<DataPacket> calibrationData=null;			
+			File calFile = new File("CalibrationData\\calibrationdata.dat");
+			if (calFile.exists()){				
+				calibrationData = (ArrayList<DataPacket>)ObjectFiler.load("CalibrationData\\calibrationdata.dat");
+			}else{
+				calibrationData = new ArrayList<DataPacket>();
+			}
+			calibrationData.add(dataPacket);
+			ObjectFiler.save("CalibrationData\\calibrationdata.dat", calibrationData);	
+		}		
 	}
 	
 	public class CollectorReader extends PortReader implements Runnable{
-
 		Hashtable<Integer, Calendar> ttl = new Hashtable<Integer, Calendar>();
 		Hashtable<Integer, ArrayList<String>> samples = new Hashtable<Integer,ArrayList<String>>();
 		public CollectorReader(InputStream in){
@@ -610,23 +586,20 @@ public class Main {
 			try{				
 				this.done=false;
 				ArrayList<Byte> list = new ArrayList<Byte>();
-				FileWriter fw = new FileWriter(txtLocationDescription.getText()+"_data.csv");
-				Sample newSample = new Sample();
-				while (!done){				
-
+				FileWriter fw = new FileWriter(txtLocationDescription.getText()+"_data.csv");				
+				while (!done){
 					int bufferSize = 6;
 					readPort(list,bufferSize);
 					if (list.size() >= bufferSize){												
-						
-						parseSample(list, newSample);						
-						String printString = printSample(newSample);		
+						RawSample rawSample = new RawSample();
+						parseRawSample(list, rawSample);						
+						String printString = printRawSample(rawSample);		
 						fw.write(printString);
 					}					
 				}
 				fw.close();
 				lblPreviousLocationDescription.setText(txtLocationDescription.getText());
-				txtLocationDescription.setText(null);
-			
+				txtLocationDescription.setText(null);			
 			}catch (IOException e){
 				e.printStackTrace();
 			}catch (RuntimeException e){
@@ -634,44 +607,29 @@ public class Main {
 			}
 		}
 	}
-	
-	public class BlockData{
-		int detectorID;
-		int blockNumber;
-		int rssi;
-	}
-	
-	public class LocatorReader  extends PortReader implements Runnable{
 
-		
+	public class LocatorReader  extends PortReader implements Runnable{		
 		public LocatorReader(InputStream in){
 			super(in);
-		}
-		
-		
+		}		
 		public void run(){
 			try{				
 				this.done=false;
 				ArrayList<Byte> list = new ArrayList<Byte>();
-				Hashtable<Integer, ArrayList<Sample>> rssiData = new Hashtable<Integer, ArrayList<Sample>>();
+				Hashtable<Integer, ArrayList<RawSample>> rawSampleTable = new Hashtable<Integer, ArrayList<RawSample>>();
 				Hashtable<Integer, Calendar> ttl = new Hashtable<Integer, Calendar>();
-				ArrayList<DataPacket> fingerPrintTable = new ArrayList<DataPacket>();
-				
-				loadCalibrationData(fingerPrintTable);
-				
+				ArrayList<DataPacket> fingerPrintTable = new ArrayList<DataPacket>();				
+				loadCalibrationData(fingerPrintTable);				
 				FingerPrint locator = new FingerPrint(fingerPrintTable); 
 				while (!done){				
-					Sample newSample = new Sample();
+					RawSample rawSample = new RawSample();
 					int bufferSize = 6;
 					readPort(list,bufferSize);
-					if (list.size() >= bufferSize){												
-						
-						parseSample(list, newSample);						
-						//printSample(newSample);
-						
-						int key = newSample.tagID + newSample.messageID;
-						saveSample(key, rssiData, newSample);
-						
+					if (list.size() >= bufferSize){						
+						parseRawSample(list, rawSample);						
+						//printSample(newSample);						
+						int key = rawSample.tagId + rawSample.messageId;
+						saveRawSample(key, rawSampleTable, rawSample);						
 						//Start a new time window, and associate with key, if key has not been seen.
 						if (!ttl.containsKey(key)){
 							Calendar currentMoment = Calendar.getInstance();
@@ -680,38 +638,38 @@ public class Main {
 						}
 					}				
 					ArrayList<Integer> expiredItems = new ArrayList<Integer>();
+					//key = TagId + MsgId;
 					for (Map.Entry<Integer, Calendar> e: ttl.entrySet()){
 						Calendar savedMoment = e.getValue();
 						if (savedMoment.before(Calendar.getInstance())){
-							ArrayList<Sample> sampleVals = rssiData.get(e.getKey());
-							if (sampleVals.size() >= 2)
-							{		
-								DataPacket t = new DataPacket(-1,sampleVals.get(0).tagID,new Vector2D(-999,-999) );
-								for (int s = 0;s < sampleVals.size();s++)
-								{
-									ArrayList<Integer> rssiSingle =  new ArrayList<Integer>();
-									rssiSingle.add(sampleVals.get(s).rssi);//Only one
-									t.rssiTable.put(sampleVals.get(s).detectorID,rssiSingle );
+							//Getting all RawSamples associated with TagId+MsgId key
+							ArrayList<RawSample> rawSamples = rawSampleTable.get(e.getKey());
+							//TODO: don't give a DataPacket to the locator, if less then N detectors are participating
+							DataPacket dataPacket=null;
+							boolean first=true;
+							for (int s = 0;s < rawSamples.size();s++){
+								if (first){									
+									dataPacket = new DataPacket(-1,rawSamples.get(0).tagId,null);
+									first =false;
 								}
-
-								locator.locate(t,StatisticMode.MEAN);
-								String displayString = String.format("TagId=%1$d at (%2$f, %3$f), Block=%4$d\n", t.tagId, t.location.x, t.location.y, t.blockId);
-								txtOutput.append(displayString);
-								txtOutput.setCaretPosition(txtOutput.getDocument().getLength());
+								ArrayList<Integer> rssiSingle =  new ArrayList<Integer>();
+								rssiSingle.add(rawSamples.get(s).rssi);//Only one
+								dataPacket.rssiTable.put(rawSamples.get(s).detectorId,rssiSingle );
 							}
-							//Remove entries in samples and ttl
-							//rssiData.remove(e.getKey());
-							//ttl.remove(e.getKey());
-							expiredItems.add(e.getKey());
-							
+
+							locator.locate(dataPacket,StatisticMode.MEAN);
+							String displayString = String.format("TagId=%1$d at (%2$f, %3$f), Block=%4$d\n", dataPacket.tagId, dataPacket.location.x, dataPacket.location.y, dataPacket.blockId);
+							txtOutput.append(displayString);
+							txtOutput.setCaretPosition(txtOutput.getDocument().getLength());
+							//Expire Transaction
+							expiredItems.add(e.getKey());							
 						}
-					}
-					
+					}					
+					//Remove expired items.
 					for (Integer key:expiredItems){
-						rssiData.remove(key);
+						rawSampleTable.remove(key);
 						ttl.remove(key);
 					}
-					expiredItems.clear();
 				}
 			
 			}catch (IOException e){
@@ -727,44 +685,34 @@ public class Main {
 				e.printStackTrace();
 			}
 		}
-
-		private void loadCalibrationData(ArrayList<DataPacket> fingerPrintTable)
-				throws ClassNotFoundException, SQLException {
-			Connection connect;
-			//Open a connection to a database					
-			// This will load the MySQL driver, each DB has its own driver
-			Class.forName("com.mysql.jdbc.Driver");
-			// Setup the connection with the DB
-			connect = DriverManager.getConnection("jdbc:mysql://db.cecs.pdx.edu/hoangman?" + 
-			 "user=hoangman&password=c@p2011$#tT");
-			// Statements allow to issue SQL queries to the database
-			Statement statementOuter = connect.createStatement();			
-			String query = String.format("select * from CalibrationBlock;");
-			ResultSet calBlocks = statementOuter.executeQuery(query);
-
-			
-			while (calBlocks.next()){
-				int detectorID = calBlocks.getInt("DetectorID");
-				int blockNumber = calBlocks.getInt("BlockNumber");
-				float x = calBlocks.getFloat("X");
-				float y = calBlocks.getFloat("Y");
-				query = String.format("select * from BlockData where DetectorID=%1$d and BlockNumber=%2$d;",detectorID,blockNumber);
-				Statement statementInner = connect.createStatement();
-				ResultSet blockData = statementInner.executeQuery(query);
-				
-				//TODO: change second parameter to DataPacket constructor to TagId
-				DataPacket t = new DataPacket(blockNumber, blockNumber, new Vector2D(x,y));
-				ArrayList<Integer> detectorRSSI = new ArrayList<Integer>();
-				while (blockData.next()){
-					int rssi = blockData.getInt("RSSI");
-					detectorRSSI.add(rssi);
-				}
-				statementInner.close();
-				t.rssiTable.put(detectorID, detectorRSSI);
-				fingerPrintTable.add(t);
+		///saveRawSample - rawDataTable is index by TagId+MsgId
+		protected void saveRawSample(int key, Hashtable<Integer, ArrayList<RawSample>> rawDataTable, RawSample rawSample) {
+			//Hash incoming data based on key
+			ArrayList<RawSample> samples = null;
+			if (rawDataTable.containsKey(key)){
+				//If samples for this key have already been received
+				samples = rawDataTable.get(key);
+			}else{
+				//If samples for this key have NOT been received before.
+				samples = new ArrayList<RawSample>();
 			}
-			statementOuter.close();
-			
+			samples.add(rawSample);
+			rawDataTable.put(key, samples);
+		}
+		/*
+		 * Loads an ArrayList<DataPacket> with calibration data.
+		 * Returns: True if calibration data exists, False otherwise.
+		 */
+		@SuppressWarnings("unchecked")
+		private boolean loadCalibrationData(ArrayList<DataPacket> fingerPrintTable)
+				throws ClassNotFoundException, SQLException, IOException {
+			File calFile = new File("CalibrationData\\calibrationdata.dat");
+			if (!calFile.exists()){
+				System.out.println("Calibration data not found.");
+				return false;
+			}						
+			fingerPrintTable = (ArrayList<DataPacket>)ObjectFiler.load("CalibrationData\\calibrationdata.dat");			
+			//Debug printing..
 			System.out.println("FingerPrintTable:");
 			for(DataPacket t: fingerPrintTable){
 				System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagId, t.blockId));
@@ -775,8 +723,8 @@ public class Main {
 					}
 				}
 				System.out.println();
-			}
+			}			
+			return true;
 		}
-	}
-	
+	}	
 }
