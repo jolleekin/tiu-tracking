@@ -4,32 +4,40 @@ import java.io.Serializable;
 
 public final class ConfigurationParam implements Serializable {
 
-	private static final long serialVersionUID = 954522706171093537L;
+	private static final long serialVersionUID = -7916728150923528984L;
 
+	public final String name;
 	public final String description;
-	public final ValueType type;
 	private Object value;
 
 	/**
-	 * Creates an instance of ConfigurationParam class.
+	 * Creates a new configuration param.
 	 * 
+	 * @param name
+	 *            Name of this param. Name cannot be null.
 	 * @param desc
 	 *            The description for this element.
-	 * @param type
-	 *            The value type of this element.
 	 * @param value
-	 *            The value assigned to this element.
+	 *            The value assigned to this element. The value's type should be
+	 *            explicitly defined, e.g. 1.0d for Double.
 	 */
-	public ConfigurationParam(String desc, ValueType type, Object value) {
-	
-		this.description = desc;
-		this.type = type;
-		try {
-			setValue(value.toString());
-		} catch (Exception e) {
-			throw new IllegalArgumentException("Arguments unmatched: type = "
-					+ type + ", value = " + value);
+	public ConfigurationParam(String name, String desc, Object value) {
+
+		if (name == null) {
+			throw new IllegalArgumentException("Name cannot be null.");
 		}
+		this.name = name;
+		this.description = desc;
+		this.value = value;
+	}
+
+	/**
+	 * Returns a string representing the value type of this param.
+	 * 
+	 * @return A string representing the value type of this param.
+	 */
+	public String getTypeName() {
+		return value.getClass().getSimpleName();
 	}
 
 	public Object getValue() {
@@ -37,26 +45,30 @@ public final class ConfigurationParam implements Serializable {
 	}
 
 	/**
-	 * Sets the value from a string. This method shoudl ease the life of the
-	 * controller writer ;)
+	 * Sets value of this param from a string. This provides a consistent and
+	 * simple interface for the controller to change the param's value since the
+	 * controller does not care about the param's type.
 	 * 
 	 * @param valueStr
-	 *            The string representing the value
+	 *            A string representing the value to be assigned to this param.
 	 */
 	public void setValue(String valueStr) {
 
-		switch (type) {
-		case DOUBLE:
-			value = Double.parseDouble(valueStr);
-			break;
-		case INTEGER:
-			value = Integer.parseInt(valueStr);
-			break;
-		case STATISTIC_MODE:
+		Class<?> c = value.getClass();
+		if (c == Double.class) {
+			value = Double.valueOf(valueStr);
+
+		} else if (c == Integer.class) {
+			value = Integer.valueOf(valueStr);
+
+		} else if (c == StatisticMode.class) {
 			value = StatisticMode.valueOf(valueStr);
-			break;
-		default:
+
+		} else if (c == String.class) {
 			value = valueStr;
+		} else {
+			throw new IllegalArgumentException("Unsupported value type.");
 		}
 	}
+
 }
