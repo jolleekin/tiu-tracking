@@ -45,6 +45,25 @@ public final class ConfigurationParam implements Serializable {
 	}
 
 	/**
+	 * Returns a list of possible values for this param.
+	 * 
+	 * @return An array of strings representing possible values if the value
+	 *         type is an enum, else null.
+	 */
+	public String[] getValueList() {
+
+		Object[] values = value.getClass().getEnumConstants();
+		if (values != null) {
+			String[] result = new String[values.length];
+			for (int i = values.length - 1; i >= 0;i--) {
+				result[i] = values[i].toString();
+			}
+			return result;
+		}
+		return null;
+	}
+
+	/**
 	 * Sets value of this param from a string. This provides a consistent and
 	 * simple interface for the controller to change the param's value since the
 	 * controller does not care about the param's type.
