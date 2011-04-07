@@ -147,10 +147,11 @@ public class KEngine implements LocationEngine {
 					if (pathLossModels.containsKey(detectorId)) {
 						model = pathLossModels.get(detectorId);
 					} else {
-						model = pathLossModels.put(detectorId, new PathLossModel());
+						model = new PathLossModel();
+						pathLossModels.put(detectorId, model);
 					}
 
-					// Train the model.
+					// Adjust the model.
 					model.learn(rssi, distance, learningRate);
 				}
 			}
