@@ -67,12 +67,12 @@ public class KEngine implements LocationEngine {
 		// Load configuration file if exists.
 		configuration = (ArrayList<ConfigurationParam>) ObjectFiler.load(CONFIG_FILE_NAME);
 
-		// If file does not exist, intialized default configuration.
+		// If file does not exist, intialize default configuration.
 		if (configuration == null) {
 
 			configuration = new ArrayList<ConfigurationParam>(6);
 
-			// Initialize default configuration. The order must match PARAM_xx constants.
+			// The order must match PARAM_xx constants.
 
 			configuration.add(new ConfigurationParam(
 					"Learning Cycle",
@@ -127,24 +127,19 @@ public class KEngine implements LocationEngine {
 		double learningRate = (Double) configuration.get(PARAM_LEARNING_RATE).getValue();
 
 		// Performs learning algorithm
+		
 		for (int cycle = learningCycle - 1; cycle >= 0; cycle--) {
 
 			for (DataPacket packet : rawData) {
 
-				Set<Entry<Integer, ArrayList<Integer>>> set = packet.rssiTable
-						.entrySet();
+				Set<Entry<Integer, ArrayList<Integer>>> set = packet.rssiTable.entrySet();
 
 				for (Entry<Integer, ArrayList<Integer>> entry : set) {
 
-					// TODO: Replace this block of code to implement your
-					// learning algorithm.
-
 					// Prepare data to train the path loss model.
 					int detectorId = entry.getKey();
-					double distance = packet.location
-							.distanceTo(detectorLocations.get(detectorId));
-					int rssi = Statistics.calculate(entry.getValue(),
-							statisticMode);
+					double distance = packet.location.distanceTo(detectorLocations.get(detectorId));
+					int rssi = Statistics.calculate(entry.getValue(), statisticMode);
 
 					// Get the model for this detector if exists or create a new
 					// one.
@@ -152,8 +147,7 @@ public class KEngine implements LocationEngine {
 					if (pathLossModels.containsKey(detectorId)) {
 						model = pathLossModels.get(detectorId);
 					} else {
-						model = pathLossModels.put(detectorId,
-								new PathLossModel());
+						model = pathLossModels.put(detectorId, new PathLossModel());
 					}
 
 					// Train the model.
@@ -168,7 +162,7 @@ public class KEngine implements LocationEngine {
 		try {
 			FileWriter writer = new FileWriter("PathLossModels.txt");
 			for (Entry<Integer, PathLossModel> entry : pathLossModels.entrySet()) {
-				writer.write(entry.getValue().toString() + "\n");
+				writer.write(entry.getKey() + entry.getValue().toString() + "\n");
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -178,8 +172,7 @@ public class KEngine implements LocationEngine {
 	@Override
 	public void locate(DataPacket dataPacket) {
 
-		Set<Entry<Integer, ArrayList<Integer>>> set = dataPacket.rssiTable
-				.entrySet();
+		Set<Entry<Integer, ArrayList<Integer>>> set = dataPacket.rssiTable.entrySet();
 
 		if (set.size() > 0) {
 
@@ -194,12 +187,10 @@ public class KEngine implements LocationEngine {
 
 				PathLossModel model = pathLossModels.get(key);
 				Vector2D location = detectorLocations.get(key);
-				int rssi = Statistics.calculate(entry.getValue(),
-						statisticMode);
+				int rssi = Statistics.calculate(entry.getValue(), statisticMode);
 				double distance = model.rssiToDistance(rssi);
 
-				involvedDetectors.add(new DetectorInfo(model, location,
-						distance));
+				involvedDetectors.add(new DetectorInfo(model, location, distance));
 				result.add(location);
 			}
 
@@ -261,12 +252,12 @@ public class KEngine implements LocationEngine {
 	@Override
 	public void onConfigurationChanged() {
 
-		// Update configuration params.
+		// Update configuration params and save the configuration to configuration file. 
 
-		maxIterations	= (Integer) 	  configuration.get(PARAM_MAX_ITERATIONS).getValue();
-		statisticMode	= (StatisticMode) configuration.get(PARAM_STATISTIC_MODE).getValue();
-		forceThreshold	= (Double) 		  configuration.get(PARAM_FORCE_THRESHOLD).getValue();
-		velocityFactor	= (Double) 		  configuration.get(PARAM_VELOCITY_FACTOR).getValue();
+		maxIterations  = (Integer)		 configuration.get(PARAM_MAX_ITERATIONS).getValue();
+		statisticMode  = (StatisticMode) configuration.get(PARAM_STATISTIC_MODE).getValue();
+		forceThreshold = (Double) 		 configuration.get(PARAM_FORCE_THRESHOLD).getValue();
+		velocityFactor = (Double) 		 configuration.get(PARAM_VELOCITY_FACTOR).getValue();
 		
 		ObjectFiler.save(CONFIG_FILE_NAME, configuration);
 	}
