@@ -72,7 +72,7 @@ public class FingerPrint
 			this.fill_stat(mode);
 		}
 		
-		Hashtable<Double,Integer> ED_list = new Hashtable<Double,Integer>(); // list of Eucledean distance
+		Hashtable<Double,Integer> ED_list = new Hashtable<Double,Integer>(); // list of Euclidean distance
 		ArrayList<Double> ED_mirror = new ArrayList<Double>(); // mirror list of the EU_list
 		Enumeration<Integer> blockIDs = this.statTable.keys(); // get block id list
 		while(blockIDs.hasMoreElements())
@@ -85,13 +85,15 @@ public class FingerPrint
 				int currentDetID = detIDs.nextElement();       // detectorID
 				if(this.statTable.get(currentBlockID).get(currentDetID) != null )
 				{
-					eu_sum = (eu_sum + Math.pow(
-							(this.statTable.get(currentBlockID)).get(currentDetID)
-							- t.rssiTable.get(currentDetID).get(0)
-							, 2));                            // do the sum first
+					double calibrationValue = this.statTable.get(currentBlockID).get(currentDetID);
+					double currentValue = t.rssiTable.get(currentDetID).get(0);
+					double squaredDifference = Math.pow(calibrationValue - currentValue	, 2);
+					
+					eu_sum = (eu_sum + squaredDifference);    // do the sum first
 				}
 			}	
 			eu_sum = Math.sqrt(eu_sum);                       // take sqrt() of sum
+			System.out.println("Distance From Block " + currentBlockID + ": "+ eu_sum);
 			ED_list.put(eu_sum,currentBlockID);               // put eucledean results on the list
 			ED_mirror.add(eu_sum);                            // put sum in mirror list for sorting
 		}
@@ -100,7 +102,12 @@ public class FingerPrint
 		t.blockId = ED_list.get(ED_mirror.get(0));            // get the first element after sort, this will be the key to hash table
 		//t.x = this.fingerPrintTable.get(t.blockId).x;         // map to its x and y coordinates
 		//t.y = this.fingerPrintTable.get(t.blockId).y;
-		t.location.set(this.fingerPrintTable.get(t.blockId).location);
+		for (DataPacket dp: this.fingerPrintTable){
+			if (dp.blockId == t.blockId){
+				t.location.set(dp.location);
+			}
+		}
+		//t.location.set(this.fingerPrintTable.get(t.blockId).location);
 		return true;
 		
 		//return false;
