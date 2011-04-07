@@ -115,8 +115,8 @@ public final class ConfigurationParam implements Serializable {
 
 		if (c == Double.class) {
 			Double v = Double.valueOf(valueStr);
-			double vmin = (Double) minValue;
-			double vmax = (Double) maxValue;
+			Double vmin = (Double) minValue;
+			Double vmax = (Double) maxValue;
 			if (v >= vmin && v <= vmax) {
 				value = v;
 			} else {
@@ -124,8 +124,8 @@ public final class ConfigurationParam implements Serializable {
 			}
 		} else if (c == Integer.class) {
 			Integer v = Integer.valueOf(valueStr);
-			int vmin = (Integer) minValue;
-			int vmax = (Integer) maxValue;
+			Integer vmin = (Integer) minValue;
+			Integer vmax = (Integer) maxValue;
 			if (v >= vmin && v <= vmax) {
 				value = v;
 			} else {
