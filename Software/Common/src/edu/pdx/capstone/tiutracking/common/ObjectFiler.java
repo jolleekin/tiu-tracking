@@ -20,8 +20,8 @@ public class ObjectFiler {
 	 * 
 	 * @param fileName
 	 *            Name of the file to be read
-	 * @return The object read from the file or <b>null</b> if the file does not
-	 *         exist.
+	 * @return The object read from the file or <b>null</b> if there is any
+	 *         error.
 	 */
 	public static Object load(String fileName) {
 

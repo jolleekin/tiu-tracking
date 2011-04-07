@@ -26,10 +26,10 @@ public final class ConfigurationParam implements Serializable {
 	 * @param name
 	 *            Name of this param. Name cannot be null.
 	 * @param desc
-	 *            The description for this element.
+	 *            The description for this param.
 	 * @param value
-	 *            The value assigned to this element. The value's type should be
-	 *            explicitly defined, e.g. 1.0d for Double.
+	 *            The value assigned to this param. The value's type should be
+	 *            explicitly defined, e.g. 1.0D for Double.
 	 * @param minValue
 	 *            Lower bound of the value, used only for integer and floating
 	 *            point values, ignored in other cases.
