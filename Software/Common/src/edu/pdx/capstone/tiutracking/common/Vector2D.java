@@ -89,6 +89,10 @@ public class Vector2D implements Serializable {
 	public double magSquared() {
 		return x * x + y * y;
 	}
+	
+	public String toString() {
+		return "(x: " + x + ", y: " + y + ")";
+	}
 
 	public static Vector2D sub(Vector2D a, Vector2D b) {
 		return new Vector2D(a.x - b.x, a.y - b.y);
