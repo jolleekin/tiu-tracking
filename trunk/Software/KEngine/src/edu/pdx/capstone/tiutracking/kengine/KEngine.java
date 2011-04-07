@@ -77,34 +77,34 @@ public class KEngine implements LocationEngine {
 			configuration.add(new ConfigurationParam(
 					"Learning Cycle",
 					"Number of cyles that a list of raw data packets is used to adjust the models.",
-					10));
+					10, 1, 100));
 			
 			configuration.add(new ConfigurationParam(
 					"Learning Rate",
 					"Learning rate used to adjust the path loss models.",
-					0.3D));
+					0.3D, 0.1D, 1.0D));
 			
 			configuration.add(new ConfigurationParam(
 					"Max Iterations",
 					"Number of iterations at which the locating algorithm " +
 					"will stop in case it does not converge.",
-					maxIterations));
+					maxIterations, 10, 100));
 			
 			configuration.add(new ConfigurationParam(
 					"Statistic Mode",
 					"Statistic mode used to determine an 'average' RSSI from a list of raw RSSIs.",
-					statisticMode));
+					statisticMode, null, null));
 			
 			configuration.add(new ConfigurationParam(
 					"Force Threshold",
 					"Threshold that controls the convergence of the locating algorithm. If the " +
 					"squared magnitude of the net force is below this value, the algorithm will stop.",
-					forceThreshold));
+					forceThreshold, 0.2D, 2.0D));
 			
 			configuration.add(new ConfigurationParam(
 					"Velocity Factor",
 					"A scale factor that determines how fast the tag can move per iteration.",
-					velocityFactor));
+					velocityFactor, 0.1D, 1.0D));
 		}
 
 		// Load data file if exists
@@ -201,7 +201,8 @@ public class KEngine implements LocationEngine {
 			// Initialize the iteration counter.
 			int count = 0;
 
-			// Creates the net force vector out here to optimize memory.
+			// Creates the force vectors out here to optimize memory.
+			Vector2D force = new Vector2D();
 			Vector2D netForce = new Vector2D();
 
 			while (true) {
@@ -210,7 +211,8 @@ public class KEngine implements LocationEngine {
 				for (DetectorInfo info : involvedDetectors) {
 
 					// Get the vector pointing from the detector to the tag.
-					Vector2D force = Vector2D.sub(info.location, result);
+					force.x = info.location.x - result.x;
+					force.y = info.location.y - result.y;
 
 					// Scale it by the percent of difference between the
 					// measured distance and the current distance, resulting

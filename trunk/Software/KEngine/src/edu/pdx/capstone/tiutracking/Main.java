@@ -14,7 +14,7 @@ public class Main {
 			System.out.println(p.description);
 			System.out.println(p.getTypeName());
 			System.out.println(p.getValue());
-			System.out.println(p.getValueList());
+			System.out.println(p.getValueArray());
 			System.out.println("-------------------------------");
 			if (p.name == "Learning Cycle") {
 				p.setValue("20");
