@@ -212,6 +212,10 @@ public class Main {
 		btnStartCollecting = new JButton("Start Collecting");
 		btnStartCollecting.setBounds(11, 82, 173, 31);
 		pnlCollecting.add(btnStartCollecting);
+		
+		/*When the Start/Stop Collecting button is hit
+		 *Start/Stop the CollectorThread 
+		 */
 		btnStartCollecting.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				try {					
@@ -301,6 +305,9 @@ public class Main {
 		cbxCOMPorts = new JComboBox();
 		cbxCOMPorts.setBounds(10, 23, 173, 20);
 		panel_3.add(cbxCOMPorts);
+		/*When the Start/Stop Locating button is hit
+		 *Start/Stop the LocatorThread 
+		 */
 		btnStartLocating.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {				
 				try {					
@@ -352,6 +359,9 @@ public class Main {
 				}
 			}
 		});
+		/*When the Start/Stop Calibrating button is hit
+		 *Start/Stop the CalibratorThread 
+		 */
 		btnStartCalibrating.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				try {					
@@ -449,7 +459,14 @@ public class Main {
 		}
 	}
 	
-	
+	/*class PortReader
+	 * 	Implements basic functionality shared by all reader threads.
+	 * 	It provides:
+	 * 		Reading raw data and packaging it into a RawSample object.
+	 * 		Displaying a RawSample object to an output txt field
+	 * 		Ability to stop the reader thread.
+	 * 
+	 */
 	public class PortReader{
 		protected InputStream in;
 		protected volatile boolean done;
@@ -478,7 +495,7 @@ public class Main {
 			newSample.tagId 		= list.get(0) & 0xff;		list.remove(0);
 			newSample.messageId 	= list.get(0) & 0xff;		list.remove(0);
 			newSample.reserved 		= list.get(0) & 0xff;		list.remove(0);			
-			System.out.println("Parsing Sample From "+newSample.detectorId);
+			System.out.println("Parsing Sample From " + newSample.detectorId);
 		}
 		protected void readPort(ArrayList<Byte> list, int bufferSize)
 				throws IOException {
@@ -494,6 +511,10 @@ public class Main {
 		}
 	}
 	
+	/*class RawSample
+	 * 	Represents a sample that is exactly as it comes in from the radio.
+	 * 	Used internally. 
+	 */
 	public class RawSample{
 		public int detectorId;
 		public int rssi;
@@ -503,6 +524,15 @@ public class Main {
 		public int reserved;	
 	}
 	
+	/*class CalibratorReader
+	 * 	This class implements a thread that reads raw samples from a (Serial)Port.
+	 * 	It ignores all Raw Samples that come from a tag that doesn't match the
+	 *  TagId specified in the user interface for calibration mode.
+	 * 	If a raw sample is collected with a matching TagId, it is stored into
+	 * 	a DataPacket object.
+	 * 	When this reader is requested to stop, it first serializes the DataPacket object
+	 * 	to a local file.
+	 */
 	public class CalibratorReader extends PortReader implements Runnable {
 		Hashtable<Integer, Calendar> ttl = new Hashtable<Integer, Calendar>();
 		Hashtable<Integer, ArrayList<String>> samples = new Hashtable<Integer,ArrayList<String>>();
@@ -534,7 +564,8 @@ public class Main {
 							saveSample(dataBlock, rawSample);
 						}
 					}					
-				}				
+				}
+				//Serialize calibration data
 				storeCalibrationData(dataBlock);			
 			}catch (IOException e){
 				e.printStackTrace();
@@ -564,17 +595,35 @@ public class Main {
 				throws ClassNotFoundException, SQLException, IOException {
 			//TODO: make cal data directory and data file configurable.
 			ArrayList<DataPacket> calibrationData=null;			
-			File calFile = new File("CalibrationData\\calibrationdata.dat");
+			File calFile = new File("calibrationdata.dat");
 			if (calFile.exists()){				
-				calibrationData = (ArrayList<DataPacket>)ObjectFiler.load("CalibrationData\\calibrationdata.dat");
+				calibrationData = (ArrayList<DataPacket>)ObjectFiler.load("calibrationdata.dat");
 			}else{
 				calibrationData = new ArrayList<DataPacket>();
 			}
-			calibrationData.add(dataPacket);
-			ObjectFiler.save("CalibrationData\\calibrationdata.dat", calibrationData);	
+			
+			//If it exists, replace entry with a matching block Id, else just append it.
+			boolean foundExisting=false;
+			int blockId = Integer.parseInt(txtCalibrateBlockNumber.getText());
+			for (int h = 0;h < calibrationData.size();h++){
+				if (calibrationData.get(h).blockId == blockId){
+					calibrationData.set(h, dataPacket);
+					foundExisting = true;
+					break;
+				}
+			}
+			if (!foundExisting){
+				calibrationData.add(dataPacket);
+			}
+			ObjectFiler.save("calibrationdata.dat", calibrationData);	
 		}		
 	}
 	
+	/*class CollectorReader
+	 * 	This class implements a thread that reads raw samples from a (Serial)Port.
+	 * 	It writes each collected Raw Sample to a local file in CSV format.
+	 * 
+	 */
 	public class CollectorReader extends PortReader implements Runnable{
 		Hashtable<Integer, Calendar> ttl = new Hashtable<Integer, Calendar>();
 		Hashtable<Integer, ArrayList<String>> samples = new Hashtable<Integer,ArrayList<String>>();
@@ -608,6 +657,22 @@ public class Main {
 		}
 	}
 
+	/*class LocatorReader
+	 * 	This class implements a thread that reads raw samples from a (Serial)Port.
+	 *  It investigates the TagId and MsgId; If it has not seen that combination,
+	 *  it waits a period of time to allow other raw samples with the same TagId and MsgId
+	 *  combination. When the period of time expires, it takes the Raw samples it has collected
+	 *  and puts them into a DataPacket.
+	 *  
+	 *  1) Deserialize calibration data from local filesystem.
+	 *  2) Construct a Locator implementation, and pass in calibration data.
+	 *  3) Begin collecting Raw Samples
+	 *  	4) If conditions are right, and a DataPacket is formed
+	 *  	   invoke the locate method on the Locator instance, and
+	 *  	   pass in the DataPacket.
+	 *  	5) Save results of locate method into DB	
+	 * 
+	 */
 	public class LocatorReader  extends PortReader implements Runnable{		
 		public LocatorReader(InputStream in){
 			super(in);
@@ -618,8 +683,23 @@ public class Main {
 				ArrayList<Byte> list = new ArrayList<Byte>();
 				Hashtable<Integer, ArrayList<RawSample>> rawSampleTable = new Hashtable<Integer, ArrayList<RawSample>>();
 				Hashtable<Integer, Calendar> ttl = new Hashtable<Integer, Calendar>();
-				ArrayList<DataPacket> fingerPrintTable = new ArrayList<DataPacket>();				
-				loadCalibrationData(fingerPrintTable);				
+				
+				//Deserialize calibration data
+				ArrayList<DataPacket> fingerPrintTable =loadCalibrationData();				
+				//Debug printing..
+				System.out.println("FingerPrintTable:");
+				for(DataPacket t: fingerPrintTable){
+					System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagId, t.blockId));
+					for (Map.Entry<Integer, ArrayList<Integer>> e: t.rssiTable.entrySet()){						
+						System.out.print(String.format("\tDetectorID %1$d: ", e.getKey()));
+						for (Integer rssi: e.getValue()){
+							System.out.print(String.format("%1$d  ", rssi));
+						}
+						System.out.println();
+					}
+					System.out.println();
+				}			
+				
 				FingerPrint locator = new FingerPrint(fingerPrintTable); 
 				while (!done){				
 					RawSample rawSample = new RawSample();
@@ -633,7 +713,7 @@ public class Main {
 						//Start a new time window, and associate with key, if key has not been seen.
 						if (!ttl.containsKey(key)){
 							Calendar currentMoment = Calendar.getInstance();
-							currentMoment.add(Calendar.SECOND, 2);
+							currentMoment.add(Calendar.SECOND, 5);
 							ttl.put(key, currentMoment);						
 						}
 					}				
@@ -685,7 +765,13 @@ public class Main {
 				e.printStackTrace();
 			}
 		}
-		///saveRawSample - rawDataTable is index by TagId+MsgId
+
+		/*saveRawSample
+		 * 	This function is used to save a RawSample into a hashtable.
+		 *  The key may be any integer.
+		 *  This function is used to store a RawSample before it is known
+		 *  which DataPacket it will be associated with. 		 * 
+		 */
 		protected void saveRawSample(int key, Hashtable<Integer, ArrayList<RawSample>> rawDataTable, RawSample rawSample) {
 			//Hash incoming data based on key
 			ArrayList<RawSample> samples = null;
@@ -699,32 +785,20 @@ public class Main {
 			samples.add(rawSample);
 			rawDataTable.put(key, samples);
 		}
-		/*
-		 * Loads an ArrayList<DataPacket> with calibration data.
-		 * Returns: True if calibration data exists, False otherwise.
+		/*loadCalibrationData
+		 * 	deserializes an ArrayList<DataPacket> from the local filesystem
+		 * 	and returns it on success. returns null if there does not exist
+		 * 	previously serialized calibration data.
 		 */
 		@SuppressWarnings("unchecked")
-		private boolean loadCalibrationData(ArrayList<DataPacket> fingerPrintTable)
+		private ArrayList<DataPacket> loadCalibrationData()
 				throws ClassNotFoundException, SQLException, IOException {
-			File calFile = new File("CalibrationData\\calibrationdata.dat");
+			File calFile = new File("calibrationdata.dat");
 			if (!calFile.exists()){
 				System.out.println("Calibration data not found.");
-				return false;
-			}						
-			fingerPrintTable = (ArrayList<DataPacket>)ObjectFiler.load("CalibrationData\\calibrationdata.dat");			
-			//Debug printing..
-			System.out.println("FingerPrintTable:");
-			for(DataPacket t: fingerPrintTable){
-				System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagId, t.blockId));
-				for (Map.Entry<Integer, ArrayList<Integer>> e: t.rssiTable.entrySet()){						
-					System.out.print(String.format("DetectorID %1$d: ", e.getKey()));
-					for (Integer rssi: e.getValue()){
-						System.out.print(String.format("%1$d  ", rssi));
-					}
-				}
-				System.out.println();
-			}			
-			return true;
+				return null;
+			}									
+			return (ArrayList<DataPacket>)ObjectFiler.load("calibrationdata.dat");
 		}
 	}	
 }
