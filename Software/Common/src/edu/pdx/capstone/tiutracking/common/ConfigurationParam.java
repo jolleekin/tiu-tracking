@@ -2,6 +2,14 @@ package edu.pdx.capstone.tiutracking.common;
 
 import java.io.Serializable;
 
+/**
+ * A class that defines a configuration param.
+ * 
+ * Supported value types: Integer, Double, Boolean, String, StatisticMode.
+ * 
+ * @author Kin
+ * 
+ */
 public final class ConfigurationParam implements Serializable {
 
 	private static final long serialVersionUID = -7916728150923528984L;
@@ -9,6 +17,8 @@ public final class ConfigurationParam implements Serializable {
 	public final String name;
 	public final String description;
 	private Object value;
+	public final Object minValue;
+	public final Object maxValue;
 
 	/**
 	 * Creates a new configuration param.
@@ -20,15 +30,34 @@ public final class ConfigurationParam implements Serializable {
 	 * @param value
 	 *            The value assigned to this element. The value's type should be
 	 *            explicitly defined, e.g. 1.0d for Double.
+	 * @param minValue
+	 *            Lower bound of the value, used only for integer and floating
+	 *            point values, ignored in other cases.
+	 * @param maxValue
+	 *            Upper bound of the value, used only for integer and floating
+	 *            point values, ignored in other cases.
+	 * @throws IllegalArgumentException
 	 */
-	public ConfigurationParam(String name, String desc, Object value) {
+	public ConfigurationParam(String name, String desc, Object value,
+			Object minValue, Object maxValue) {
 
 		if (name == null) {
 			throw new IllegalArgumentException("Name cannot be null.");
 		}
+
+		if (value == null) {
+			throw new IllegalArgumentException("Value cannot be null.");
+		}
+
 		this.name = name;
 		this.description = desc;
 		this.value = value;
+		this.minValue = minValue;
+		this.maxValue = maxValue;
+
+		// This is needed to ensure value is in range, and value, minValue, and
+		// maxValue are of the same type.
+		setValue(value.toString());
 	}
 
 	/**
@@ -45,22 +74,29 @@ public final class ConfigurationParam implements Serializable {
 	}
 
 	/**
-	 * Returns a list of possible values for this param.
+	 * Returns an array of all possible values for this param.
 	 * 
-	 * @return An array of strings representing possible values if the value
-	 *         type is an enum, else null.
+	 * @return An array of strings representing possible values if the value is
+	 *         an enum, else null. Note that Boolean is considered as an enum.
 	 */
-	public String[] getValueList() {
+	public String[] getValueArray() {
 
-		Object[] values = value.getClass().getEnumConstants();
+		String[] result = null;
+		Class<?> c = value.getClass();
+		Object[] values = c.getEnumConstants();
+		
 		if (values != null) {
-			String[] result = new String[values.length];
-			for (int i = values.length - 1; i >= 0;i--) {
+			result = new String[values.length];
+			for (int i = 0; i < values.length; i++) {
 				result[i] = values[i].toString();
 			}
-			return result;
+		} else if (c == Boolean.class) {
+			result = new String[2];
+			result[0] = "false";
+			result[1] = "true";
 		}
-		return null;
+		
+		return result;
 	}
 
 	/**
@@ -70,23 +106,44 @@ public final class ConfigurationParam implements Serializable {
 	 * 
 	 * @param valueStr
 	 *            A string representing the value to be assigned to this param.
+	 * @throws IllegalArgumentException
 	 */
 	public void setValue(String valueStr) {
 
+		boolean ok = true;
 		Class<?> c = value.getClass();
+
 		if (c == Double.class) {
-			value = Double.valueOf(valueStr);
-
+			Double v = Double.valueOf(valueStr);
+			double vmin = (Double) minValue;
+			double vmax = (Double) maxValue;
+			if (v >= vmin && v <= vmax) {
+				value = v;
+			} else {
+				ok = false;
+			}
 		} else if (c == Integer.class) {
-			value = Integer.valueOf(valueStr);
-
+			Integer v = Integer.valueOf(valueStr);
+			int vmin = (Integer) minValue;
+			int vmax = (Integer) maxValue;
+			if (v >= vmin && v <= vmax) {
+				value = v;
+			} else {
+				ok = false;
+			}
 		} else if (c == StatisticMode.class) {
 			value = StatisticMode.valueOf(valueStr);
-
+		} else if (c == Boolean.class) {
+			value = Boolean.valueOf(valueStr);
 		} else if (c == String.class) {
 			value = valueStr;
 		} else {
 			throw new IllegalArgumentException("Unsupported value type.");
+		}
+
+		if (ok == false) {
+			throw new IllegalArgumentException("Value out of range: "
+					+ valueStr + ".");
 		}
 	}
 
