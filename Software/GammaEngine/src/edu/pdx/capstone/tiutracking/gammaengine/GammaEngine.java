@@ -56,9 +56,9 @@ public class GammaEngine implements LocationEngine {
 		double[][] outputTrain = new double[trainSize][OUTPUT_NUM];
 
 		for (int row = 0; row < trainSize; row++) {
-			DataPacket packet = rawData.get(row);
-			Vector2D refLocation = packet.location;
-			Set<Entry<Integer, ArrayList<Integer>>> set = packet.rssiTable
+			DataPacket dataPacket = rawData.get(row);
+			Vector2D refLocation = dataPacket.location;
+			Set<Entry<Integer, ArrayList<Integer>>> set = dataPacket.rssiTable
 					.entrySet();
 
 			// Process input pattern
@@ -100,8 +100,8 @@ public class GammaEngine implements LocationEngine {
 
 		// Load the neural network if existed
 		// Otherwise, create a new neural network
-		gammaNet = new MultiLayerPerceptron(
-				TransferFunctionType.SIGMOID, INPUT_NUM, HID_NUM, OUTPUT_NUM);
+		gammaNet = new MultiLayerPerceptron(TransferFunctionType.SIGMOID,
+				INPUT_NUM, HID_NUM, OUTPUT_NUM);
 		IterativeLearning learnRule = new BackPropagation();
 		learnRule.setNeuralNetwork(gammaNet);
 
@@ -116,16 +116,43 @@ public class GammaEngine implements LocationEngine {
 
 	@Override
 	public void locate(DataPacket dataPacket) {
-		// Load the neural network
+		
+		
+
+		double[] inputPattern = new double[INPUT_NUM];
+		Set<Entry<Integer, ArrayList<Integer>>> set = dataPacket.rssiTable
+				.entrySet();
 
 		// Process dataPacket and generate input pattern
+		int index = INPUT_NUM / IN_RESOL - 1;
 
-		// Apply input pattern
+		for (Entry<Integer, ArrayList<Integer>> entry : set) {
+			// int key = entry.getKey();
+			int rssi = Statistics.calculate(entry.getValue(), mode);
+			double[] conversionBuffer = new double[IN_RESOL];
 
-		// Calculate
+			analogToDigital(rssi, conversionBuffer);
 
-		// Return output (x, y)
+			for (int i = 0; i < conversionBuffer.length; i++) {
+				inputPattern[index * IN_RESOL + i] = conversionBuffer[i];
+			}
+			index--;
+		}
 
+		
+		gammaNet.setInput(inputPattern); // Apply input pattern
+		gammaNet.calculate(); // Calculate
+		
+		/* Return location (x, y)
+		 * by modifying dataPacket.location
+		 */
+		double[] output = gammaNet.getOutputAsArray();
+		Vector2D result = new Vector2D();
+		
+		digitalToAnalog(output, result);
+		
+		dataPacket.location.set(result.x * ACCURACY, result.y * ACCURACY);
+		
 	}
 
 	@Override
