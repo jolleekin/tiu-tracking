@@ -141,12 +141,9 @@ public class KEngine implements LocationEngine {
 					double distance = packet.location.distanceTo(detectorLocations.get(detectorId));
 					int rssi = Statistics.calculate(entry.getValue(), statisticMode);
 
-					// Get the model for this detector if exists or create a new
-					// one.
-					PathLossModel model;
-					if (pathLossModels.containsKey(detectorId)) {
-						model = pathLossModels.get(detectorId);
-					} else {
+					// Get the model for this detector if exists, else create a new one.
+					PathLossModel model = pathLossModels.get(detectorId);
+					if (model == null) {
 						model = new PathLossModel();
 						pathLossModels.put(detectorId, model);
 					}
@@ -202,7 +199,7 @@ public class KEngine implements LocationEngine {
 			// Initialize the iteration counter.
 			int count = 0;
 
-			// Creates the force vectors out here to optimize memory.
+			// Create the force vectors out here to optimize memory.
 			Vector2D force = new Vector2D();
 			Vector2D netForce = new Vector2D();
 
