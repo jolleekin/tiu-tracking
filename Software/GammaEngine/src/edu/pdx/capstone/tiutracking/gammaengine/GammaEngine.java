@@ -28,11 +28,14 @@ public class GammaEngine implements LocationEngine {
 	private final static int OUT_RESOL = 5;
 	private final static int ACCURACY = 1; // accuracy is 1m for ADC
 	private final static int HID_NUM = 10; // number of neurons of hidden layer
+	private final static double LOGIC_LOW = 0.3;
+	private final static double LOGIC_HIGH = 0.7;
 
 	private MultiLayerPerceptron gammaNet;
 	private static StatisticMode mode;
 	private static double learningRate;
 	private static int maxIteration;
+	private static double threshold;
 
 	private static int trainSize;
 
@@ -48,6 +51,7 @@ public class GammaEngine implements LocationEngine {
 		// Set configuration
 		learningRate = 0.2;
 		maxIteration = 10000;
+		threshold = 0.8;
 
 		// Create training set (input patterns and supervised output)from
 		// rawData
@@ -147,6 +151,16 @@ public class GammaEngine implements LocationEngine {
 		 * by modifying dataPacket.location
 		 */
 		double[] output = gammaNet.getOutputAsArray();
+		for (int j = 0; j < OUTPUT_NUM; j++) {
+			if (output[j] > LOGIC_HIGH) {
+				output[j] = 1.0; //Logic high
+			}
+			else if (output[j] < LOGIC_LOW) {
+				output[j] = 0.0; //Logic low
+			} else {
+				output[j] = 0.5; //Undefined
+			}
+		}
 		Vector2D result = new Vector2D();
 		
 		digitalToAnalog(output, result);
