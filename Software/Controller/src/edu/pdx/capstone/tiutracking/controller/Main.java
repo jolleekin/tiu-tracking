@@ -25,9 +25,13 @@
 
 package edu.pdx.capstone.tiutracking.controller;
 import edu.pdx.capstone.tiutracking.common.*;
+
+import edu.pdx.capstone.tiutracking.gammaengine.GammaEngine;
+import edu.pdx.capstone.tiutracking.kengine.KEngine;
 import edu.pdx.capstone.tiutracking.locator.FingerPrint;
 
 import java.awt.EventQueue;
+import java.awt.Font;
 
 import javax.swing.JFrame;
 import javax.swing.JTextField;
@@ -63,9 +67,14 @@ import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JPanel;
 import java.awt.Color;
 import javax.swing.border.TitledBorder;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel;
 import javax.swing.UIManager;
 
 import java.sql.*;
+import javax.swing.JTabbedPane;
+import javax.swing.JMenuItem;
+import javax.swing.JTable;
 
 public class Main {
 
@@ -76,7 +85,7 @@ public class Main {
 	}
 	
 	private AppViewMode appViewMode;
-	private JFrame frame;
+	private JFrame frmController;
 	private JComboBox cbxCOMPorts;
 	private JTextArea txtOutput;
 	
@@ -102,9 +111,12 @@ public class Main {
 	private JLabel lblNewLabel_1;
 	private JLabel lblNewLabel_2;
 	private JLabel lblNewLabel_3;
-	private JPanel pnlLocating;
-	private JPanel panel_3;
+	private JTabbedPane tabbedPaneMain;
+	private JMenu mnFile;
+	private JMenuItem mntmExit;
+	private JTable tblLocatorConfiguration;
 	private JScrollPane scrollPane;
+	private JScrollPane scrollPane_1;
 	/**
 	 * Launch the application.
 	 */
@@ -113,7 +125,7 @@ public class Main {
 			public void run() {
 				try {
 					Main window = new Main();
-					window.frame.setVisible(true);
+					window.frmController.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -144,78 +156,76 @@ public class Main {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
-		frame = new JFrame();
-		frame.setBounds(100, 100, 794, 520);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.getContentPane().setLayout(null);
+		frmController = new JFrame();
+		frmController.setTitle("Controller");
+		frmController.setBounds(100, 100, 655, 520);
+		frmController.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frmController.getContentPane().setLayout(null);
+		
+		tabbedPaneMain = new JTabbedPane(JTabbedPane.TOP);
+		tabbedPaneMain.setBounds(10, 245, 615, 205);
+		
+		JPanel pnlSettings = new JPanel();
+		pnlSettings.addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentShown(ComponentEvent arg0) {
+				//LocationEngine locator = (KEngine)new KEngine();
+			/*	LocationEngine locator = (GammaEngine)new GammaEngine();
+				ArrayList<ConfigurationParam> parameters = locator.getConfiguration();
+
+				ConfigurationTableModel ctm = new ConfigurationTableModel();
+				ctm.setData(parameters);
+				tblLocatorConfiguration.setModel(ctm);
+				tblLocatorConfiguration.setFont(new Font(null,Font.PLAIN, 8));*/
+				
+			}
+		});
+		
+		
+		
+		JPanel pnlCollect = new JPanel();
+		JPanel pnlLocate = new JPanel();
+		
+		tabbedPaneMain.addTab("Settings",pnlSettings);
+		pnlSettings.setLayout(null);
+		
+		cbxCOMPorts = new JComboBox();
+		cbxCOMPorts.setBounds(10, 24, 265, 20);
+		pnlSettings.add(cbxCOMPorts);
+		
+		JLabel lblSerialPort = new JLabel("Serial Port");
+		lblSerialPort.setBounds(10, 11, 80, 14);
+		pnlSettings.add(lblSerialPort);
+		
+		JLabel lblLocatorConfiguration = new JLabel("Locator Configuration");
+		lblLocatorConfiguration.setBounds(10, 62, 122, 14);
+		pnlSettings.add(lblLocatorConfiguration);
 		
 		scrollPane = new JScrollPane();
-		scrollPane.setBounds(10, 8, 553, 443);
-		frame.getContentPane().add(scrollPane);
+		scrollPane.setBounds(10, 87, 590, 79);
+		pnlSettings.add(scrollPane);
 		
-		txtOutput = new JTextArea();
-		scrollPane.setViewportView(txtOutput);
+		tblLocatorConfiguration = new JTable();
+		scrollPane.setViewportView(tblLocatorConfiguration);
+		tabbedPaneMain.addTab("Collect", pnlCollect);
+		pnlCollect.setLayout(null);
 		
-		JPanel pnlCalibrating = new JPanel();
-		pnlCalibrating.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Calibrate", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		pnlCalibrating.setBounds(573, 179, 195, 202);
-		frame.getContentPane().add(pnlCalibrating);
-		pnlCalibrating.setLayout(null);
+		JLabel lblLocationDescription = new JLabel("Output File Description");
+		lblLocationDescription.setBounds(10, 11, 123, 16);
+		pnlCollect.add(lblLocationDescription);
 		
-		lblNewLabel = new JLabel("X");
-		lblNewLabel.setBounds(10, 27, 46, 14);
-		pnlCalibrating.add(lblNewLabel);
+		txtLocationDescription = new JTextField();
+		txtLocationDescription.setBounds(10, 26, 265, 20);
+		pnlCollect.add(txtLocationDescription);
+		txtLocationDescription.setColumns(10);
 		
-		lblNewLabel_1 = new JLabel("Y");
-		lblNewLabel_1.setBounds(98, 27, 46, 14);
-		pnlCalibrating.add(lblNewLabel_1);
-		
-		txtCalibrateY = new JTextField();
-		txtCalibrateY.setBounds(98, 40, 86, 20);
-		pnlCalibrating.add(txtCalibrateY);
-		txtCalibrateY.setColumns(10);
-		
-		txtCalibrateX = new JTextField();
-		txtCalibrateX.setBounds(10, 40, 86, 20);
-		pnlCalibrating.add(txtCalibrateX);
-		txtCalibrateX.setColumns(10);
-		
-		lblNewLabel_2 = new JLabel("TagID");
-		lblNewLabel_2.setBounds(10, 71, 46, 14);
-		pnlCalibrating.add(lblNewLabel_2);
-		
-		txtCalibrateTagID = new JTextField();
-		txtCalibrateTagID.setBounds(10, 84, 174, 20);
-		pnlCalibrating.add(txtCalibrateTagID);
-		txtCalibrateTagID.setColumns(10);
-		
-		lblNewLabel_3 = new JLabel("Block Number");
-		lblNewLabel_3.setBounds(10, 112, 102, 14);
-		pnlCalibrating.add(lblNewLabel_3);
-		
-		txtCalibrateBlockNumber = new JTextField();
-		txtCalibrateBlockNumber.setBounds(10, 127, 174, 20);
-		pnlCalibrating.add(txtCalibrateBlockNumber);
-		txtCalibrateBlockNumber.setColumns(10);
-		
-		btnStartCalibrating = new JButton("Start Calibrating");
-		btnStartCalibrating.setBounds(10, 160, 174, 31);
-		pnlCalibrating.add(btnStartCalibrating);
-		btnStartCalibrating.setToolTipText("Saves collected data into the database");
-		
-		JPanel pnlCollecting = new JPanel();
-		pnlCollecting.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Collect", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		pnlCollecting.setBounds(573, 59, 195, 123);
-		frame.getContentPane().add(pnlCollecting);
-		pnlCollecting.setLayout(null);
+		lblPreviousLocationDescription = new JLabel("Previous...");
+		lblPreviousLocationDescription.setBounds(11, 43, 177, 16);
+		pnlCollect.add(lblPreviousLocationDescription);
 		
 		btnStartCollecting = new JButton("Start Collecting");
-		btnStartCollecting.setBounds(11, 82, 173, 31);
-		pnlCollecting.add(btnStartCollecting);
-		
-		/*When the Start/Stop Collecting button is hit
-		 *Start/Stop the CollectorThread 
-		 */
+		btnStartCollecting.setBounds(11, 70, 264, 31);
+		pnlCollect.add(btnStartCollecting);
 		btnStartCollecting.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				try {					
@@ -271,43 +281,106 @@ public class Main {
 			}
 		});
 		btnStartCollecting.setToolTipText("Saves collected data into a file");
+		JPanel pnlCalibrate = new JPanel();
+		tabbedPaneMain.addTab("Calibrate", pnlCalibrate);
+		pnlCalibrate.setLayout(null);
 		
-		JLabel lblLocationDescription = new JLabel("Output File Description");
-		lblLocationDescription.setBounds(10, 23, 123, 16);
-		pnlCollecting.add(lblLocationDescription);
+		lblNewLabel = new JLabel("X");
+		lblNewLabel.setBounds(10, 11, 46, 14);
+		pnlCalibrate.add(lblNewLabel);
 		
-		txtLocationDescription = new JTextField();
-		txtLocationDescription.setBounds(10, 38, 173, 20);
-		pnlCollecting.add(txtLocationDescription);
-		txtLocationDescription.setColumns(10);
+		lblNewLabel_1 = new JLabel("Y");
+		lblNewLabel_1.setBounds(98, 11, 46, 14);
+		pnlCalibrate.add(lblNewLabel_1);
 		
-		lblPreviousLocationDescription = new JLabel("Previous...");
-		lblPreviousLocationDescription.setBounds(11, 55, 177, 16);
-		pnlCollecting.add(lblPreviousLocationDescription);
+		btnStartCalibrating = new JButton("Start Calibrating");
+		btnStartCalibrating.setBounds(10, 144, 265, 31);
+		pnlCalibrate.add(btnStartCalibrating);
+		btnStartCalibrating.setToolTipText("Saves collected data into the database");
 		
-		pnlLocating = new JPanel();
-		pnlLocating.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Locate", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		pnlLocating.setBounds(573, 379, 195, 72);
-		frame.getContentPane().add(pnlLocating);
-		pnlLocating.setLayout(null);
+		txtCalibrateX = new JTextField();
+		txtCalibrateX.setBounds(10, 24, 86, 20);
+		pnlCalibrate.add(txtCalibrateX);
+		txtCalibrateX.setColumns(10);
+		
+		txtCalibrateY = new JTextField();
+		txtCalibrateY.setBounds(98, 24, 86, 20);
+		pnlCalibrate.add(txtCalibrateY);
+		txtCalibrateY.setColumns(10);
+		
+		txtCalibrateTagID = new JTextField();
+		txtCalibrateTagID.setBounds(10, 68, 265, 20);
+		pnlCalibrate.add(txtCalibrateTagID);
+		txtCalibrateTagID.setColumns(10);
+		
+		txtCalibrateBlockNumber = new JTextField();
+		txtCalibrateBlockNumber.setBounds(10, 111, 265, 20);
+		pnlCalibrate.add(txtCalibrateBlockNumber);
+		txtCalibrateBlockNumber.setColumns(10);
+		
+		lblNewLabel_3 = new JLabel("Block Number");
+		lblNewLabel_3.setBounds(10, 96, 102, 14);
+		pnlCalibrate.add(lblNewLabel_3);
+		
+		lblNewLabel_2 = new JLabel("TagID");
+		lblNewLabel_2.setBounds(10, 55, 46, 14);
+		pnlCalibrate.add(lblNewLabel_2);
+		btnStartCalibrating.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				try {					
+					if (btnStartCalibrating.getText() == "Start Calibrating"){						
+						String selectedPortName = cbxCOMPorts.getItemAt(cbxCOMPorts.getSelectedIndex()).toString();
+						CommPortIdentifier port = CommPortIdentifier.getPortIdentifier(selectedPortName);
+						commPort = port.open("Controller",2000);
+						if (commPort instanceof SerialPort){
+							serialPort = (SerialPort) commPort;
+							serialPort.setSerialPortParams(19200, 
+														   SerialPort.DATABITS_8, 
+														   SerialPort.STOPBITS_1, 
+														   SerialPort.PARITY_NONE);
+							InputStream in = serialPort.getInputStream();
+							OutputStream out = serialPort.getOutputStream();
+							calibratorReader = new CalibratorReader(in);
+							writer = new Writer(out);
+							writerThread = new Thread(calibratorReader);
+							readerThread = new Thread(writer);
+							writerThread.start();
+							readerThread.start();							
+							btnStartCalibrating.setText("Stop Calibrating");
+						}
+					}else if (btnStartCalibrating.getText() == "Stop Calibrating"){
+						writer.stop();
+						calibratorReader.requestStop();
+						writerThread.join();
+						readerThread.join();
+						serialPort.close();
+						btnStartCalibrating.setText("Start Calibrating");
+					}
+				} catch (NoSuchPortException e) {
+					//Caused by CommPortIdentifier.getPortIdentifier
+					e.printStackTrace();
+				} catch (PortInUseException e) {
+					//Caused by port.open
+					e.printStackTrace();
+				} catch (UnsupportedCommOperationException e) {
+					//Caused by serialPort.setSerialPortParams
+					e.printStackTrace();
+				} catch (IOException e) {
+					//Caused by serialPort.getInputStream() or serialPort.getOutputStream()
+					e.printStackTrace();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+		tabbedPaneMain.addTab("Locate", pnlLocate);
+		pnlLocate.setLayout(null);
 		
 		btnStartLocating = new JButton("Start Locating");
-		btnStartLocating.setBounds(10, 30, 173, 31);
-		pnlLocating.add(btnStartLocating);
+		btnStartLocating.setBounds(10, 11, 265, 31);
+		pnlLocate.add(btnStartLocating);
 		btnStartLocating.setToolTipText("Passes collected data to the Locating engine");
-		
-		panel_3 = new JPanel();
-		panel_3.setBorder(new TitledBorder(null, "Serial Port", TitledBorder.LEADING, TitledBorder.TOP, null, null));
-		panel_3.setBounds(573, 8, 195, 54);
-		frame.getContentPane().add(panel_3);
-		panel_3.setLayout(null);
-		
-		cbxCOMPorts = new JComboBox();
-		cbxCOMPorts.setBounds(10, 23, 173, 20);
-		panel_3.add(cbxCOMPorts);
-		/*When the Start/Stop Locating button is hit
-		 *Start/Stop the LocatorThread 
-		 */
 		btnStartLocating.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {				
 				try {					
@@ -359,81 +432,48 @@ public class Main {
 				}
 			}
 		});
+		
+		
+		
+		frmController.getContentPane().add(tabbedPaneMain);
+		
+		scrollPane_1 = new JScrollPane();
+		scrollPane_1.setBounds(10, 9, 615, 225);
+		frmController.getContentPane().add(scrollPane_1);
+		
+		txtOutput = new JTextArea();
+		scrollPane_1.setViewportView(txtOutput);
+		/*When the Start/Stop Locating button is hit
+		 *Start/Stop the LocatorThread 
+		 */
 		/*When the Start/Stop Calibrating button is hit
 		 *Start/Stop the CalibratorThread 
 		 */
-		btnStartCalibrating.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				try {					
-					if (btnStartCalibrating.getText() == "Start Calibrating"){
-						
-						float x = Float.parseFloat(txtCalibrateX.getText());
-						float y = Float.parseFloat(txtCalibrateY.getText());
-						int blockNumber = Integer.parseInt(txtCalibrateBlockNumber.getText());
-						int tagID = Integer.parseInt(txtCalibrateTagID.getText());
-						
-						String selectedPortName = cbxCOMPorts.getItemAt(cbxCOMPorts.getSelectedIndex()).toString();
-						CommPortIdentifier port = CommPortIdentifier.getPortIdentifier(selectedPortName);
-						commPort = port.open("Controller",2000);
-						if (commPort instanceof SerialPort){
-							serialPort = (SerialPort) commPort;
-							serialPort.setSerialPortParams(19200, 
-														   SerialPort.DATABITS_8, 
-														   SerialPort.STOPBITS_1, 
-														   SerialPort.PARITY_NONE);
-							InputStream in = serialPort.getInputStream();
-							OutputStream out = serialPort.getOutputStream();
-							calibratorReader = new CalibratorReader(in);
-							writer = new Writer(out);
-							writerThread = new Thread(calibratorReader);
-							readerThread = new Thread(writer);
-							writerThread.start();
-							readerThread.start();
-							
-							
-							btnStartCalibrating.setText("Stop Calibrating");
-						}
-					}else if (btnStartCalibrating.getText() == "Stop Calibrating"){
-						writer.stop();
-						calibratorReader.requestStop();
-						writerThread.join();
-						readerThread.join();
-						serialPort.close();
-						btnStartCalibrating.setText("Start Calibrating");
-					}
-				} catch (NoSuchPortException e) {
-					//Caused by CommPortIdentifier.getPortIdentifier
-					e.printStackTrace();
-				} catch (PortInUseException e) {
-					//Caused by port.open
-					e.printStackTrace();
-				} catch (UnsupportedCommOperationException e) {
-					//Caused by serialPort.setSerialPortParams
-					e.printStackTrace();
-				} catch (IOException e) {
-					//Caused by serialPort.getInputStream() or serialPort.getOutputStream()
-					e.printStackTrace();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		});
 		
 		JMenuBar menuBar = new JMenuBar();
-		frame.setJMenuBar(menuBar);
+		frmController.setJMenuBar(menuBar);
+		
+		mnFile = new JMenu("File");
+		menuBar.add(mnFile);
+		
+		mntmExit = new JMenuItem("Exit");
+		mntmExit.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				//TODO: stop everything, close everything, exit application
+			}
+		});
+		mnFile.add(mntmExit);
 		
 		JMenu mnview = new JMenu("View");
 		menuBar.add(mnview);
 		
-		JRadioButtonMenuItem rdbtnmntmNewRadioItem = new JRadioButtonMenuItem("Calibration");
-		mnview.add(rdbtnmntmNewRadioItem);
-		
-		JRadioButtonMenuItem rdbtnmntmCollection = new JRadioButtonMenuItem("Collection");
-		mnview.add(rdbtnmntmCollection);
-		
-		JRadioButtonMenuItem rdbtnmntmLocating = new JRadioButtonMenuItem("Locating");
-		mnview.add(rdbtnmntmLocating);
+		JMenuItem mntmClear = new JMenuItem("Clear");
+		mntmClear.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				txtOutput.setText(null);
+			}
+		});
+		mnview.add(mntmClear);
 	}
 	
 	public class Writer implements Runnable{
@@ -477,7 +517,6 @@ public class Main {
 		public void requestStop(){
 			done=true;
 		}		
-		
 		
 		protected String printRawSample(RawSample rawSample) {
 			DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
@@ -615,7 +654,7 @@ public class Main {
 			if (!foundExisting){
 				calibrationData.add(dataPacket);
 			}
-			ObjectFiler.save("calibrationdata.dat", calibrationData);	
+			ObjectFiler.save("calibrationdata.dat", calibrationData);
 		}		
 	}
 	
@@ -673,7 +712,8 @@ public class Main {
 	 *  	5) Save results of locate method into DB	
 	 * 
 	 */
-	public class LocatorReader  extends PortReader implements Runnable{		
+	public class LocatorReader  extends PortReader implements Runnable{	
+		private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-mm-dd hh:mm:ss");
 		public LocatorReader(InputStream in){
 			super(in);
 		}		
@@ -684,11 +724,13 @@ public class Main {
 				Hashtable<Integer, ArrayList<RawSample>> rawSampleTable = new Hashtable<Integer, ArrayList<RawSample>>();
 				Hashtable<Integer, Calendar> ttl = new Hashtable<Integer, Calendar>();
 				
+				//Get all detector Info from DB
+				Hashtable<Integer,Vector2D> detectorLocations = getDetectorInfo();
 				//Deserialize calibration data
-				ArrayList<DataPacket> fingerPrintTable =loadCalibrationData();				
+				ArrayList<DataPacket> calibrationData =loadCalibrationData();				
 				//Debug printing..
 				System.out.println("FingerPrintTable:");
-				for(DataPacket t: fingerPrintTable){
+				for(DataPacket t: calibrationData){
 					System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagId, t.blockId));
 					for (Map.Entry<Integer, ArrayList<Integer>> e: t.rssiTable.entrySet()){						
 						System.out.print(String.format("\tDetectorID %1$d: ", e.getKey()));
@@ -700,7 +742,12 @@ public class Main {
 					System.out.println();
 				}			
 				
-				FingerPrint locator = new FingerPrint(fingerPrintTable); 
+				//Create locator instance, pass in calibration data, and 
+				//information about detector locations
+				//LocationEngine locator = (LocationEngine)new KEngine();
+				LocationEngine locator = (LocationEngine)new GammaEngine();
+				locator.learn(calibrationData, detectorLocations);				
+				
 				while (!done){				
 					RawSample rawSample = new RawSample();
 					int bufferSize = 6;
@@ -737,7 +784,10 @@ public class Main {
 								dataPacket.rssiTable.put(rawSamples.get(s).detectorId,rssiSingle );
 							}
 
-							locator.locate(dataPacket,StatisticMode.MEAN);
+							locator.locate(dataPacket);
+							storeResult(dataPacket);
+							
+							//Print to txtOutput
 							String displayString = String.format("TagId=%1$d at (%2$f, %3$f), Block=%4$d\n", dataPacket.tagId, dataPacket.location.x, dataPacket.location.y, dataPacket.blockId);
 							txtOutput.append(displayString);
 							txtOutput.setCaretPosition(txtOutput.getDocument().getLength());
@@ -764,6 +814,75 @@ public class Main {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		}
+		
+		public void storeResult(DataPacket dataPacket){
+			try{
+				Connection connect;
+				Statement statement;
+				//Open a connection to a database					
+				// This will load the MySQL driver, each DB has its own driver
+				Class.forName("com.mysql.jdbc.Driver");
+				// Setup the connection with the DB
+				connect = DriverManager.getConnection("jdbc:mysql://db.cecs.pdx.edu/hoangman?" + 
+				 "user=hoangman&password=c@p2011$#tT");
+				// Statements allow to issue SQL queries to the database
+				statement = connect.createStatement();	
+				
+				//Remove rows from CalibrateBlock and BlockDate where BlockNumber == User Specified BlockNumber 
+				String query1 = String.format("insert into TagInfo values(%1$d, '%2$s', %3$f, %4$f, %5$d)",
+											  dataPacket.tagId, 
+											  sdf.format(dataPacket.timestamp), 
+											  dataPacket.location.x, 
+											  dataPacket.location.y, 
+											  dataPacket.battery);
+				System.out.println(query1);
+				statement.executeUpdate(query1);
+				statement.close();
+				connect.close();
+			}catch (Exception e){
+				e.printStackTrace();
+			}
+		}
+		
+		public Hashtable<Integer, Vector2D> getDetectorInfo(){
+			try{
+				Connection connect;
+				Statement statement;
+				//Open a connection to a database					
+				// This will load the MySQL driver, each DB has its own driver
+				Class.forName("com.mysql.jdbc.Driver");
+				// Setup the connection with the DB
+				connect = DriverManager.getConnection("jdbc:mysql://db.cecs.pdx.edu/hoangman?" + 
+				 "user=hoangman&password=c@p2011$#tT");
+				// Statements allow to issue SQL queries to the database
+				statement = connect.createStatement();	
+				
+				//Remove rows from CalibrateBlock and BlockDate where BlockNumber == User Specified BlockNumber 
+				String query1 = String.format("select * from Detectors;");
+				ResultSet detectorsResult = statement.executeQuery(query1);
+				
+				//Package results into a Hashtable<Integer, Vector2D>
+				Hashtable<Integer,Vector2D> detectorTable = new Hashtable<Integer, Vector2D>();
+				System.out.println("Getting Detectors:");
+				while (detectorsResult.next()){
+					int detectorId = detectorsResult.getInt("DetectorID");
+					double x = detectorsResult.getFloat("X");
+					double y = detectorsResult.getFloat("Y");
+					Vector2D location = new Vector2D(x,y);
+					detectorTable.put(detectorId, location);
+					System.out.println("\tDetectorId="+detectorId+", (X,Y)=("+x+","+y+")");
+				}
+				
+				return detectorTable;
+				
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			
+			return null;			
 		}
 
 		/*saveRawSample
