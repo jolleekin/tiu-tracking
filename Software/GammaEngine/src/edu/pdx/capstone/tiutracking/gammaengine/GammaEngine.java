@@ -22,7 +22,7 @@ import edu.pdx.capstone.tiutracking.common.Vector2D;
 public class GammaEngine implements LocationEngine {
 
 	private final static int TRAINSET_SIZE = 10;
-	private final static int INPUT_NUM = 32;
+	private final static int INPUT_NUM = 24;
 	private final static int IN_RESOL = 8;
 	private final static int OUTPUT_NUM = 10;
 	private final static int OUT_RESOL = 5;
@@ -52,6 +52,7 @@ public class GammaEngine implements LocationEngine {
 		learningRate = 0.2;
 		maxIteration = 10000;
 		threshold = 0.8;
+		mode = StatisticMode.MEAN;
 
 		// Create training set (input patterns and supervised output)from
 		// rawData
@@ -170,7 +171,7 @@ public class GammaEngine implements LocationEngine {
 	}
 
 	@Override
-	public Hashtable<String, ConfigurationParam> getConfiguration() {
+	public ArrayList<ConfigurationParam> getConfiguration() {
 
 		return null;
 	}
