@@ -5,6 +5,7 @@ import java.util.Hashtable;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.neuroph.core.NeuralNetwork;
 import org.neuroph.core.learning.IterativeLearning;
 import org.neuroph.core.learning.SupervisedTrainingElement;
 import org.neuroph.core.learning.TrainingSet;
@@ -113,6 +114,8 @@ public class GammaEngine implements LocationEngine {
 		// Train the network with the training set
 		learnRule.learn(trainSet, maxIteration);
 		learnRule.stopLearning();
+		
+		System.out.println("Learning successful!");
 
 		// Save the neural net
 		gammaNet.save("locator.nnet");
@@ -122,7 +125,9 @@ public class GammaEngine implements LocationEngine {
 	@Override
 	public void locate(DataPacket dataPacket) {
 		
-		
+		System.out.println("Locating mode..");
+		NeuralNetwork myNet = NeuralNetwork.load("locator.nnet");
+		System.out.println("Loaded neural net!");
 
 		double[] inputPattern = new double[INPUT_NUM];
 		Set<Entry<Integer, ArrayList<Integer>>> set = dataPacket.rssiTable
@@ -145,8 +150,8 @@ public class GammaEngine implements LocationEngine {
 		}
 
 		
-		gammaNet.setInput(inputPattern); // Apply input pattern
-		gammaNet.calculate(); // Calculate
+		myNet.setInput(inputPattern); // Apply input pattern
+		myNet.calculate(); // Calculate
 		
 		/* Return location (x, y)
 		 * by modifying dataPacket.location
