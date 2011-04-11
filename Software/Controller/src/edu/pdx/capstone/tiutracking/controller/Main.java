@@ -57,6 +57,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import javax.swing.ButtonGroup;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 import javax.swing.JScrollPane;
@@ -75,6 +76,9 @@ import java.sql.*;
 import javax.swing.JTabbedPane;
 import javax.swing.JMenuItem;
 import javax.swing.JTable;
+import javax.swing.JRadioButton;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ChangeEvent;
 
 public class Main {
 
@@ -84,6 +88,13 @@ public class Main {
 		LOCATING
 	}
 	
+	private enum LocatorChoices{
+		FINGERPRINT,
+		GAMMA,
+		KEWTON
+	}
+	private LocatorChoices locatorChoice=LocatorChoices.KEWTON;
+	private LocationEngine locator;
 	private AppViewMode appViewMode;
 	private JFrame frmController;
 	private JComboBox cbxCOMPorts;
@@ -100,9 +111,9 @@ public class Main {
 	Writer writer;
 	private JTextField txtLocationDescription;
 	private JLabel lblPreviousLocationDescription;
-	private JButton btnStartCalibrating;
-	private JButton btnStartCollecting;
-	private JButton btnStartLocating;
+	private ToggleButton btnStartCalibrating;
+	private ToggleButton btnStartCollecting;
+	private ToggleButton btnStartLocating;
 	private JTextField txtCalibrateX;
 	private JTextField txtCalibrateY;
 	private JTextField txtCalibrateTagID;
@@ -133,6 +144,54 @@ public class Main {
 		});
 	}
 
+	public static LocationEngine createLocator(LocatorChoices locatorChoice) {
+		switch (locatorChoice){
+		case FINGERPRINT:
+			return (LocationEngine)new FingerPrint();
+		case GAMMA:
+			return(LocationEngine)new GammaEngine();
+		case KEWTON:
+			return(LocationEngine)new KEngine();
+		}
+		return null;
+	}
+	public static void populateConfigurationTable(LocationEngine locator, JTable tblLocatorConfiguration) {
+		ArrayList<ConfigurationParam> parameters = locator.getConfiguration();
+		if (parameters != null){
+			ConfigurationTableModel ctm = new ConfigurationTableModel();
+			ctm.setData(parameters);
+			tblLocatorConfiguration.setModel(ctm);
+			tblLocatorConfiguration.setFont(new Font(null,Font.PLAIN, 8));
+			tblLocatorConfiguration.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);   
+			tblLocatorConfiguration.getColumnModel().getColumn(0).setPreferredWidth(55);
+			tblLocatorConfiguration.getColumnModel().getColumn(1).setPreferredWidth(400);					
+			tblLocatorConfiguration.getColumnModel().getColumn(2).setPreferredWidth(55);
+		}else{
+			for (int i = 0;i < tblLocatorConfiguration.getColumnModel().getColumnCount();i++){
+				tblLocatorConfiguration.getColumnModel().removeColumn(tblLocatorConfiguration.getColumnModel().getColumn(0));
+			}
+		}
+	}
+	public boolean openPort() throws NoSuchPortException,
+	PortInUseException, UnsupportedCommOperationException {
+		if (cbxCOMPorts.getItemCount() < 1 || cbxCOMPorts.getSelectedIndex() == -1){
+			JOptionPane.showMessageDialog(null,"A port was no selected. Please select a port.");
+			return false;
+		}
+		String selectedPortName = cbxCOMPorts.getItemAt(cbxCOMPorts.getSelectedIndex()).toString();
+		CommPortIdentifier port = CommPortIdentifier.getPortIdentifier(selectedPortName);
+		commPort = port.open("Controller",2000);
+		if (!(commPort instanceof SerialPort)){
+			JOptionPane.showMessageDialog(null,"Only Serial Ports are supported. Please select another port.");
+			return false;
+		}
+		serialPort = (SerialPort) commPort;
+		serialPort.setSerialPortParams(19200, 
+									   SerialPort.DATABITS_8, 
+									   SerialPort.STOPBITS_1, 
+									   SerialPort.PARITY_NONE);
+		return true;
+	}
 	/**
 	 * Create the application.
 	 */
@@ -165,24 +224,7 @@ public class Main {
 		tabbedPaneMain = new JTabbedPane(JTabbedPane.TOP);
 		tabbedPaneMain.setBounds(10, 245, 615, 205);
 		
-		JPanel pnlSettings = new JPanel();
-		pnlSettings.addComponentListener(new ComponentAdapter() {
-			@Override
-			public void componentShown(ComponentEvent arg0) {
-				//LocationEngine locator = (KEngine)new KEngine();
-			/*	LocationEngine locator = (GammaEngine)new GammaEngine();
-				ArrayList<ConfigurationParam> parameters = locator.getConfiguration();
-
-				ConfigurationTableModel ctm = new ConfigurationTableModel();
-				ctm.setData(parameters);
-				tblLocatorConfiguration.setModel(ctm);
-				tblLocatorConfiguration.setFont(new Font(null,Font.PLAIN, 8));*/
-				
-			}
-		});
-		
-		
-		
+		JPanel pnlSettings = new JPanel();		
 		JPanel pnlCollect = new JPanel();
 		JPanel pnlLocate = new JPanel();
 		
@@ -207,6 +249,56 @@ public class Main {
 		
 		tblLocatorConfiguration = new JTable();
 		scrollPane.setViewportView(tblLocatorConfiguration);
+		
+		JPanel panel = new JPanel();
+		panel.setBorder(new TitledBorder(null, "Locator Engine", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		panel.setBounds(435, 0, 165, 87);
+		pnlSettings.add(panel);
+		panel.setLayout(null);
+		
+		final JRadioButton rdbtnFingerPrintEngine = new JRadioButton("Finger Print Engine");
+		rdbtnFingerPrintEngine.addChangeListener(new ChangeListener() {
+			public void stateChanged(ChangeEvent arg0) {
+				if (rdbtnFingerPrintEngine.isSelected()){
+					locatorChoice = LocatorChoices.FINGERPRINT;
+					locator = Main.createLocator(locatorChoice);
+					Main.populateConfigurationTable(locator, tblLocatorConfiguration);
+				}
+			}
+		});
+		rdbtnFingerPrintEngine.setBounds(6, 21, 145, 23);
+		panel.add(rdbtnFingerPrintEngine);
+		
+		final JRadioButton rdbtnGammaEngine = new JRadioButton("Gamma Engine");
+		rdbtnGammaEngine.addChangeListener(new ChangeListener() {
+			public void stateChanged(ChangeEvent arg0) {
+				if (rdbtnGammaEngine.isSelected()){
+					locatorChoice = LocatorChoices.GAMMA;
+					locator = Main.createLocator(locatorChoice);				
+					Main.populateConfigurationTable(locator, tblLocatorConfiguration);
+				}
+			}
+		});
+		rdbtnGammaEngine.setBounds(6, 40, 145, 23);
+		panel.add(rdbtnGammaEngine);
+		
+		final JRadioButton rdbtnKewtonEngine = new JRadioButton("Kewton Engine");
+		rdbtnKewtonEngine.addChangeListener(new ChangeListener() {
+			public void stateChanged(ChangeEvent arg0) {
+				if (rdbtnKewtonEngine.isSelected()){
+					locatorChoice = LocatorChoices.KEWTON;
+					locator = Main.createLocator(locatorChoice);				
+					Main.populateConfigurationTable(locator, tblLocatorConfiguration);
+				}
+			}
+		});
+		
+		ButtonGroup engineBtnGroup = new ButtonGroup(); 
+		engineBtnGroup.add(rdbtnFingerPrintEngine);
+		engineBtnGroup.add(rdbtnGammaEngine);
+		engineBtnGroup.add(rdbtnKewtonEngine);
+		rdbtnKewtonEngine.setBounds(6, 59, 109, 23);
+		panel.add(rdbtnKewtonEngine);
 		tabbedPaneMain.addTab("Collect", pnlCollect);
 		pnlCollect.setLayout(null);
 		
@@ -223,44 +315,34 @@ public class Main {
 		lblPreviousLocationDescription.setBounds(11, 43, 177, 16);
 		pnlCollect.add(lblPreviousLocationDescription);
 		
-		btnStartCollecting = new JButton("Start Collecting");
+		btnStartCollecting = new ToggleButton("Start Collecting", "Stop Collecting");
 		btnStartCollecting.setBounds(11, 70, 264, 31);
 		pnlCollect.add(btnStartCollecting);
 		btnStartCollecting.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				try {					
-					if (btnStartCollecting.getText() == "Start Collecting"){
+					if (btnStartCollecting.getText() == btnStartCollecting.getFirstTitle()){
 						if (txtLocationDescription.getText().length() < 2){
-							JOptionPane.showMessageDialog(null,"Enter Location Description!!");
+							JOptionPane.showMessageDialog(null,"Please specify a file description.");
 							return;
 						}
-						String selectedPortName = cbxCOMPorts.getItemAt(cbxCOMPorts.getSelectedIndex()).toString();
-						CommPortIdentifier port = CommPortIdentifier.getPortIdentifier(selectedPortName);
-						commPort = port.open("Controller",2000);
-						if (commPort instanceof SerialPort){
-							serialPort = (SerialPort) commPort;
-							serialPort.setSerialPortParams(19200, 
-														   SerialPort.DATABITS_8, 
-														   SerialPort.STOPBITS_1, 
-														   SerialPort.PARITY_NONE);
-							InputStream in = serialPort.getInputStream();
-							OutputStream out = serialPort.getOutputStream();
-							collectorReader = new CollectorReader(in);
-							writer = new Writer(out);
-							writerThread = new Thread(collectorReader);
-							readerThread = new Thread(writer);
-							writerThread.start();
-							readerThread.start();							
-							
-							btnStartCollecting.setText("Stop Collecting");
-						}
-					}else if (btnStartCollecting.getText() == "Stop Collecting"){
+						openPort();
+						InputStream in = serialPort.getInputStream();
+						OutputStream out = serialPort.getOutputStream();						
+						collectorReader = new CollectorReader(in);
+						writer = new Writer(out);
+						writerThread = new Thread(collectorReader);
+						readerThread = new Thread(writer);
+						writerThread.start();
+						readerThread.start();						
+						btnStartCollecting.toggleTitle();						
+					}else if (btnStartCollecting.getText() == btnStartCollecting.getSecondTitle()){
 						writer.stop();
 						collectorReader.requestStop();
 						writerThread.join();
 						readerThread.join();
 						serialPort.close();
-						btnStartCollecting.setText("Start Collecting");
+						btnStartCollecting.toggleTitle();
 					}
 				} catch (NoSuchPortException e) {
 					//Caused by CommPortIdentifier.getPortIdentifier
@@ -278,7 +360,7 @@ public class Main {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			}
+			}		
 		});
 		btnStartCollecting.setToolTipText("Saves collected data into a file");
 		JPanel pnlCalibrate = new JPanel();
@@ -293,7 +375,7 @@ public class Main {
 		lblNewLabel_1.setBounds(98, 11, 46, 14);
 		pnlCalibrate.add(lblNewLabel_1);
 		
-		btnStartCalibrating = new JButton("Start Calibrating");
+		btnStartCalibrating = new ToggleButton("Start Calibrating", "Stop Calibrating");
 		btnStartCalibrating.setBounds(10, 144, 265, 31);
 		pnlCalibrate.add(btnStartCalibrating);
 		btnStartCalibrating.setToolTipText("Saves collected data into the database");
@@ -328,33 +410,24 @@ public class Main {
 		btnStartCalibrating.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				try {					
-					if (btnStartCalibrating.getText() == "Start Calibrating"){						
-						String selectedPortName = cbxCOMPorts.getItemAt(cbxCOMPorts.getSelectedIndex()).toString();
-						CommPortIdentifier port = CommPortIdentifier.getPortIdentifier(selectedPortName);
-						commPort = port.open("Controller",2000);
-						if (commPort instanceof SerialPort){
-							serialPort = (SerialPort) commPort;
-							serialPort.setSerialPortParams(19200, 
-														   SerialPort.DATABITS_8, 
-														   SerialPort.STOPBITS_1, 
-														   SerialPort.PARITY_NONE);
-							InputStream in = serialPort.getInputStream();
-							OutputStream out = serialPort.getOutputStream();
-							calibratorReader = new CalibratorReader(in);
-							writer = new Writer(out);
-							writerThread = new Thread(calibratorReader);
-							readerThread = new Thread(writer);
-							writerThread.start();
-							readerThread.start();							
-							btnStartCalibrating.setText("Stop Calibrating");
-						}
-					}else if (btnStartCalibrating.getText() == "Stop Calibrating"){
+					if (btnStartCalibrating.getText() == btnStartCalibrating.getFirstTitle()){						
+						openPort();
+						InputStream in = serialPort.getInputStream();
+						OutputStream out = serialPort.getOutputStream();
+						calibratorReader = new CalibratorReader(in);
+						writer = new Writer(out);
+						writerThread = new Thread(calibratorReader);
+						readerThread = new Thread(writer);
+						writerThread.start();
+						readerThread.start();							
+						btnStartCalibrating.toggleTitle();						
+					}else if (btnStartCalibrating.getText() == btnStartCalibrating.getSecondTitle()){
 						writer.stop();
 						calibratorReader.requestStop();
 						writerThread.join();
 						readerThread.join();
 						serialPort.close();
-						btnStartCalibrating.setText("Start Calibrating");
+						btnStartCalibrating.toggleTitle();
 					}
 				} catch (NoSuchPortException e) {
 					//Caused by CommPortIdentifier.getPortIdentifier
@@ -377,42 +450,32 @@ public class Main {
 		tabbedPaneMain.addTab("Locate", pnlLocate);
 		pnlLocate.setLayout(null);
 		
-		btnStartLocating = new JButton("Start Locating");
+		btnStartLocating = new ToggleButton("Start Locating", "Stop Locating");
 		btnStartLocating.setBounds(10, 11, 265, 31);
 		pnlLocate.add(btnStartLocating);
 		btnStartLocating.setToolTipText("Passes collected data to the Locating engine");
 		btnStartLocating.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {				
 				try {					
-					if (btnStartLocating.getText() == "Start Locating"){						
-						String selectedPortName = cbxCOMPorts.getItemAt(cbxCOMPorts.getSelectedIndex()).toString();
-						CommPortIdentifier port = CommPortIdentifier.getPortIdentifier(selectedPortName);
-						commPort = port.open("Controller",2000);
-						if (commPort instanceof SerialPort){
-							serialPort = (SerialPort) commPort;
-							serialPort.setSerialPortParams(19200, 
-														   SerialPort.DATABITS_8, 
-														   SerialPort.STOPBITS_1, 
-														   SerialPort.PARITY_NONE);
-							InputStream in = serialPort.getInputStream();
-							OutputStream out = serialPort.getOutputStream();
-							locatorReader = new LocatorReader(in);
-							writer = new Writer(out);
-							writerThread = new Thread(locatorReader);
-							readerThread = new Thread(writer);
-							writerThread.start();
-							readerThread.start();
-							
-							
-							btnStartLocating.setText("Stop Locating");
-						} 
-					}else if (btnStartLocating.getText() == "Stop Locating"){
+					if (btnStartLocating.getText() == btnStartLocating.getFirstTitle()){						
+						openPort();
+						InputStream in = serialPort.getInputStream();
+						OutputStream out = serialPort.getOutputStream();
+						locatorReader = new LocatorReader(in);
+						writer = new Writer(out);
+						writerThread = new Thread(locatorReader);
+						readerThread = new Thread(writer);
+						writerThread.start();
+						readerThread.start();					
+						btnStartLocating.toggleTitle();
+						
+					}else if (btnStartLocating.getText() == btnStartLocating.getSecondTitle()){
 						writer.stop();
 						locatorReader.requestStop();
 						writerThread.join();
 						readerThread.join();
 						serialPort.close();
-						btnStartLocating.setText("Start Locating");
+						btnStartLocating.toggleTitle();
 					}
 				} catch (NoSuchPortException e) {
 					//Caused by CommPortIdentifier.getPortIdentifier
@@ -713,7 +776,7 @@ public class Main {
 	 * 
 	 */
 	public class LocatorReader  extends PortReader implements Runnable{	
-		private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-mm-dd hh:mm:ss");
+		private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 		public LocatorReader(InputStream in){
 			super(in);
 		}		
@@ -744,8 +807,9 @@ public class Main {
 				
 				//Create locator instance, pass in calibration data, and 
 				//information about detector locations
+				//FingerPrint locator = new FingerPrint(calibrationData);
 				//LocationEngine locator = (LocationEngine)new KEngine();
-				LocationEngine locator = (LocationEngine)new GammaEngine();
+				LocationEngine locator = Main.createLocator(locatorChoice);
 				locator.learn(calibrationData, detectorLocations);				
 				
 				while (!done){				
