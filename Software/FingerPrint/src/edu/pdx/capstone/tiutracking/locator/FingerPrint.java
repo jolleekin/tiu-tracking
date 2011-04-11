@@ -1,6 +1,7 @@
 
 package edu.pdx.capstone.tiutracking.locator;
 import edu.pdx.capstone.tiutracking.common.*;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -14,7 +15,7 @@ import java.util.Hashtable;
  * location. These signals measured by the surrounding detector nodes.
  */
 
-public class FingerPrint 
+public class FingerPrint implements LocationEngine
 {	
 	/**
 	 * ID of this FingerPrint pattern, associated with the tag that used for calibration 
@@ -45,14 +46,18 @@ public class FingerPrint
 	 * This must be done before calling the locate() method.  
 	 * @param table: ArrayList of Transactions
 	 */
-	public FingerPrint(ArrayList<DataPacket> table)
+	public FingerPrint()
 	{
+		this.statmode = StatisticMode.MEAN;
+		this.dirty    = false;
+	}
+	
+	public void learn(ArrayList<DataPacket> table, Hashtable<Integer, Vector2D> detectorLocations){
 		this.statmode = StatisticMode.MEAN;
 		this.dirty    = false;
 		fingerPrintTable = table;
 		this.fill_stat(this.statmode);
 	}
-	
 	/**
 	 * Locating engine, receives a transaction with unknown location. 
 	 * The engine calculates Eucledean distance between current RSSI set
@@ -64,13 +69,13 @@ public class FingerPrint
 	 *               : "mean", "median", "mode"
 	 * @return true if success, false otherwise
 	 */
-	public boolean locate(DataPacket t, StatisticMode mode)	
+	public void locate(DataPacket t)	
 	{
-		if (this.statmode != mode)
+		/*if (this.statmode != mode)
 		{
 			this.statmode = mode;
 			this.fill_stat(mode);
-		}
+		}*/
 		
 		Hashtable<Double,Integer> ED_list = new Hashtable<Double,Integer>(); // list of Euclidean distance
 		ArrayList<Double> ED_mirror = new ArrayList<Double>(); // mirror list of the EU_list
@@ -108,7 +113,7 @@ public class FingerPrint
 			}
 		}
 		//t.location.set(this.fingerPrintTable.get(t.blockId).location);
-		return true;
+		//return true;
 		
 		//return false;
 	}
@@ -150,6 +155,18 @@ public class FingerPrint
 				}
 			}
 		}
+	}
+
+	@Override
+	public ArrayList<ConfigurationParam> getConfiguration() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void onConfigurationChanged() {
+		// TODO Auto-generated method stub
+		
 	}
 	
 }
