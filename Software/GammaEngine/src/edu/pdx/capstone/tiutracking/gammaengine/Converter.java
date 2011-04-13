@@ -11,8 +11,7 @@ public class Converter {
 		}
 	}
 		
-	public static void digitalToAnalog(double[] output, Vector2D v) {
-		int offset = 5;
+	public static void digitalToAnalog(double[] output, Vector2D v, int offset) {
 		for (int i = 0; i < output.length / 2; i++) {
 			v.x += (Math.pow(2, i)) * output[i];
 			v.y += (Math.pow(2, i)) * output[i + offset];
