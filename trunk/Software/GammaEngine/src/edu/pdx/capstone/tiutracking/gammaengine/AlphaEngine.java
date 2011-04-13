@@ -132,7 +132,7 @@ public class AlphaEngine implements LocationEngine {
 		}
 
 		Vector2D result = new Vector2D();
-		Converter.digitalToAnalog(output, result);
+		Converter.digitalToAnalog(output, result, OUT_RES);
 		dataPacket.location.set(result.x, result.y);
 
 	}
