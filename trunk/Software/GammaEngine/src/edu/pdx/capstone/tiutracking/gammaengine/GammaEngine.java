@@ -22,7 +22,6 @@ import edu.pdx.capstone.tiutracking.common.Vector2D;
 
 public class GammaEngine implements LocationEngine {
 
-	private final static int TRAINSET_SIZE = 10;
 	private final static int INPUT_NUM = 24;
 	private final static int IN_RESOL = 8;
 	private final static int OUTPUT_NUM = 10;
@@ -156,17 +155,16 @@ public class GammaEngine implements LocationEngine {
 		/* Return location (x, y)
 		 * by modifying dataPacket.location
 		 */
-		double[] output = gammaNet.getOutputAsArray();
+		double[] output = myNet.getOutputAsArray();
 		for (int j = 0; j < OUTPUT_NUM; j++) {
 			if (output[j] > LOGIC_HIGH) {
 				output[j] = 1.0; //Logic high
 			}
-			else if (output[j] < LOGIC_LOW) {
+			else {
 				output[j] = 0.0; //Logic low
-			} else {
-				output[j] = 0.5; //Undefined
 			}
 		}
+			
 		Vector2D result = new Vector2D();
 		
 		digitalToAnalog(output, result);
