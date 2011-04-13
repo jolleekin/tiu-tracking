@@ -35,7 +35,8 @@ public class BetaEngine implements LocationEngine {
 		PARAM_INPUT_RES = 5,
 		PARAM_OUTPUT_RES = 6,
 		PARAM_LOGIC_HIGH = 7,
-		PARAM_STATISTIC_MODE = 8;
+		PARAM_STATISTIC_MODE = 8,
+		PARAM_ACCURACY = 9;
 
 	// Declare configuration parameters
 	private NeuralNetwork gammaNet;
@@ -47,7 +48,8 @@ public class BetaEngine implements LocationEngine {
 		hiddenNumber = 50,
 		inputRes = 8,
 		outputRes = 5,
-		trainSize = 0;
+		trainSize = 0,
+		accuracy = 1;
 	
 	private static double logicHigh = 0.7;
 	private StatisticMode statMode = StatisticMode.MEDIAN;
@@ -63,7 +65,7 @@ public class BetaEngine implements LocationEngine {
 		//If file does not exist, initialize default configuration
 		if (configuration == null) {
 			
-			configuration = new ArrayList<ConfigurationParam>(9);
+			configuration = new ArrayList<ConfigurationParam>(10);
 			
 			configuration.add(new ConfigurationParam(
 					"Learning Rate",
@@ -101,7 +103,10 @@ public class BetaEngine implements LocationEngine {
 					"Statistic Mode",
 					"Statistic Mode which is used in learn/recall process",
 					statMode, null, null));
-			
+			configuration.add(new ConfigurationParam(
+					"Accuracy",
+					"Accuracy of location (x,y)",
+					accuracy, 1, 5));
 		}
 	}
 	
@@ -120,6 +125,7 @@ public class BetaEngine implements LocationEngine {
 		outputRes = (Integer) configuration.get(PARAM_OUTPUT_RES).getValue();
 		logicHigh = (Integer) configuration.get(PARAM_LOGIC_HIGH).getValue();
 		statMode = (StatisticMode) configuration.get(PARAM_STATISTIC_MODE).getValue();
+		accuracy = (Integer) configuration.get(PARAM_ACCURACY).getValue();
 	
 		System.out.println("Load successfully!");
 		System.out.println("Learning Rate: " + learningRate);
@@ -216,7 +222,7 @@ public class BetaEngine implements LocationEngine {
 
 		Vector2D result = new Vector2D();
 		Converter.digitalToAnalog(output, result, outputRes);
-		dataPacket.location.set(result.x, result.y);
+		dataPacket.location.set(result.x * accuracy, result.y * accuracy);
 
 	}
 
@@ -228,6 +234,18 @@ public class BetaEngine implements LocationEngine {
 
 	@Override
 	public void onConfigurationChanged() {
+		//Update parameters
+		System.out.println("Update parameters...");
+		learningRate = (Double) configuration.get(PARAM_LEARNING_RATE).getValue();
+		maxIteration = (Integer) configuration.get(PARAM_MAX_ITERATION).getValue();
+		inputNumber = (Integer) configuration.get(PARAM_INPUT_NUMBER).getValue();
+		outputNumber = (Integer)configuration.get(PARAM_OUTPUT_NUMBER).getValue();
+		hiddenNumber = (Integer) configuration.get(PARAM_HIDDEN_NUMBER).getValue();
+		inputRes = (Integer) configuration.get(PARAM_INPUT_RES).getValue();
+		outputRes = (Integer) configuration.get(PARAM_OUTPUT_RES).getValue();
+		logicHigh = (Integer) configuration.get(PARAM_LOGIC_HIGH).getValue();
+		statMode = (StatisticMode) configuration.get(PARAM_STATISTIC_MODE).getValue();
+		accuracy = (Integer) configuration.get(PARAM_ACCURACY).getValue();
 		
 		//Save configuration
 		ObjectFiler.save(CONFIG_FILE_NAME, configuration);
@@ -259,8 +277,8 @@ public class BetaEngine implements LocationEngine {
 		double[] xBuffer = new double[outputRes];
 		double[] yBuffer = new double[outputRes];
 
-		Converter.analogToDigital((int) refLocation.x, xBuffer);
-		Converter.analogToDigital((int) refLocation.y, yBuffer);
+		Converter.analogToDigital(((int) refLocation.x)/accuracy, xBuffer);
+		Converter.analogToDigital(((int) refLocation.y)/accuracy, yBuffer);
 
 		for (int i = 0; i < outputRes; i++) {
 			outputTarget[i] = xBuffer[i];
