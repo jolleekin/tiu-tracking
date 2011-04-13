@@ -1,0 +1,256 @@
+body {
+	height: 100%;
+	background-color: #D8DCE0;
+	/* /* for non-webkit browsers *
+	background: -webkit-gradient(linear, left top, left bottom, from(#FFFFFF), color-stop(0.1, #D8DCE0), to(#D8DCE0));
+	-webkit-background-origin: 0;
+	-webkit-background-size: 1000px;
+	
+	background: #D8DCE0 url(images/M6.png) no-repeat center;*/
+	font: normal 13px/1.8em Calibri, Sans-serif;
+}
+
+h1 {
+	padding: 15px;
+	color: #2177F2;
+	font-style: georgia;
+}
+
+.ClearLine {
+	width: 100%;
+	height: 1px;
+	background-color: #F5F5F5;
+}
+
+.Panel {
+	background-color: #FFFFFF;
+	border-radius: 6px;
+	box-shadow: rgba(0, 0, 0, 0.2) 2px 2px 2px 2px;
+}
+
+#headerPanel {
+	width: 1020px;
+	height: 80px;
+	margin-top: 30px;
+}
+
+#logo {
+}
+
+#innerSearchPanel {
+	display: inline-block;
+	width: auto;
+	height: 17px;
+	margin: 10px 0px 5px 0px;
+	padding: 2px 6px 2px 8px;
+	border: 1px solid #A0A0A0;
+	border-radius: 13px;
+	background-color: #FFFFFF;
+	box-shadow: rgba(255, 255, 255, 1) 1px 1px 1px 0px;			
+}
+
+#searchBox {
+	float: left;
+	width: auto;
+	height: 17px;
+	border: none;
+	outline: none;
+}
+
+#searchIcon {
+	float: left;
+	width: 17px;
+	height: 17px;
+	cursor: pointer;
+	margin-top: 1px;
+	background: url(images/SearchIcon.png) no-repeat top;
+}
+
+#contentPanel {
+	width: 1030px;
+	display: inline-block;
+}
+
+#leftPanel {
+	float: left;
+	width: 220px;
+}
+
+.PanelHeader {
+	width: 100%;
+	height: 25px;
+	color: white;
+	font-size: 14px;
+	font-weight: bold;
+	vertical-align: middle;
+	border-radius: 6px 6px 0px 0px;
+	background-color: #508ACD;	/* for non-webkit browsers */
+	background: -webkit-gradient(linear, left top, left bottom, from(#61A7F2), to(#508ACD));
+	-webkit-background-origin: 0;
+	-webkit-background-size: 100%;
+}
+
+#assetListPanel, #assetInfoListPanel {
+	height: 510px;/*250px;*/
+	margin: 10px 5px;
+}
+
+.BasePanel {
+	background-color: rgb(200, 226, 252);
+}
+
+#assetListPanelBody {
+	height: 430px;/*170px;*/
+	overflow-y: auto;
+	text-align: left;
+}
+
+
+.ListItem {
+	float: left;
+	width: 98%;
+	height: 23px;
+	cursor: default;
+	text-align: left;
+	border-bottom: 1px solid #F5F5F5;
+	margin-left: 1%;
+	border-radius: 3px 3px 5px 5px;
+}
+
+.ListItemIndex {
+	float: left;
+	width: 34px;
+	text-align: right;
+	padding-right: 10px;
+	border-right: 1px solid #D5D5D5;
+}
+
+.ListItemText {
+	float: left;
+	padding-left: 10px;
+}
+
+.HoverItem {
+	background-color: #F5F5F5;
+	background: -webkit-gradient(linear, left top, left bottom, from(#F2F4F6), to(#E8EAF6));
+	/*background: -webkit-gradient(linear, left top, left bottom, from(#F5F5F5), color-stop(0.3, #F8F8F8), to(#F0F0F0));*/
+	-webkit-background-origin: 0;
+	-webkit-background-size: 100%;
+}
+
+.ActiveItem {
+	background-color: #D0FFE0;
+	/*background: -webkit-gradient(linear, left top, left bottom, from(#CDFDDD), color-stop(0.3, #D0FFE0), to(#C8F8D8));*/
+	background: -webkit-gradient(linear, left top, left bottom, from(#DEEFFF), to(#BEDFFF));
+	-webkit-background-origin: 0;
+	-webkit-background-size: 100%;
+}
+/*
+#assetId {
+	text-align: left;
+	padding-left: 30px;
+	border-bottom: 1px solid #F5F5F5;
+	background-color: rgb(200, 226, 252);
+}
+*/
+#mainPanel {
+	float: left;
+	width: 800px;
+	height: 510px;
+	margin: 10px 5px;
+}
+
+#canvas1 {
+	border-radius: 0px 0px 6px 6px;
+}
+
+.InfoBoxContent {
+	padding: 5px 10px;
+	position: relative;
+	border-radius: 5px;
+	border: 1px solid grey;
+	background-color: white;
+	box-shadow: rgba(0, 0, 0, 0.4) 7px 7px 4px 4px;
+}
+
+.Pink {
+	position: relative;
+	top: -1px;
+	z-index: 101;
+}
+
+.AbsPos {
+	position: absolute;
+	z-index: 100;
+	width: auto;
+	height: auto;
+}
+
+.ShowOnReady {
+	visibility: hidden;
+}
+
+button {
+	float: left;
+	margin: 0;
+	display: inline-block;
+	padding: 5px;
+	color: #3C3C3D;
+	text-shadow: 1px 1px 0 #FFFFFF;
+	background: #ECECEC url('images/ButtonBackground.png') 0 0 no-repeat;
+	overflow: visible;
+	text-decoration: none;
+	border: 1px solid #CACACA;
+	border-radius: 2px;
+	outline: none;
+}
+
+button.Primary {
+	font-weight: bold;
+}
+
+button:hover {
+	color: #FFFFFF;
+	border-color: #388AD4;
+	background-color: #2D7DC5;
+	background-position: 0 -40px;
+	text-decoration: none;
+	text-shadow: -1px -1px 0 rgba(0,0,0,0.3);
+}
+
+button.Pill {
+	padding: 5px 10px;
+	border-radius: 19px;
+}
+
+button.LeftPill {
+	padding: 5px 10px;
+	border-radius: 19px 0px 0px 19px;
+}
+
+button.RightPill {
+	padding: 5px 10px;
+	border-radius: 0px 19px 19px 0px;
+}
+
+button.Middle {
+	padding: 5px 10px;
+	border-radius: 0px;
+}
+
+button.TextIcon {
+	font-weight: 900;
+	font: 16px "Courier New";
+}
+
+button.Translucent {
+	opacity: 0.8;
+	transition: opacity 200ms ease-in 0s;
+	-o-transition: opacity 200ms ease-in 0s;
+	-moz-transition: opacity 200ms ease-in 0s;
+	-webkit-transition: opacity 200ms ease-in 0s;
+}
+
+button.Translucent:hover {
+	opacity: 1;
+}

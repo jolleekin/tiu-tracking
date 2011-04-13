@@ -1,0 +1,1161 @@
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+		<title>Asset Tracking System</title>
+		
+		<link rel="shortcut icon" href= "favicon.ico">
+		
+		<script type="application/x-javascript">
+			
+			/* Global functions */
+			
+			/** A nice alias for document.getElementById() */
+			function $(idStr) {
+				return document.getElementById(idStr);
+			}
+			
+			function isZero(x, epsilon) {
+				return Math.abs(x) < epsilon;
+			}
+			
+			function isInRange(x, min, max) {
+				return (x >= min && x <= max);
+			}
+			
+			function ensureRange(x, min, max) {
+				if (x < min) return min;
+				if (x > max) return max;
+				return x;
+			}
+			
+			
+			/* class Vector2D */
+			
+			function Vector2D() {
+				this.x = 0;
+				this.y = 0;
+			}
+			
+			Vector2D.prototype = {
+				assign: function (other) {
+					this.x = other.x;
+					this.y = other.y;
+				},
+				
+				multAddSet: function (v1, v2, s) {
+					this.x = v1.x + v2.x * s;
+					this.y = v1.y + v2.y * s;
+				},
+				
+				multSubSet: function (v1, v2, s) {
+					this.x = v1.x - v2.x * s;
+					this.y = v1.y - v2.y * s;
+				},
+				
+				equals: function (other, epsilon) {
+					return	isZero(this.x - other.x, epsilon) &&
+							isZero(this.y - other.y, epsilon);
+				},
+				
+				length: function () {
+					return Math.sqrt(this.x*this.x + this.y*this.y);
+				},
+
+				squaredLength: function () {
+					return this.x*this.x + this.y*this.y;
+				},
+
+				distanceTo: function (other) {
+					var dx = this.x - other.x;
+					var dy = this.y - other.y;
+					return Math.sqrt(dx*dx + dy*dy);
+				},
+
+				lerp: function (v1, v2, factor) {
+					this.x = v1.x + factor * (v2.x - v1.x);
+					this.y = v1.y + factor * (v2.y - v1.y);
+				},
+				
+				add: function (other) {
+					this.x += other.x;
+					this.y += other.y;
+				},
+				
+				sub: function (other) {
+					this.x -= other.x;
+					this.y -= other.y;
+				},
+				
+				mult: function (c) {
+					this.x *= c;
+					this.y *= c;
+				},
+				
+				dotProduct: function (other) {
+					return this.x * other.x + this.y * other.y;
+				},
+				
+				toString: function () {
+					return '(X: ' + this.x.toFixed(1) + ', Y: ' + this.y.toFixed(1) + ')';
+				}
+			};
+			
+			// Useful constants
+			
+			ZeroVector2D = new Vector2D();
+			
+			/** class SceneManager */
+			
+			var METTER_TO_PIXEL = 272;	// Number of pixels equivalent to 1m
+			var CIRCLE_RADIUS = 25;
+			
+			function SceneManager(aCanvas) {
+				
+				
+				/* Enum TComponentState */
+				var csLoading = 0;
+				var csPostLoading = 1;
+				var csLoaded  = 2;	
+			
+				var self = this;
+				var componentState = csLoading;
+				
+				var mapImage = null;	// DOM image element
+				var mapCenter = new Vector2D();
+				var mapBackgroundColor = '#DDDDFF';
+				
+				var frontCanvas;
+				var frontContext;
+				var frontCanvasCenter = new Vector2D();
+				
+				var backCanvas;
+				var backContext;
+				
+				var mask;
+				
+				var objects;				// Array of all objects to be drawn
+				var objectIndex;			// Index of the object currently selected
+				var hoverObjectIndex;		// The object that is currently under the mouse
+
+				var fitScale = 0;			// The scale at which the scene fits perfectly inside the mapCanvas
+				var minScale = 0.1;
+				var maxScale = 2;		
+				
+				var mouse = {
+					position: new Vector2D(),
+					velocity: new Vector2D(),
+					transformedPosition: new Vector2D(),
+					isLeftButtonDown: false
+				};
+
+				var scene = {
+					position: new Vector2D(),
+					targetPosition: new Vector2D(),
+					scale: 1,						// Current scale of the scene
+					targetScale: 1,					// Target scale of the scene
+					totalScale: METTER_TO_PIXEL		// Scale * METTER_TO_PIXEL
+				};
+								
+				var FRAME_INTERVAL = 40;
+				var LERP_FACTOR = FRAME_INTERVAL * 0.004; /*some unit / ms^2 */;
+				
+				var timerHandle;		// Timer handle, used for scene animation
+			
+			/* Initialization */
+				if (aCanvas && aCanvas.getContext) {
+					frontContext = aCanvas.getContext('2d');
+					frontContext.fillStyle = mapBackgroundColor;
+					frontContext.font = '20px sans-serif';
+					frontCanvas = aCanvas;
+					
+					frontCanvasCenter.x = frontCanvas.width * 0.5;
+					frontCanvasCenter.y = frontCanvas.height * 0.5;
+					
+					backCanvas = document.createElement('canvas');
+					backCanvas.width = frontCanvas.width;
+					backCanvas.height = frontCanvas.height;
+					backContext = backCanvas.getContext('2d');
+					
+					// Create an transparent mask right on top of the canvas to capture events.
+					mask = document.createElement('div');
+					mask.id = 'mask';
+					mask.style.position = 'absolute';
+					mask.style.zIndex = 1;
+					// By default, the mask is transparent, but we need to explicity set it or IE will complain :D
+					mask.style.backgroundColor = 'rgba(255, 255, 255, 0)';
+					document.body.appendChild(mask);
+				} else {
+					throw 'Canvas undefined or not supported';
+				}
+			
+			/* public */
+				
+				/**	
+				 *	Event onChanged()
+				 *	This event happens when new object is selected
+				 *	Implement a handler to capture the event
+				 */
+				 this.onChanged = null;
+				
+				/**
+				 * Event onReady()
+				 * Happens when the scene is ready (all objects loaded, entrance animation done)
+				 * Implement a handler to capture the event
+				 */
+				this.onReady = null;
+				
+				/**
+				 *	This function must be called after the map is loaded
+				 */
+				this.show = function () {
+					if (componentState == csLoading) {
+						componentState = csPostLoading;
+
+						mapCenter.x = mapImage.width * 0.5;
+						mapCenter.y = mapImage.height * 0.5;
+
+						scene.scale = 0.001;
+						scene.targetScale = fitScale;
+						scene.totalScale = scene.scale * METTER_TO_PIXEL;
+
+						scene.position.multSubSet(frontCanvasCenter, mapCenter, scene.scale);
+						scene.targetPosition.multSubSet(frontCanvasCenter, mapCenter, scene.targetScale);
+						
+						startAnimation();
+					}
+				}
+				
+				/**
+				 *	Returns the index of the currently selected object
+				 */
+				this.getObjectIndex = function () {
+					return objectIndex;
+				}
+				
+				/**
+				 *	Sets the map image
+				 *
+				 *	@param	aImage	DOM image element used as the map
+				 */
+				this.setMapImage = function (aImage) {
+					if (mapImage != aImage) {
+						mapImage = aImage;
+						recalculateScales();
+					}
+				}
+				
+				function recalculateScales() {
+					if (mapImage) {
+						var sw = frontCanvas.width  / mapImage.width;
+						var sh = frontCanvas.height / mapImage.height;
+						minScale = fitScale = Math.min(sw, sh) * 0.95;
+					} else {
+						minScale = fitScale = 1;
+					}				
+				}
+				
+				this.setSize = function (w, h) {
+					var sw = w / frontCanvas.width;
+					var sh = h / frontCanvas.height;
+					var s = sw;
+					if (Math.abs(s - 1) < Math.abs(sh - 1))
+						s = sh;
+					//TODO: Improve
+					scene.position.x *= sw;
+					scene.position.y *= sh;
+					scene.targetPosition.assign(scene.position);
+					scene.targetScale = scene.scale = scene.scale * s;
+					scene.totalScale  = scene.scale * METTER_TO_PIXEL;
+					
+					frontCanvas.width  = backCanvas.width  = w;
+					frontCanvas.height = backCanvas.height = h;
+					
+					frontCanvas.style.width  = w + 'px';
+					frontCanvas.style.height = h + 'px';
+					
+					frontCanvasCenter.x = w * 0.5;
+					frontCanvasCenter.y = h * 0.5;
+					
+					mask.style.left = frontCanvas.style.left;
+					mask.style.top  = frontCanvas.style.top;
+					mask.style.width = frontCanvas.style.width;
+					mask.style.height = frontCanvas.style.height;
+					
+					recalculateScales();
+					
+					self.invalidate();
+				}
+				
+				/**
+				 *	Check if a point is visible. The coordinates of the point is
+				 *	relative to the top left corner of the mapCanvas.
+				 */
+				this.isPointVisible = function (point) {
+					return	isInRange(point.x, 0, frontCanvas.offsetWidth) &&
+							isInRange(point.y, 0, frontCanvas.offsetHeight)
+				}
+
+				/**
+				 *	Sets the active object. If the object is out of range, it will be brought the center.
+				 *
+				 *	@param	{Integer}	aIndex				Index of the desired object. -1 means none
+				 *
+				 */
+				this.setObjectIndex = function (aIndex) {
+					if (objectIndex != aIndex) {
+						objectIndex = aIndex;
+						if (self.onChanged)
+							self.onChanged();
+						
+						if (objectIndex > -1) {
+							var pos = objects[objectIndex].getPosition();
+							if (self.isPointVisible(sceneToCanvas(pos)))
+								self.invalidate();
+							else {
+								// Brings the object to the center.
+								scene.targetPosition.multSubSet(frontCanvasCenter, pos, scene.scale * METTER_TO_PIXEL);
+								startAnimation();
+							}
+						} else {
+							self.invalidate();
+						}
+					}
+				}
+				
+				this.setHoverObjectIndex = function (aIndex) {
+					if (hoverObjectIndex != aIndex) {
+						hoverObjectIndex = aIndex;
+						if (hoverObjectIndex > -1)
+							currentAssetInfoBox.setContent(objects[hoverObjectIndex].toHtml());
+						self.invalidate();
+					}
+				}
+				
+				/**
+				 *	Attaches a list of objects to be drawn. Every object must support
+				 *	getPosition, draw(context) functions.
+				 *
+				 *	@param	objs	Array	The object list to be drawn
+				 */
+				this.setObjects = function (objs) {
+					objects = objs ? objs : [];
+				}
+								
+				/**
+				 *	Redraws the map
+				 */
+				this.invalidate = function () {
+					if (componentState == csLoading) {
+						frontContext.fillRect(0, 0, frontCanvas.width, frontCanvas.height);
+						frontContext.fillStyle = 'white';
+						frontContext.fillText('Loading...', frontCanvasCenter.x - 50, frontCanvasCenter.y);
+						frontContext.fillStyle = mapBackgroundColor;
+						return;
+					}
+
+					if (timerHandle) {
+						var animationDone = true;
+						if (scene.position.equals(scene.targetPosition, 1) == false) {
+							animationDone = false;
+							scene.position.lerp(scene.position, scene.targetPosition, LERP_FACTOR);
+						}
+						
+						var ds = scene.targetScale - scene.scale;
+						if (isZero(ds, 0.001) == false) {
+							animationDone = false;
+							scene.scale += ds * LERP_FACTOR;
+							scene.totalScale = scene.scale * METTER_TO_PIXEL;
+						}
+						
+						if (animationDone) {
+							stopAnimation();
+							if (componentState == csPostLoading) {
+								componentState = csLoaded;
+														
+								mask.onmousedown = maskMouseDown;
+								mask.onmousemove = maskMouseMove;
+								mask.onmouseup = maskMouseUp;
+								mask.onmousewheel = maskMouseWheel;
+								mask.ondblclick = canvasDoubleClick;
+								mask.addEventListener('DOMMouseScroll', maskMouseWheel, false);	// Firefox shit
+								
+								if (self.onReady)
+									self.onReady();
+							}
+						}
+					}
+					
+					// Clear the mapCanvas
+					backContext.setTransform(1, 0, 0, 1, 0, 0);
+					backContext.fillStyle = mapBackgroundColor;
+					backContext.fillRect(0, 0, frontCanvas.width, frontCanvas.height);
+					
+					// Draw the map image
+					backContext.setTransform(1, 0, 0, 1, scene.position.x, scene.position.y);
+					backContext.drawImage(mapImage, 0, 0, mapImage.width * scene.scale, mapImage.height * scene.scale);
+					
+					// Draw the objects
+					var showActiveAssetInfo = false;
+					var showCurrentAssetInfo = false;
+					var dx = markerIcons.width * 0.5;
+					for (var i = objects.length - 1; i >= 0; i--) {
+						var pos = objects[i].getPosition();
+						var x = pos.x * scene.totalScale;
+						var y = pos.y * scene.totalScale;
+						var xx = x - dx;
+						backContext.drawImage(markerShadow, xx, y - markerShadow.height);
+						backContext.drawImage(markerIcons, 0, 0, markerIcons.width, 35, xx, y - 35, markerIcons.width, 35);
+						
+						if (i == objectIndex) {
+							backContext.fillStyle = 'rgba(255, 55, 55, 0.5)';
+							backContext.beginPath();
+							backContext.arc(x, y - CIRCLE_RADIUS * 0.5, CIRCLE_RADIUS, 0, Math.PI * 2, true);
+							backContext.fill();
+							
+							pos = sceneToCanvas(pos);
+							activeAssetInfoBox.setPosition(frontCanvas.offsetLeft + pos.x, frontCanvas.offsetTop  + pos.y - CIRCLE_RADIUS);
+							showActiveAssetInfo = true;
+							
+						} else if (i == hoverObjectIndex) {
+						
+							backContext.fillStyle = 'rgba(55, 255, 100, 0.5)';
+							backContext.beginPath();
+							backContext.arc(x, y - CIRCLE_RADIUS * 0.5, CIRCLE_RADIUS, 0, Math.PI * 2, true);
+							backContext.fill();
+							
+							pos = sceneToCanvas(pos);
+							currentAssetInfoBox.setPosition(frontCanvas.offsetLeft + pos.x, frontCanvas.offsetTop  + pos.y - CIRCLE_RADIUS);
+							showCurrentAssetInfo = true;
+						}
+					}			
+					
+					// Show the map to the world
+					frontContext.drawImage(backCanvas, 0, 0);
+					
+					// Update the position of the info box
+					activeAssetInfoBox.setVisible(showActiveAssetInfo);
+					currentAssetInfoBox.setVisible(showCurrentAssetInfo);
+				}
+				
+				/**
+				 *	
+				 *
+				 *	@param	{Double}	percent	Zoom percent compared to the current scale.
+				 *								> 1 means zoom in
+				 *								< 1 means zoom out
+				 *								= 0 means zoom fit
+				 *								< 0 means error (ignored fore now)
+				 *	@param	{Event}		event	An object containing layerX and layerY, i.e. mouse's position w.r.t. the screen.
+				 *								null means mapCanvas's center
+				 */
+				this.zoom = function (event, percent) {
+					if (percent < 0)
+						return;
+
+					updateMousePosition(event, false);
+					if (percent > 0) {
+						scene.targetScale = ensureRange(scene.scale * percent, minScale, maxScale);
+						scene.targetPosition.lerp(mouse.position, scene.position, scene.targetScale / scene.scale);
+					} else {
+						scene.targetScale = fitScale;
+						scene.targetPosition.multSubSet(mouse.position, mapCenter, scene.targetScale);
+					}
+					
+					if ( !(scene.position.equals(scene.targetPosition, 1) && isZero(scene.scale - scene.targetScale, 0.001)) )
+						startAnimation();
+				}
+				
+				function sceneToCanvas(pos) {
+					var result = new Vector2D();
+					result.multAddSet(scene.position, pos, scene.totalScale);
+					return result;
+				}
+				
+			/* private functions */
+				
+				function startAnimation() {
+					if (timerHandle == null)
+						timerHandle = setInterval(self.invalidate, FRAME_INTERVAL);
+				}
+				
+				function stopAnimation() {
+					if (timerHandle) {
+						clearInterval(timerHandle);
+						timerHandle = null;
+					}
+				}
+				
+				function updateMousePosition(event, updateVelocity) {
+					if (event) {
+						var x  = event.layerX;// - frontCanvas.offsetLeft;
+						var y  = event.layerY;// - frontCanvas.offsetTop;
+						if (updateVelocity) {
+							mouse.velocity.x = x - mouse.position.x;
+							mouse.velocity.y = y - mouse.position.y;
+						}
+						mouse.position.x = x;
+						mouse.position.y = y;
+					} else {
+						mouse.position.assign(frontCanvasCenter);
+					}
+					var s = 1 / scene.totalScale;
+					mouse.transformedPosition.x = (mouse.position.x - scene.position.x) * s;
+					mouse.transformedPosition.y = (mouse.position.y - scene.position.y) * s;
+				}
+				
+				function getHoveredObjectIndex() {
+					for (var i = objects.length - 1; i >= 0; i--) {
+						var obj = objects[i];
+						var pos = sceneToCanvas(obj.getPosition());
+						pos.y -= CIRCLE_RADIUS * 0.5;
+						if (pos.distanceTo(mouse.position) < CIRCLE_RADIUS)
+							return i;
+					}
+					return -1;
+				}
+			
+				/**
+				 *	Notes:
+				 *	<this> in the following event handlers refers to the mapCanvas
+				 */
+				 
+				function maskMouseDown(event) {
+					if (event.button == 0) {
+						stopAnimation();
+						mouse.isLeftButtonDown = true;
+						updateMousePosition(event, true);
+						event.preventDefault();
+					}
+				}
+				
+				function maskMouseUp(event) {
+					if (event.button == 0) {
+						this.style.cursor = 'default';
+						mouse.isLeftButtonDown = false;
+						updateMousePosition(event, false);
+						
+						if ( !mouse.velocity.equals(ZeroVector2D, 2) ) {
+							scene.targetPosition.multAddSet(scene.position, mouse.velocity, 2);
+							startAnimation();
+						} else {
+							self.setObjectIndex(getHoveredObjectIndex());
+						}
+					}
+				}
+				
+				function maskMouseMove(event) {		
+					updateMousePosition(event, true);
+					
+					if (mouse.isLeftButtonDown) {
+						this.style.cursor = 'url(http://maps.gstatic.com/intl/en_us/mapfiles/closedhand_8_8.cur), move';
+						scene.targetPosition.add(mouse.velocity);
+						scene.position.assign(scene.targetPosition);
+						self.invalidate();
+					} else {
+						self.setHoverObjectIndex(getHoveredObjectIndex());
+					}
+					
+					event.preventDefault();
+				}
+				
+				function maskMouseWheel(event) {
+					var delta = event.detail ? -event.detail * 0.1 : event.wheelDelta * 0.0025;
+					var percent = 1 + delta;
+					if (delta < 0)
+						percent = 1 / (1 - delta);
+
+					self.zoom(event, percent);
+					event.preventDefault();
+				}
+				
+				function canvasDoubleClick(event) {
+					self.zoom(null, 1.6);
+				}
+			}
+			
+			/** class CellList */
+			
+			/*	CellList constructor
+				@param	aContainer	The DOM node to which will hold this list
+			*/
+			function CellList(aContainer) {
+				if (aContainer == null) {
+					alert('Cannot attach this list to a null element');
+					return;
+				}
+				
+			/* private */
+				var self = this;
+				
+				var container = aContainer;
+								
+				var items;			// An array of items contained in this list, the items must have a toString() function
+				var matchString;	// If an item whose propertyName contains matchString, the item will be
+									// displayed. Setting this to null will cause all items to be displayed
+				
+				var itemIndex = -1;	// Index of the selected item
+				var hoverItemIndex = -1;
+				
+			/* public */
+				
+				this.matchStringStyle = 'color: blue; font-weight: bold;';
+				
+				/**	onChanged()
+				 *	This event happens when another item is selected
+				 *	Implement this handler to capture the event
+				 */
+				this.onChanged = null;
+
+				/**
+				 *	onHoverChanged()
+				 *	Happens when the temporary selected item has been changed.
+				 */
+				this.onHoverChanged = null;
+				
+				this.getItemIndex = function () {
+					return itemIndex;
+				}
+				
+				this.getHoverItemIndex = function () {
+					return hoverItemIndex;
+				}
+
+				/**
+				 *	
+				 *	@param	aItems	{Array}	An array of items to be displayed
+				 *
+				 *	@param	reverse	{Boolean}	If true, the order of the items is reversed
+				 */
+				this.setItems = function (aItems, reverse) {
+					if (items != aItems) {
+						items = aItems;
+						
+						// Rebuild the list
+						var s = '';
+						var high = -1;
+						if (items) {
+							high = items.length - 1;
+							if (reverse) {
+								for (var i = high; i >= 0; i--)
+									s += generateIndex(high - i, items[i].toString());
+							} else {
+								for (var i = 0; i <= high; i++)
+									s += generateIndex(i, items[i].toString());
+							}
+						}
+						container.innerHTML = s;
+						for (var i = high; i >= 0; i--) {
+							var node = container.childNodes[i];
+							node.onclick = itemClick;
+							node.onmouseout = itemMouseOut;
+							node.onmouseover = itemMouseOver;
+						}
+					}
+				}
+				
+				function generateIndex(idx, text) {
+					return '<div id="' + idx + '" class="ListItem">' + '<div class="ListItemIndex">' + (idx + 1) + '</div><div class="ListItemText">' + text + '</div></div>';
+				}
+				
+				this.setMatchString = function (aMatchStr) {
+					if (matchString != aMatchStr) {
+						matchString = aMatchStr;
+						self.invalidate();
+						
+						// Set the first visible item to be hovered.
+						for (var i = 0; i < container.childNodes.length; i++)
+							if (container.childNodes[i].style.display != 'none') {
+								self.setHoverItemIndex(i);
+								return;
+							}
+					}
+				}
+				
+				/**
+				 *	Scrolls the list to show an item if it is invisible.
+				 *
+				 *	@param	item	{DOM Div}	item to be shown.
+				 */
+				// item: DOM div element
+				function showItem(item) {
+					var t = item.offsetTop - container.offsetTop;
+					if (t < container.scrollTop)
+						container.scrollTop = t;
+					else {
+						t += item.offsetHeight - container.clientHeight;
+						if (t > container.scrollTop)
+							container.scrollTop += t;
+					}
+				}
+					
+				this.setItemIndex = function (aIndex) {
+					if (itemIndex != aIndex) {
+						if (itemIndex > -1)
+							container.childNodes[itemIndex].className = 'ListItem';
+						
+						if (aIndex > -1) {
+							var item = container.childNodes[aIndex];
+							item.className = 'ListItem ActiveItem';
+							showItem(item);
+						}
+						
+						itemIndex = aIndex;
+						
+						if (self.onChanged)
+							self.onChanged();
+					}
+				}
+
+				this.setHoverItemIndex = function (aIndex) {
+					if (hoverItemIndex != aIndex) {
+						if (hoverItemIndex > -1) {
+							var item = container.childNodes[hoverItemIndex];
+							if (item.classList)
+								item.classList.remove('HoverItem');
+							else
+								if (item.id != itemIndex)
+									item.className = 'ListItem';
+								else
+									item.className = 'ListItem ActiveItem';
+						}
+						if (aIndex > -1) {
+							var item = container.childNodes[aIndex];
+							if (item.classList)
+								item.classList.add('HoverItem');
+							else
+								if (item.id != itemIndex)
+									item.className = 'ListItem HoverItem';
+							showItem(item);
+						}
+						hoverItemIndex = aIndex;
+						if (self.onHoverChanged) {
+							self.onHoverChanged();
+						}
+					}
+				}
+				
+				// Refresh the list currently displayed
+				this.invalidate = function () {
+					//TODO
+					self.setHoverItemIndex(-1);
+					var showAll = (matchString == null) || (matchString == '');
+					var tagBegin = '<span style="' + self.matchStringStyle + '">';
+					var tagEnd = '</span>';
+					var s = tagBegin + matchString + tagEnd;
+					var matched = false;
+					
+					for (var i = container.childNodes.length - 1; i >= 0; i--) {
+						var node = container.childNodes[i];
+						var text = items[i].toString();
+						var textNode = node.childNodes[1];
+						textNode.innerHTML = text;
+						
+						if (showAll == false) {
+							if (text.indexOf(matchString) > -1) {
+								textNode.innerHTML = text.replace(matchString, s);
+								node.style.display = 'block';
+								matched = true;
+							} else {
+								node.style.display = 'none';
+							}
+						} else {
+							node.style.display = 'block';
+							matched = true;
+						}
+					}
+					
+					//TODO
+					// Show/hide the list according to matched.
+				}
+				
+				/**
+				 *	Select the next displayed item.
+				 *
+				 *	@param	direction	{1, -1}	1 = down, -1 = up.
+				 */
+				this.nextItem = function (direction) {
+					var nodes = container.childNodes;
+					var i = -1;
+					
+					if (hoverItemIndex >= 0 && nodes[hoverItemIndex].style.display != 'none')
+						i = hoverItemIndex;
+					
+					var j = i;
+					do {
+						i += direction;
+						if (i < 0)
+							i = nodes.length - 1;
+						else if (i == nodes.length)
+							i = 0;
+					} while ((i != j) && (nodes[i].style.display == 'none'));
+
+					self.setHoverItemIndex(i);
+				}				
+				
+				function itemClick(event) {
+					self.setItemIndex(this.id);
+					event.preventDefault();
+				}
+				
+				function itemMouseOut(event) {
+					self.setHoverItemIndex(-1);
+					event.preventDefault();
+				}
+				
+				function itemMouseOver(event) {
+					self.setHoverItemIndex(this.id);
+					event.preventDefault();
+				}
+
+			}
+			
+			/** class AssetInfoItem */
+			
+			function AssetInfoItem(timestamp, x, y, battery) {
+				this.timestamp = timestamp;
+				this.location = new Vector2D();
+				this.location.x = x;
+				this.location.y = y;
+				this.battery = battery;
+			}
+			
+			/** class Asset */
+
+			function Asset(id) {
+			/* public properties */
+				
+				this.id = id;
+				
+				// An array of AssetInfoItem. The first element is the latest.
+				this.infoList = [];
+				
+				// An index into the infoList.
+				// This is needed because the user may want to see the information
+				// of an asset at some time in the past while other tags are displayed
+				// with their latest location.
+				this.historyIndex = 0;
+			}
+			
+			Asset.prototype = {
+				getPosition: function () {
+					return this.infoList[this.historyIndex].location;
+				},
+				
+				toString: function () {
+					return this.id.toString();
+				},
+				
+				toHtml: function () {
+					return '<table cellspacing="0"><tr><td style="font-weight: bold;">Name</td><td>:</td><td style="color: blue;">' + this.id + '</td></tr>' + '<tr><td style="font-weight: bold;">Battery</td><td>:</td><td style="color: blue;">' +this.infoList[this.historyIndex].battery + '%</td></tr></table>';
+				}
+			};
+			
+			function InfoBox() {
+				var box = document.createElement('div');
+				box.className = 'InfoBox ShowOnReady AbsPos';
+				box.innerHTML = '<div class="InfoBoxContent"></div><img class="Pink" src="images/Pink.png" />';
+
+				document.body.appendChild(box);
+				
+				var content = box.childNodes[0];
+				var pink = box.childNodes[1];
+				var cx = (box.offsetWidth - pink.width) * 0.5;
+				var cy = box.offsetHeight;
+			
+				this.setVisible = function (value) {
+					box.style.visibility = value ? 'visible' : 'hidden';
+				}
+				
+				this.setContent = function (html) {
+					content.innerHTML = html;
+					cx = (box.offsetWidth - pink.width) * 0.5;
+					cy = box.offsetHeight;
+					pink.style.left = cx + 'px';
+				}
+				
+				this.setPosition = function (x, y) {
+					box.style.left = (x - cx) + 'px';
+					box.style.top  = (y - cy) + 'px';
+				}
+			}
+			
+			/** Global variables. Some of these are references to DOM elements. */
+			
+			var map;					// Tracking area
+			var mapCanvas;
+			var mapToolbar;
+
+			var floorImage;				// DOM image element that holds the floor image
+			var markerIcons;			// DOM image element that holds the spot marker icons, stolen from Google Maps :D
+			var markerShadow;			// DOM image element that holds the shadow of the spot marker icons
+
+			var headerPanel;
+			var logo;
+			var searchPanel;
+			var searchBox;
+			
+			var assetListPanel;
+			var assets = [];			// An array that stores the information of all tracked asset tags
+			var activeAsset;			// The asset that is currently selected
+			var activeAssetInfoBox;		// An InfoBox object which shows the active asset's info
+			var currentAssetInfoBox;	// An InfoBox object which shows the currently selected asset's info
+
+			var ajax;					// XMLHttpRequest object to communicate with the server
+			var updateTimerHandle;
+
+			/** Global constants */
+			
+			var UPDATE_INTERVAL = 10000;	// The interval that the web app requests new info of the tags, in ms
+			
+			function updateAssetInfo() {
+				//ajax.open('GET', 'AssetInfo.php?id=', true);
+				//ajax.send();
+				for (var i = 0; i < 10; i++) {
+					var asset = new Asset(randomId());
+					asset.infoList.push(new AssetInfoItem('2011-04-09 12:08:00', Math.random() * 12, Math.random() * 7, 100));
+					assets[i] = asset;
+				}
+				
+				assetList.setItems(assets, false);
+				map.invalidate();
+			}
+			
+			function randomId() {
+				var result = '';
+				var hexDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
+				for (var i = 0; i < 2; i++) {
+					for (var j = 0; j < 4 + i; j++) {
+						result += hexDigits[Math.floor(Math.random() * 15)];
+					}
+					result += '-';
+				}
+				for (var j = 0; j < 6; j++) {
+					result += hexDigits[Math.floor(Math.random() * 15)];
+				}
+				return result;
+			}
+
+			/* body onresize event handler */
+			onresize = function () {
+				// Resize the map canvas
+				map.setSize(window.innerWidth, window.innerHeight - headerPanel.offsetHeight);
+
+				// Adjust the position of the map toolbar
+				mapToolbar.style.left = (window.innerWidth - mapToolbar.offsetWidth - 10) + 'px';
+				mapToolbar.style.top  = (window.innerHeight - mapToolbar.offsetHeight - 10) + 'px';
+
+				// Adjust the position of the asset list panel
+				assetListPanel.style.left = searchPanel.offsetLeft + 'px';
+				assetListPanel.style.top = searchPanel.offsetTop + searchPanel.offsetHeight + 'px';
+
+			}
+			
+			/* body onload event handler */
+			onload = function () {
+				// Get references of various UI elements, just to support Firefox shit.
+				mapCanvas = $('mapCanvas');
+				headerPanel = $('headerPanel');
+				logo = $('logo');
+				searchPanel = $('searchPanel');
+				searchBox = $('searchBox');
+				mapToolbar = $('mapToolbar');
+				assetListPanel = $('assetListPanel');
+				
+				// If the browser does not support HTML5 Canvas, show a waring message and get done :D
+				if (mapCanvas.getContext == null) {
+					var el = document.createElement('div');			
+					el.innerHTML = '<div style="position: absolute; left: 0px; top: 0px; width: ' + window.innerWidth +
+					'px; height: ' + window.innerHeight + 'px; z-index: 1000; background-color: rgba(0, 0, 0, 0.5); text-align: center; font-size: 20px; color: white; vertical-align: middle;"><div style="height: ' + window.innerHeight * 0.4 + 'px;"></div>This web app requires HTML5 Canvas. Please upgrade your browser.</div>';
+					document.body.appendChild(el);
+					return;
+				}
+				
+				logo.style.marginTop = (headerPanel.offsetHeight - logo.offsetHeight) * 0.4 + 'px';
+				assetListPanel.style.width = searchPanel.style.width;
+				
+				// Adjust the height of the map canvas to fit the window.
+				mapCanvas.style.top = headerPanel.offsetHeight + 'px';
+
+				// Load images and icons
+				
+				floorImage = new Image();
+				floorImage.src = 'images/FloorPlan.jpg';
+				floorImage.onload = function () {
+					map.setMapImage(this);
+					map.show();
+				}
+				
+				markerIcons = new Image();
+				markerIcons.src = 'images/Markers.png';
+				
+				markerShadow = new Image();
+				markerShadow.src = 'images/MarkerShadow.png';
+				
+				// Initialize the map
+				map = new SceneManager(mapCanvas);
+				map.setObjects(assets);
+				map.onReady = function () {
+					mapToolbar.style.visibility = 'visible';
+				}
+				map.onChanged = function () {
+					var index = this.getObjectIndex();
+					if (index > -1) {
+						activeAsset = assets[index];
+						activeAssetInfoBox.setContent(activeAsset.toHtml());
+					} else {
+						activeAsset = null;
+					}
+					assetList.setItemIndex(index);
+				}
+				
+				// Initialize the asset list
+				assetList = new CellList($('assetListPanelBody'));
+				assetList.onChanged = function () {
+					var index = this.getItemIndex();
+					if (index > -1) {
+						activeAsset = assets[index];
+						activeAssetInfoBox.setContent(activeAsset.toHtml());
+					} else {
+						activeAsset = null;
+					}
+					map.setObjectIndex(index);
+					assetListPanel.style.visibility = 'hidden';
+				}
+				assetList.onHoverChanged = function () {
+					map.setHoverObjectIndex(this.getHoverItemIndex());
+				}
+				
+				activeAssetInfoBox = new InfoBox();
+				currentAssetInfoBox = new InfoBox();
+
+				// Add event handlers to the search box
+				
+				searchBox.onkeyup = function (event) {
+					assetListPanel.style.visibility = 'visible';
+					switch (event.keyCode) {
+						case 13:	/* Enter */
+							assetList.setItemIndex(assetList.getHoverItemIndex());
+							break;
+						case 38:	/* Up */
+						case 40:
+							assetList.nextItem(event.keyCode - 39);
+							break;
+						case 27:	/* Esc */
+							this.value = '';
+							assetListPanel.style.visibility = 'hidden';
+							break;
+						default:
+							assetList.setMatchString(this.value.toUpperCase());
+					}
+				}
+
+				searchBox.onfocus = function (event) {
+					searchPanel.style.borderColor = 'green';
+					assetListPanel.style.visibility = 'visible';
+				}
+				
+				searchBox.onblur = function (event) {
+					searchPanel.style.borderColor = '#A0A0A0';
+				}
+				
+				// Add click handler to the search icon
+				$('searchIcon').onclick = function (event) {
+					searchBox.focus();
+					searchBox.select();
+				}
+				
+				// Initialize the AJAX object
+				ajax = new XMLHttpRequest();
+				ajax.onreadystatechange = function () {
+					if (this.readyState == 4 && this.status == 200) {
+						/*
+							Data returned from AssetInfo.php have the following format:
+							[
+								{
+									id: string,
+									iL:
+									[
+										{
+											t: string,
+											x: float,
+											y: float,
+											b: byte
+										},
+										...
+										{
+											t: string,
+											x: float,
+											y: float,
+											b: byte
+										}
+									]
+								},
+								...
+								{}	// Dummy element
+							]
+						*/
+						var tempAssetList = eval(this.responseText);
+						for (var i = tempAssetList.length - 2; i >= 0; i--) {
+							var item = tempAssetList[i].iL[0];
+							if (assets[i] == null) {
+								assets[i] = new Asset();
+								assets[i].id = tempAssetList[i].id;
+								assets[i].infoList[0] = new AssetInfoItem(item.t, item.x, item.y, item.b);
+							} else {
+								var a = assets[i].infoList[0];
+								a.timestamp = item.t;
+								a.location.x = item.x;
+								a.location.y = item.y;
+								a.battery = item.b;
+								/*
+								assets[i].infoList.push(new AssetInfoItem(item.t, item.x, item.y, item.b));
+								assets[i].historyIndex++;
+								*/
+							}
+						}
+						
+						tempAssetList = null;
+						
+						assetList.setItems(assets, false);
+
+						map.invalidate();
+					}
+				}
+
+				this.onresize();
+				updateAssetInfo();
+				//updateTimerHandle = setInterval(updateAssetInfo, UPDATE_INTERVAL);
+			}
+		</script>
+		
+		<link href="TIUTrackingMobile.css" rel="stylesheet" type="text/css"/>
+	</head>
+
+	<body>
+		<div id="headerPanel" class="Float AbsPos">
+			<center>
+			<div>
+				<div id="logo">Asset Tracking System</div>
+				<div id="searchPanel">
+					<input type="textbox" id="searchBox" placeholder="Search for an asset"/><div id="searchIcon"></div>
+				</div>
+			</div>
+			</center>
+		</div>
+		
+		<canvas id="mapCanvas" class="AbsPos"></canvas>
+		
+		<div id="assetListPanel" class="AbsPos ShowOnReady">
+			<div id="assetListPanelBody"></div>
+		</div>
+		<div id="statusBar" class="AbsPos ShowOnReady"></div>
+		<div id="mapToolbar" class="Float AbsPos ShowOnReady">
+			<button id="zoomOutButton" class="LeftPill TextIcon Translucent" onclick="map.zoom(null, 0.625);">-</button>
+			<button id="zoomFitButton" class="Middle TextIcon Translucent" onclick="map.zoom(null, 0);">[]</button>
+			<button id="zoomInButton" class="RightPill TextIcon Translucent" onclick="map.zoom(null, 1.6);">+</button>
+		</div>
+	</body>
+</html>
