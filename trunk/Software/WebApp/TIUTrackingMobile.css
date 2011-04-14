@@ -8,6 +8,14 @@ body {
 	font: normal 13px/1.8em Calibri, Sans-serif;
 }
 
+.TabHeader {
+	
+}
+
+.TabHeader .TabItem {
+	display: inline;
+}
+
 .Float {
 	box-shadow: rgba(0, 0, 0, 0.3) 2px 2px 2px 2px;
 }
@@ -16,16 +24,9 @@ body {
 	vertical-align: middle;
 }
 
-#logo {
-	width: 500px;
-	height: 100%;
-	text-align: center;
-	font-size: 24px;
-}
-
 #searchPanel {
 	display: inline-block;
-	width: 210px;
+	width: 190px;
 	height: 17px;
 	margin: 10px 0px 5px 0px;
 	padding: 2px 6px 2px 8px;
@@ -37,7 +38,6 @@ body {
 
 #searchBox {
 	float: left;
-	width: 175px;
 	height: 17px;
 	border: none;
 	outline: none;
@@ -65,18 +65,6 @@ body {
 	z-index: 3;
 }
 
-#assetListPanel {
-	display: block;
-	width: 200px;
-	max-height: 200px;/*250px;*/
-	padding: 5px;
-	text-align: left;
-	background-color: #FFFFFF;
-	border-radius: 6px;
-	box-shadow: rgba(0, 0, 0, 0.2) 3px 3px 4px 4px;
-	z-index: 3;
-}
-
 #assetListPanelBody {
 	max-height: 190px;
 	overflow-y: auto;
@@ -94,10 +82,21 @@ body {
 	z-index: 3;
 }
 
-.ListItem {
+.TCellList {
+	display: block;
+	width: 200px;
+	padding: 5px;
+	overflow-y: auto;
+	text-align: left;
+	background-color: #FFFFFF;
+	border-radius: 6px;
+	box-shadow: rgba(0, 0, 0, 0.2) 3px 3px 4px 4px;
+	z-index: 3;
+}
+
+.TListItem, .TFocusedItem, .TSelectedItem {
 	float: left;
 	width: 98%;
-	height: 23px;
 	cursor: default;
 	text-align: left;
 	border-bottom: 1px solid #F5F5F5;
@@ -105,7 +104,7 @@ body {
 	border-radius: 3px 3px 5px 5px;
 }
 
-.ListItemIndex {
+.TListItemIndex {
 	float: left;
 	width: 34px;
 	text-align: right;
@@ -113,12 +112,12 @@ body {
 	border-right: 1px solid #D5D5D5;
 }
 
-.ListItemText {
+.TListItemText {
 	float: left;
 	padding-left: 10px;
 }
 
-.HoverItem {
+.TFocusedItem {
 	background-color: #F5F5F5;
 	background: -webkit-gradient(linear, left top, left bottom, from(#F2F4F6), to(#E8EAF6));
 	/*background: -webkit-gradient(linear, left top, left bottom, from(#F5F5F5), color-stop(0.3, #F8F8F8), to(#F0F0F0));*/
@@ -126,12 +125,17 @@ body {
 	-webkit-background-size: 100%;
 }
 
-.ActiveItem {
+.TSelectedItem {
 	background-color: #D0FFE0;
 	/*background: -webkit-gradient(linear, left top, left bottom, from(#CDFDDD), color-stop(0.3, #D0FFE0), to(#C8F8D8));*/
 	background: -webkit-gradient(linear, left top, left bottom, from(#DEEFFF), to(#BEDFFF));
 	-webkit-background-origin: 0;
 	-webkit-background-size: 100%;
+}
+
+.TMatchedString {
+	color: Blue;
+	font-weight: bold;
 }
 
 .InfoBox {
