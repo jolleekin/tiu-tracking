@@ -10,6 +10,27 @@
 		
 		<script type="application/x-javascript">
 			
+			/* Global constant */
+			
+			var SPixel = 'px';
+			
+			var SNone = 'none';
+			var SBlock = 'block';
+			
+			var SHidden = 'hidden';
+			var SVisible = 'visible';
+			
+			var SFocus = 'focus';
+			var SBlur = 'blur';
+			var SKeyDown = 'keydown';
+			var SKeyUp = 'keyup';
+			
+			var SClick = 'click';
+			var SMouseDown = 'mousedown';
+			var SMouseMove = 'mousemove';
+			var SMouseUp = 'mouseup';
+			var SMouseWheel = 'mousewheel';
+			
 			/* Global functions */
 			
 			/** A nice alias for document.getElementById() */
@@ -238,11 +259,11 @@
 				/**
 				 *	Sets the map image
 				 *
-				 *	@param	aImage	DOM image element used as the map
+				 *	@param	value	{HTMLImageElement}	The image used as the map
 				 */
-				this.setMapImage = function (aImage) {
-					if (mapImage != aImage) {
-						mapImage = aImage;
+				this.setMapImage = function (value) {
+					if (mapImage != value) {
+						mapImage = value;
 						recalculateScales();
 					}
 				}
@@ -273,8 +294,8 @@
 					frontCanvas.width  = backCanvas.width  = w;
 					frontCanvas.height = backCanvas.height = h;
 					
-					frontCanvas.style.width  = w + 'px';
-					frontCanvas.style.height = h + 'px';
+					frontCanvas.style.width  = w + SPixel;
+					frontCanvas.style.height = h + SPixel;
 					
 					frontCanvasCenter.x = w * 0.5;
 					frontCanvasCenter.y = h * 0.5;
@@ -301,12 +322,12 @@
 				/**
 				 *	Sets the active object. If the object is out of range, it will be brought the center.
 				 *
-				 *	@param	{Integer}	aIndex				Index of the desired object. -1 means none
+				 *	@param	{Integer}	value				Index of the desired object. -1 means none
 				 *
 				 */
-				this.setObjectIndex = function (aIndex) {
-					if (objectIndex != aIndex) {
-						objectIndex = aIndex;
+				this.setObjectIndex = function (value) {
+					if (objectIndex != value) {
+						objectIndex = value;
 						if (self.onChanged)
 							self.onChanged();
 						
@@ -325,9 +346,9 @@
 					}
 				}
 				
-				this.setHoverObjectIndex = function (aIndex) {
-					if (hoverObjectIndex != aIndex) {
-						hoverObjectIndex = aIndex;
+				this.setHoverObjectIndex = function (value) {
+					if (hoverObjectIndex != value) {
+						hoverObjectIndex = value;
 						if (hoverObjectIndex > -1)
 							currentAssetInfoBox.setContent(objects[hoverObjectIndex].toHtml());
 						self.invalidate();
@@ -576,32 +597,52 @@
 				}
 			}
 			
-			/** class CellList */
-			
-			/*	CellList constructor
-				@param	aContainer	The DOM node to which will hold this list
-			*/
-			function CellList(aContainer) {
-				if (aContainer == null) {
-					alert('Cannot attach this list to a null element');
-					return;
+			function newElement(tagName, className) {
+				var result = document.createElement(tagName);
+				if (result) {
+					result.className = className;
+					return result;
 				}
-				
-			/* private */
+				return null;
+			}
+			
+			/** class TCellList */
+			
+			/**
+			 *	TCellList
+			 *
+			 *	@class	TCellList	The list itself.
+			 *	@class	TListItem	The items in the list.
+			 *	@class	TFocusedItem	The currently focused item.
+			 *	@class	TSelectedItem	The currently selected item.
+			 *	@class	TMatchedString	The string in any item that matches a given string.
+			 */
+			function TCellList() {
+
+			/* private common */
 				var self = this;
+				var element = newElement('div', 'TCellList');
+			
+			/* private */
+				var TListItem = 'TListItem';
+				var TFocusedItem = 'TFocusedItem';
+				var TSelectedItem = 'TSelectedItem';
+				var TMatchedString = 'TMatchedString';
 				
-				var container = aContainer;
-								
-				var items;			// An array of items contained in this list, the items must have a toString() function
-				var matchString;	// If an item whose propertyName contains matchString, the item will be
-									// displayed. Setting this to null will cause all items to be displayed
-				
-				var itemIndex = -1;	// Index of the selected item
-				var hoverItemIndex = -1;
+				var items;				// An array of items contained in this list, the items must have a toString() function
+				var matchString = '';	// If an item whose propertyName contains matchString, the item will be
+										// displayed. Setting this to null will cause all items to be displayed
+				var selectedIndex = -1;	// Index of the selected item
+				var focusedIndex = -1;
+				var attachedTextBox = null;	// HTMLInputElement box associated with this list.
+				var isNavigationKey = false;	// True if key = up, down, enter, tab
+				var isFocused = false;
 				
 			/* public */
-				
-				this.matchStringStyle = 'color: blue; font-weight: bold;';
+				this.autoHide = false;
+				this.caseSensitive = false;
+				this.showIndex = false;
+				this.maxDisplayedItemCount = 5;
 				
 				/**	onChanged()
 				 *	This event happens when another item is selected
@@ -615,14 +656,26 @@
 				 */
 				this.onHoverChanged = null;
 				
-				this.getItemIndex = function () {
-					return itemIndex;
+				this.getElement = function () {
+					return element;
 				}
 				
-				this.getHoverItemIndex = function () {
-					return hoverItemIndex;
+				this.getSelectedIndex = function () {
+					return selectedIndex;
+				}
+				
+				this.getFocusedIndex = function () {
+					return focusedIndex;
 				}
 
+				this.getItems = function () {
+					return items;
+				}
+				
+				this.getMaxDisplayedItemCount = function () {
+					return maxDisplayedItemCount;
+				}
+				
 				/**
 				 *	
 				 *	@param	aItems	{Array}	An array of items to be displayed
@@ -640,97 +693,116 @@
 							high = items.length - 1;
 							if (reverse) {
 								for (var i = high; i >= 0; i--)
-									s += generateIndex(high - i, items[i].toString());
+									s += newItemString(high - i, items[i].toString());
 							} else {
 								for (var i = 0; i <= high; i++)
-									s += generateIndex(i, items[i].toString());
+									s += newItemString(i, items[i].toString());
 							}
 						}
-						container.innerHTML = s;
+						element.innerHTML = s;
 						for (var i = high; i >= 0; i--) {
-							var node = container.childNodes[i];
-							node.onclick = itemClick;
-							node.onmouseout = itemMouseOut;
-							node.onmouseover = itemMouseOver;
+							s = element.childNodes[i];
+							s.onclick = itemClick;
+							s.onmouseout = itemMouseOut;
+							s.onmouseover = itemMouseOver;
 						}
+						element.style.maxHeight = s.offsetHeight * self.maxDisplayedItemCount + SPixel;
 					}
 				}
 				
-				function generateIndex(idx, text) {
-					return '<div id="' + idx + '" class="ListItem">' + '<div class="ListItemIndex">' + (idx + 1) + '</div><div class="ListItemText">' + text + '</div></div>';
+				function newItemString(idx, text) {
+					var idxElement = '';
+					if (self.showIndex)
+						idxElement = '<div class="TListItemIndex">' + (idx + 1) + '</div>';
+					return '<div id="' + idx + '" class="TListItem">' + idxElement + '<div class="TListItemText">' + text + '</div></div>';
 				}
 				
-				this.setMatchString = function (aMatchStr) {
-					if (matchString != aMatchStr) {
-						matchString = aMatchStr;
-						self.invalidate();
-						
-						// Set the first visible item to be hovered.
-						for (var i = 0; i < container.childNodes.length; i++)
-							if (container.childNodes[i].style.display != 'none') {
-								self.setHoverItemIndex(i);
-								return;
-							}
+				this.attachTextBox = function (textBox) {
+					if (attachedTextBox != textBox) {
+						if (attachedTextBox) {
+							attachedTextBox.removeEventListener(SFocus, show, false);
+							attachedTextBox.removeEventListener(SBlur, onBlur, false);
+							attachedTextBox.removeEventListener(SKeyDown, textBoxKeyDown, false);
+							attachedTextBox.removeEventListener(SKeyUp, textBoxKeyUp, false);
+							document.addEventListener(SClick, documentClick, false);
+						}
+						if (textBox) {
+							textBox.addEventListener(SFocus, show, false);
+							textBox.addEventListener(SBlur, onBlur, false);
+							textBox.addEventListener(SKeyDown, textBoxKeyDown, false);
+							textBox.addEventListener(SKeyUp, textBoxKeyUp, false);
+							document.addEventListener(SClick, documentClick, false);
+						}
+						attachedTextBox = textBox;
 					}
 				}
 				
 				/**
+				 *	Sets the match string. The list will be automatically invalidated
+				 *	if the new value is different from the current value.
+				 *
+				 *	@param	value	{String}	The new match string.
+				 */
+				this.setMatchString = function (value) {
+					if (matchString != value) {
+						matchString = value;
+						self.invalidate();
+					}
+				}
+
+				/**
 				 *	Scrolls the list to show an item if it is invisible.
 				 *
-				 *	@param	item	{DOM Div}	item to be shown.
+				 *	@param	item	{HTMLDivElement}	The item to be shown.
 				 */
 				// item: DOM div element
 				function showItem(item) {
-					var t = item.offsetTop - container.offsetTop;
-					if (t < container.scrollTop)
-						container.scrollTop = t;
+					var t = item.offsetTop - element.offsetTop;
+					if (t < element.scrollTop)
+						element.scrollTop = t;
 					else {
-						t += item.offsetHeight - container.clientHeight;
-						if (t > container.scrollTop)
-							container.scrollTop += t;
+						t += item.offsetHeight - element.clientHeight;
+						if (t > element.scrollTop)
+							element.scrollTop += t;
 					}
 				}
 					
-				this.setItemIndex = function (aIndex) {
-					if (itemIndex != aIndex) {
-						if (itemIndex > -1)
-							container.childNodes[itemIndex].className = 'ListItem';
+				this.setSelectedIndex = function (value) {
+					if (selectedIndex != value) {
+						if (selectedIndex > -1)
+							element.childNodes[selectedIndex].className = TListItem;
 						
-						if (aIndex > -1) {
-							var item = container.childNodes[aIndex];
-							item.className = 'ListItem ActiveItem';
+						if (value > -1) {
+							var item = element.childNodes[value];
+							item.className = TSelectedItem;
 							showItem(item);
 						}
 						
-						itemIndex = aIndex;
+						selectedIndex = value;
 						
 						if (self.onChanged)
 							self.onChanged();
 					}
 				}
 
-				this.setHoverItemIndex = function (aIndex) {
-					if (hoverItemIndex != aIndex) {
-						if (hoverItemIndex > -1) {
-							var item = container.childNodes[hoverItemIndex];
-							if (item.classList)
-								item.classList.remove('HoverItem');
+				this.setFocusedIndex = function (value) {
+					if (focusedIndex != value) {
+						if (focusedIndex > -1) {
+							var item = element.childNodes[focusedIndex];
+							if (item.id != selectedIndex)
+								item.className = TListItem;
 							else
-								if (item.id != itemIndex)
-									item.className = 'ListItem';
-								else
-									item.className = 'ListItem ActiveItem';
+								item.className = TSelectedItem;
 						}
-						if (aIndex > -1) {
-							var item = container.childNodes[aIndex];
-							if (item.classList)
-								item.classList.add('HoverItem');
-							else
-								if (item.id != itemIndex)
-									item.className = 'ListItem HoverItem';
+						
+						if (value > -1) {
+							var item = element.childNodes[value];
+							if (item.id != selectedIndex)
+								item.className = TFocusedItem;
 							showItem(item);
 						}
-						hoverItemIndex = aIndex;
+						
+						focusedIndex = value;
 						if (self.onHoverChanged) {
 							self.onHoverChanged();
 						}
@@ -739,77 +811,156 @@
 				
 				// Refresh the list currently displayed
 				this.invalidate = function () {
-					//TODO
-					self.setHoverItemIndex(-1);
-					var showAll = (matchString == null) || (matchString == '');
-					var tagBegin = '<span style="' + self.matchStringStyle + '">';
-					var tagEnd = '</span>';
-					var s = tagBegin + matchString + tagEnd;
-					var matched = false;
+					self.setFocusedIndex(-1);
 					
-					for (var i = container.childNodes.length - 1; i >= 0; i--) {
-						var node = container.childNodes[i];
+					var showAll = (matchString == null) || (matchString == '');
+					var tagBegin = '<span class="' + TMatchedString + '">';
+					var tagEnd = '</span>';
+					
+					var anyMatched = false;
+					var modifier = self.caseSensitive ? '' : 'i';
+					var regExp = new RegExp(matchString, modifier);
+					var matches;
+					
+					var idx = 0;
+					if (self.showIndex)
+						idx = 1;
+					
+					for (var i = element.childNodes.length - 1; i >= 0; i--) {
 						var text = items[i].toString();
-						var textNode = node.childNodes[1];
+						var node = element.childNodes[i];
+
+						var textNode = node.childNodes[idx];
 						textNode.innerHTML = text;
 						
 						if (showAll == false) {
-							if (text.indexOf(matchString) > -1) {
-								textNode.innerHTML = text.replace(matchString, s);
-								node.style.display = 'block';
-								matched = true;
+							matches = text.match(regExp);
+							if (matches) {
+								textNode.innerHTML = text.replace(matches[0], tagBegin + matches[0] + tagEnd);
+								node.style.display = SBlock;
+								anyMatched = true;
 							} else {
-								node.style.display = 'none';
+								node.style.display = SNone;
 							}
 						} else {
-							node.style.display = 'block';
-							matched = true;
+							node.style.display = SBlock;
+							anyMatched = true;
 						}
 					}
 					
-					//TODO
-					// Show/hide the list according to matched.
+					if (!anyMatched && self.autoHide)
+						element.style.visibility = SHidden;
 				}
 				
 				/**
-				 *	Select the next displayed item.
+				 *	Focus the next displayed item.
 				 *
-				 *	@param	direction	{1, -1}	1 = down, -1 = up.
+				 *	@param	direction	> 0 means down, else up.
 				 */
-				this.nextItem = function (direction) {
-					var nodes = container.childNodes;
+				this.focusNextItem = function (direction) {
+					var nodes = element.childNodes;
+					
 					var i = -1;
-					
-					if (hoverItemIndex >= 0 && nodes[hoverItemIndex].style.display != 'none')
-						i = hoverItemIndex;
-					
-					var j = i;
-					do {
-						i += direction;
-						if (i < 0)
-							i = nodes.length - 1;
-						else if (i == nodes.length)
-							i = 0;
-					} while ((i != j) && (nodes[i].style.display == 'none'));
+					if (focusedIndex >= 0 && nodes[focusedIndex].style.display != SNone)
+						i = focusedIndex;
+										
+					if (direction > 0) {
+						do {
+							i++;
+						} while ((i < nodes.length) && (nodes[i].style.display == SNone));
+						if (i == nodes.length)
+							i = -1;
+					} else {
+						if (i == -1)
+							i = nodes.length;
+						do {
+							i--;
+						} while ((i > -1) && (nodes[i].style.display == SNone));
+					}
 
-					self.setHoverItemIndex(i);
+					self.setFocusedIndex(i);
 				}				
 				
 				function itemClick(event) {
-					self.setItemIndex(this.id);
-					event.preventDefault();
+					isFocused = true;
+					self.setSelectedIndex(this.id);
+					//TODO: Remove
+					if (attachedTextBox)
+						attachedTextBox.value = items[selectedIndex].toString();
+					//event.preventDefault();
 				}
 				
 				function itemMouseOut(event) {
-					self.setHoverItemIndex(-1);
+					self.setFocusedIndex(-1);
 					event.preventDefault();
 				}
 				
 				function itemMouseOver(event) {
-					self.setHoverItemIndex(this.id);
+					self.setFocusedIndex(this.id);
 					event.preventDefault();
 				}
-
+				
+				function show() {
+					isFocused = true;
+					if (self.autoHide)
+						element.style.visibility = SVisible;
+				}
+				
+				function onBlur() {
+					if (self.autoHide)
+						setTimeout(hide, 200);
+				}
+				
+				function hide() {
+					if (!isFocused)
+						element.style.visibility = SHidden;
+				}
+				
+				// Printable Keys: 32..126
+				function textBoxKeyDown(event) {
+					show();
+					isNavigationKey = false;
+					switch (event.keyCode) {
+						case 13:	/* Enter */
+							self.setSelectedIndex(focusedIndex);
+							onBlur();
+							break;
+						case 38:	/* Up   */
+						case 40:	/* Down */
+							self.focusNextItem(event.keyCode - 39);
+							if (focusedIndex > -1)
+								this.value = items[focusedIndex].toString();
+							else
+								this.value = matchString;
+							break;
+						case 9:		/* Tab */
+						case 27:	/* Esc */
+							this.value = '';
+							onBlur();
+							break;
+						default:
+							self.setMatchString(this.value);
+							return;
+					}
+					isNavigationKey = true;
+				}
+				
+				function textBoxKeyUp(event) {
+					if (!isNavigationKey)
+						self.setMatchString(this.value);
+				}
+				
+				function documentClick(event) {
+					if (self.autoHide)
+						if ((event.target == attachedTextBox) || (event.target == element)) {
+							show();
+						} else {
+							isFocused = false;
+							hide();
+							if (attachedTextBox)
+								attachedTextBox.blur();
+						}
+				}
 			}
 			
 			/** class AssetInfoItem */
@@ -866,19 +1017,19 @@
 				var cy = box.offsetHeight;
 			
 				this.setVisible = function (value) {
-					box.style.visibility = value ? 'visible' : 'hidden';
+					box.style.visibility = value ? 'visible' : SHidden;
 				}
 				
 				this.setContent = function (html) {
 					content.innerHTML = html;
 					cx = (box.offsetWidth - pink.width) * 0.5;
 					cy = box.offsetHeight;
-					pink.style.left = cx + 'px';
+					pink.style.left = cx + SPixel;
 				}
 				
 				this.setPosition = function (x, y) {
-					box.style.left = (x - cx) + 'px';
-					box.style.top  = (y - cy) + 'px';
+					box.style.left = (x - cx) + SPixel;
+					box.style.top  = (y - cy) + SPixel;
 				}
 			}
 			
@@ -944,12 +1095,12 @@
 				map.setSize(window.innerWidth, window.innerHeight - headerPanel.offsetHeight);
 
 				// Adjust the position of the map toolbar
-				mapToolbar.style.left = (window.innerWidth - mapToolbar.offsetWidth - 10) + 'px';
-				mapToolbar.style.top  = (window.innerHeight - mapToolbar.offsetHeight - 10) + 'px';
+				mapToolbar.style.left = (window.innerWidth - mapToolbar.offsetWidth - 10) + SPixel;
+				mapToolbar.style.top  = (window.innerHeight - mapToolbar.offsetHeight - 10) + SPixel;
 
 				// Adjust the position of the asset list panel
-				assetListPanel.style.left = searchPanel.offsetLeft + 'px';
-				assetListPanel.style.top = searchPanel.offsetTop + searchPanel.offsetHeight + 'px';
+				assetListPanel.style.left = searchPanel.offsetLeft + SPixel;
+				assetListPanel.style.top = searchPanel.offsetTop + searchPanel.offsetHeight + SPixel;
 
 			}
 			
@@ -962,7 +1113,6 @@
 				searchPanel = $('searchPanel');
 				searchBox = $('searchBox');
 				mapToolbar = $('mapToolbar');
-				assetListPanel = $('assetListPanel');
 				
 				// If the browser does not support HTML5 Canvas, show a waring message and get done :D
 				if (mapCanvas.getContext == null) {
@@ -972,12 +1122,9 @@
 					document.body.appendChild(el);
 					return;
 				}
-				
-				logo.style.marginTop = (headerPanel.offsetHeight - logo.offsetHeight) * 0.4 + 'px';
-				assetListPanel.style.width = searchPanel.style.width;
-				
+								
 				// Adjust the height of the map canvas to fit the window.
-				mapCanvas.style.top = headerPanel.offsetHeight + 'px';
+				mapCanvas.style.top = headerPanel.offsetHeight + SPixel;
 
 				// Load images and icons
 				
@@ -998,7 +1145,7 @@
 				map = new SceneManager(mapCanvas);
 				map.setObjects(assets);
 				map.onReady = function () {
-					mapToolbar.style.visibility = 'visible';
+					mapToolbar.style.visibility = SVisible;
 				}
 				map.onChanged = function () {
 					var index = this.getObjectIndex();
@@ -1008,13 +1155,13 @@
 					} else {
 						activeAsset = null;
 					}
-					assetList.setItemIndex(index);
+					assetList.setSelectedIndex(index);
 				}
 				
 				// Initialize the asset list
-				assetList = new CellList($('assetListPanelBody'));
+				assetList = new TCellList();
 				assetList.onChanged = function () {
-					var index = this.getItemIndex();
+					var index = this.getSelectedIndex();
 					if (index > -1) {
 						activeAsset = assets[index];
 						activeAssetInfoBox.setContent(activeAsset.toHtml());
@@ -1022,49 +1169,27 @@
 						activeAsset = null;
 					}
 					map.setObjectIndex(index);
-					assetListPanel.style.visibility = 'hidden';
+					assetListPanel.style.visibility = SHidden;
 				}
 				assetList.onHoverChanged = function () {
-					map.setHoverObjectIndex(this.getHoverItemIndex());
+					map.setHoverObjectIndex(this.getFocusedIndex());
 				}
+				assetList.autoHide = true;
+				assetList.attachTextBox(searchBox);
+				
+				assetListPanel = assetList.getElement();
+				assetListPanel.className += ' AbsPos ShowOnReady';
+				document.body.appendChild(assetListPanel);
+				assetListPanel.style.width = searchPanel.style.width;
 				
 				activeAssetInfoBox = new InfoBox();
-				currentAssetInfoBox = new InfoBox();
+				currentAssetInfoBox = new InfoBox();				
 
-				// Add event handlers to the search box
-				
-				searchBox.onkeyup = function (event) {
-					assetListPanel.style.visibility = 'visible';
-					switch (event.keyCode) {
-						case 13:	/* Enter */
-							assetList.setItemIndex(assetList.getHoverItemIndex());
-							break;
-						case 38:	/* Up */
-						case 40:
-							assetList.nextItem(event.keyCode - 39);
-							break;
-						case 27:	/* Esc */
-							this.value = '';
-							assetListPanel.style.visibility = 'hidden';
-							break;
-						default:
-							assetList.setMatchString(this.value.toUpperCase());
-					}
-				}
-
-				searchBox.onfocus = function (event) {
-					searchPanel.style.borderColor = 'green';
-					assetListPanel.style.visibility = 'visible';
-				}
-				
-				searchBox.onblur = function (event) {
-					searchPanel.style.borderColor = '#A0A0A0';
-				}
-				
 				// Add click handler to the search icon
 				$('searchIcon').onclick = function (event) {
 					searchBox.focus();
 					searchBox.select();
+					event.preventDefault();
 				}
 				
 				// Initialize the AJAX object
@@ -1135,24 +1260,16 @@
 	</head>
 
 	<body>
-		<div id="headerPanel" class="Float AbsPos">
-			<center>
-			<div>
-				<div id="logo">Asset Tracking System</div>
+			<center id="headerPanel" class="Float AbsPos">
 				<div id="searchPanel">
 					<input type="textbox" id="searchBox" placeholder="Search for an asset"/><div id="searchIcon"></div>
 				</div>
-			</div>
 			</center>
-		</div>
 		
 		<canvas id="mapCanvas" class="AbsPos"></canvas>
-		
-		<div id="assetListPanel" class="AbsPos ShowOnReady">
-			<div id="assetListPanelBody"></div>
-		</div>
-		<div id="statusBar" class="AbsPos ShowOnReady"></div>
-		<div id="mapToolbar" class="Float AbsPos ShowOnReady">
+
+		<div id="statusBar" class="ShowOnReady AbsPos"></div>
+		<div id="mapToolbar" class="Float ShowOnReady AbsPos">
 			<button id="zoomOutButton" class="LeftPill TextIcon Translucent" onclick="map.zoom(null, 0.625);">-</button>
 			<button id="zoomFitButton" class="Middle TextIcon Translucent" onclick="map.zoom(null, 0);">[]</button>
 			<button id="zoomInButton" class="RightPill TextIcon Translucent" onclick="map.zoom(null, 1.6);">+</button>
