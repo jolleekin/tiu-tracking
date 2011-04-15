@@ -29,13 +29,12 @@ function TCellList() {
 	var focusedIndex = -1;
 	var attachedTextBox = null;	// HTMLInputElement box associated with this list.
 	var isNavigationKey = false;	// True if key = up, down, enter, tab
-	var isFocused = false;
 	
 /* public */
 	this.autoHide = false;
 	this.caseSensitive = false;
 	this.showIndex = false;
-	this.clearTextBoxOnExit = true;
+	this.clearTextBoxOnExit = false;
 	this.maxDisplayedItemCount = 5;
 	
 	/**	onChanged()
@@ -115,14 +114,12 @@ function TCellList() {
 		if (attachedTextBox != textBox) {
 			if (attachedTextBox) {
 				attachedTextBox.removeEventListener(SFocus, show, false);
-				attachedTextBox.removeEventListener(SBlur, onBlur, false);
 				attachedTextBox.removeEventListener(SKeyDown, textBoxKeyDown, false);
 				attachedTextBox.removeEventListener(SKeyUp, textBoxKeyUp, false);
 				document.addEventListener(SClick, documentClick, false);
 			}
 			if (textBox) {
 				textBox.addEventListener(SFocus, show, false);
-				textBox.addEventListener(SBlur, onBlur, false);
 				textBox.addEventListener(SKeyDown, textBoxKeyDown, false);
 				textBox.addEventListener(SKeyUp, textBoxKeyUp, false);
 				document.addEventListener(SClick, documentClick, false);
@@ -278,7 +275,6 @@ function TCellList() {
 	}				
 	
 	function itemClick(event) {
-		isFocused = true;
 		self.setSelectedIndex(this.id);
 		event.preventDefault();
 	}
@@ -294,24 +290,19 @@ function TCellList() {
 	}
 	
 	function show() {
-		isFocused = true;
-		if (self.autoHide)
-			element.style.visibility = SVisible;
-	}
-	
-	function onBlur() {
-		if (attachedTextBox)
-			if (self.clearTextBoxOnExit)
-				attachedTextBox.value = '';
-			else
-				attachedTextBox.value = items[selectedIndex].toString();
-		if (self.autoHide)
-			setTimeout(hide, 200);
+		element.style.visibility = SVisible;
 	}
 	
 	function hide() {
-		if (!isFocused)
+		if (self.autoHide && element.style.visibility != SHidden) {
+			if (attachedTextBox) {
+				if (self.clearTextBoxOnExit)
+					attachedTextBox.value = '';
+				else if (selectedIndex > -1)
+					attachedTextBox.value = items[selectedIndex].toString();
+			}
 			element.style.visibility = SHidden;
+		}
 	}
 	
 	// Printable Keys: 32..126
@@ -321,8 +312,7 @@ function TCellList() {
 		switch (event.keyCode) {
 			case 13:	/* Enter */
 				self.setSelectedIndex(focusedIndex);
-				isFocused = false;
-				onBlur();
+				hide();
 				break;
 			case 38:	/* Up   */
 			case 40:	/* Down */
@@ -334,9 +324,7 @@ function TCellList() {
 				break;
 			case 9:		/* Tab */
 			case 27:	/* Esc */
-				this.value = '';
-				isFocused = false;
-				onBlur();
+				hide();
 				break;
 			default:
 				self.setMatchString(this.value);
@@ -351,14 +339,12 @@ function TCellList() {
 	}
 	
 	function documentClick(event) {
-		if (self.autoHide)
-			if ((event.target == attachedTextBox) || (event.target == element)) {
-				show();
-			} else {
-				isFocused = false;
-				hide();
-				if (attachedTextBox)
-					attachedTextBox.blur();
-			}
+		if (event.target == attachedTextBox) {
+			self.setMatchString(attachedTextBox.value);
+			show();
+		} else if (event.target == element)
+			show();
+		else
+			hide();
 	}
 }

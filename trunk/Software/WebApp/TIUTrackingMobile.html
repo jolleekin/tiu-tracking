@@ -576,8 +576,9 @@
 			var UPDATE_INTERVAL = 10000;	// The interval that the web app requests new info of the tags, in ms
 			
 			function updateAssetInfo() {
-				//ajax.open('GET', 'AssetInfo.php?id=', true);
-				//ajax.send();
+				ajax.open('GET', 'AssetInfo.php?id=', true);
+				ajax.send();
+				/*
 				for (var i = 0; i < 10; i++) {
 					var asset = new Asset(randomId());
 					asset.infoList.push(new AssetInfoItem('2011-04-09 12:08:00', Math.random() * 12, Math.random() * 7, 100));
@@ -586,8 +587,9 @@
 				
 				assetList.setItems(assets, false);
 				map.invalidate();
+				*/
 			}
-			
+			/*
 			function randomId() {
 				var result = '';
 				var hexDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
@@ -602,7 +604,8 @@
 				}
 				return result;
 			}
-
+			*/
+			
 			/* body onresize event handler */
 			onresize = function () {
 				// Resize the map canvas
@@ -701,6 +704,7 @@
 					map.setObjectIndex(index);
 				}
 				assetList.autoHide = true;
+				assetList.clearTextBoxOnExit = true;
 				assetList.attachTextBox(searchBox);
 				
 				assetListPanel = assetList.getElement();
@@ -767,7 +771,7 @@
 
 				this.onresize();
 				updateAssetInfo();
-				//updateTimerHandle = setInterval(updateAssetInfo, UPDATE_INTERVAL);
+				updateTimerHandle = setInterval(updateAssetInfo, UPDATE_INTERVAL);
 			}
 		</script>
 		
