@@ -8,133 +8,14 @@
 		
 		<link rel="shortcut icon" href= "favicon.ico">
 		
-		<script type="application/x-javascript">
-			
-			/* Global constant */
-			
-			var SPixel = 'px';
-			
-			var SNone = 'none';
-			var SBlock = 'block';
-			
-			var SHidden = 'hidden';
-			var SVisible = 'visible';
-			
-			var SFocus = 'focus';
-			var SBlur = 'blur';
-			var SKeyDown = 'keydown';
-			var SKeyUp = 'keyup';
-			
-			var SClick = 'click';
-			var SMouseDown = 'mousedown';
-			var SMouseMove = 'mousemove';
-			var SMouseUp = 'mouseup';
-			var SMouseWheel = 'mousewheel';
-			
-			/* Global functions */
-			
-			/** A nice alias for document.getElementById() */
-			function $(idStr) {
-				return document.getElementById(idStr);
-			}
-			
-			function isZero(x, epsilon) {
-				return Math.abs(x) < epsilon;
-			}
-			
-			function isInRange(x, min, max) {
-				return (x >= min && x <= max);
-			}
-			
-			function ensureRange(x, min, max) {
-				if (x < min) return min;
-				if (x > max) return max;
-				return x;
-			}
-			
-			
-			/* class Vector2D */
-			
-			function Vector2D() {
-				this.x = 0;
-				this.y = 0;
-			}
-			
-			Vector2D.prototype = {
-				assign: function (other) {
-					this.x = other.x;
-					this.y = other.y;
-				},
-				
-				multAddSet: function (v1, v2, s) {
-					this.x = v1.x + v2.x * s;
-					this.y = v1.y + v2.y * s;
-				},
-				
-				multSubSet: function (v1, v2, s) {
-					this.x = v1.x - v2.x * s;
-					this.y = v1.y - v2.y * s;
-				},
-				
-				equals: function (other, epsilon) {
-					return	isZero(this.x - other.x, epsilon) &&
-							isZero(this.y - other.y, epsilon);
-				},
-				
-				length: function () {
-					return Math.sqrt(this.x*this.x + this.y*this.y);
-				},
+		<script type="application/javascript">
 
-				squaredLength: function () {
-					return this.x*this.x + this.y*this.y;
-				},
-
-				distanceTo: function (other) {
-					var dx = this.x - other.x;
-					var dy = this.y - other.y;
-					return Math.sqrt(dx*dx + dy*dy);
-				},
-
-				lerp: function (v1, v2, factor) {
-					this.x = v1.x + factor * (v2.x - v1.x);
-					this.y = v1.y + factor * (v2.y - v1.y);
-				},
-				
-				add: function (other) {
-					this.x += other.x;
-					this.y += other.y;
-				},
-				
-				sub: function (other) {
-					this.x -= other.x;
-					this.y -= other.y;
-				},
-				
-				mult: function (c) {
-					this.x *= c;
-					this.y *= c;
-				},
-				
-				dotProduct: function (other) {
-					return this.x * other.x + this.y * other.y;
-				},
-				
-				toString: function () {
-					return '(X: ' + this.x.toFixed(1) + ', Y: ' + this.y.toFixed(1) + ')';
-				}
-			};
-			
-			// Useful constants
-			
-			ZeroVector2D = new Vector2D();
-			
 			/** class SceneManager */
 			
 			var METTER_TO_PIXEL = 272;	// Number of pixels equivalent to 1m
 			var CIRCLE_RADIUS = 25;
 			
 			function SceneManager(aCanvas) {
-				
 				
 				/* Enum TComponentState */
 				var csLoading = 0;
@@ -145,18 +26,16 @@
 				var componentState = csLoading;
 				
 				var mapImage = null;	// DOM image element
-				var mapCenter = new Vector2D();
+				var mapCenter = new TVector2D();
 				var mapBackgroundColor = '#DDDDFF';
 				
 				var frontCanvas;
 				var frontContext;
-				var frontCanvasCenter = new Vector2D();
+				var frontCanvasCenter = new TVector2D();
 				
 				var backCanvas;
 				var backContext;
-				
-				var mask;
-				
+								
 				var objects;				// Array of all objects to be drawn
 				var objectIndex;			// Index of the object currently selected
 				var hoverObjectIndex;		// The object that is currently under the mouse
@@ -166,15 +45,15 @@
 				var maxScale = 2;		
 				
 				var mouse = {
-					position: new Vector2D(),
-					velocity: new Vector2D(),
-					transformedPosition: new Vector2D(),
+					position: new TVector2D(),
+					velocity: new TVector2D(),
+					transformedPosition: new TVector2D(),
 					isLeftButtonDown: false
 				};
 
 				var scene = {
-					position: new Vector2D(),
-					targetPosition: new Vector2D(),
+					position: new TVector2D(),
+					targetPosition: new TVector2D(),
 					scale: 1,						// Current scale of the scene
 					targetScale: 1,					// Target scale of the scene
 					totalScale: METTER_TO_PIXEL		// Scale * METTER_TO_PIXEL
@@ -200,14 +79,15 @@
 					backCanvas.height = frontCanvas.height;
 					backContext = backCanvas.getContext('2d');
 					
-					// Create an transparent mask right on top of the canvas to capture events.
+					/* Create an transparent mask right on top of the canvas to capture events.
 					mask = document.createElement('div');
-					mask.id = 'mask';
-					mask.style.position = 'absolute';
-					mask.style.zIndex = 1;
+					frontCanvas.id = 'mask';
+					frontCanvas.style.position = 'absolute';
+					frontCanvas.style.zIndex = 1;
 					// By default, the mask is transparent, but we need to explicity set it or IE will complain :D
-					mask.style.backgroundColor = 'rgba(255, 255, 255, 0)';
+					frontCanvas.style.backgroundColor = 'rgba(255, 255, 255, 0)';
 					document.body.appendChild(mask);
+					*/
 				} else {
 					throw 'Canvas undefined or not supported';
 				}
@@ -279,18 +159,20 @@
 				}
 				
 				this.setSize = function (w, h) {
+				/*
+					//TODO: Improve or remove
+					
 					var sw = w / frontCanvas.width;
 					var sh = h / frontCanvas.height;
 					var s = sw;
 					if (Math.abs(s - 1) < Math.abs(sh - 1))
 						s = sh;
-					//TODO: Improve
 					scene.position.x *= sw;
 					scene.position.y *= sh;
 					scene.targetPosition.assign(scene.position);
 					scene.targetScale = scene.scale = scene.scale * s;
 					scene.totalScale  = scene.scale * METTER_TO_PIXEL;
-					
+				*/
 					frontCanvas.width  = backCanvas.width  = w;
 					frontCanvas.height = backCanvas.height = h;
 					
@@ -300,14 +182,12 @@
 					frontCanvasCenter.x = w * 0.5;
 					frontCanvasCenter.y = h * 0.5;
 					
-					mask.style.left = frontCanvas.style.left;
-					mask.style.top  = frontCanvas.style.top;
-					mask.style.width = frontCanvas.style.width;
-					mask.style.height = frontCanvas.style.height;
+					frontCanvas.style.left = frontCanvas.style.left;
+					frontCanvas.style.top  = frontCanvas.style.top;
+					frontCanvas.style.width = frontCanvas.style.width;
+					frontCanvas.style.height = frontCanvas.style.height;
 					
 					recalculateScales();
-					
-					self.invalidate();
 				}
 				
 				/**
@@ -349,8 +229,6 @@
 				this.setHoverObjectIndex = function (value) {
 					if (hoverObjectIndex != value) {
 						hoverObjectIndex = value;
-						if (hoverObjectIndex > -1)
-							currentAssetInfoBox.setContent(objects[hoverObjectIndex].toHtml());
 						self.invalidate();
 					}
 				}
@@ -396,12 +274,18 @@
 							if (componentState == csPostLoading) {
 								componentState = csLoaded;
 														
-								mask.onmousedown = maskMouseDown;
-								mask.onmousemove = maskMouseMove;
-								mask.onmouseup = maskMouseUp;
-								mask.onmousewheel = maskMouseWheel;
-								mask.ondblclick = canvasDoubleClick;
-								mask.addEventListener('DOMMouseScroll', maskMouseWheel, false);	// Firefox shit
+								frontCanvas.onmousedown = canvasMouseDown;
+								frontCanvas.onmousemove = canvasMouseMove;
+								frontCanvas.onmouseup = canvasMouseUp;
+								frontCanvas.onmousewheel = canvasMouseWheel;
+								frontCanvas.ondblclick = canvasDoubleClick;
+								frontCanvas.addEventListener('DOMMouseScroll', canvasMouseWheel, false);	// Firefox shit
+								
+								if (typeof TouchEvent != 'undefined') {
+									frontCanvas.ontouchstart = canvasTouchStart;
+									frontCanvas.ontouchmove = canvasTouchMove;
+									frontCanvas.ontouchend = canvasTouchEnd;
+								}
 								
 								if (self.onReady)
 									self.onReady();
@@ -419,46 +303,26 @@
 					backContext.drawImage(mapImage, 0, 0, mapImage.width * scene.scale, mapImage.height * scene.scale);
 					
 					// Draw the objects
-					var showActiveAssetInfo = false;
-					var showCurrentAssetInfo = false;
 					var dx = markerIcons.width * 0.5;
 					for (var i = objects.length - 1; i >= 0; i--) {
 						var pos = objects[i].getPosition();
-						var x = pos.x * scene.totalScale;
-						var y = pos.y * scene.totalScale;
-						var xx = x - dx;
-						backContext.drawImage(markerShadow, xx, y - markerShadow.height);
-						backContext.drawImage(markerIcons, 0, 0, markerIcons.width, 35, xx, y - 35, markerIcons.width, 35);
-						
-						if (i == objectIndex) {
-							backContext.fillStyle = 'rgba(255, 55, 55, 0.5)';
-							backContext.beginPath();
-							backContext.arc(x, y - CIRCLE_RADIUS * 0.5, CIRCLE_RADIUS, 0, Math.PI * 2, true);
-							backContext.fill();
-							
-							pos = sceneToCanvas(pos);
-							activeAssetInfoBox.setPosition(frontCanvas.offsetLeft + pos.x, frontCanvas.offsetTop  + pos.y - CIRCLE_RADIUS);
-							showActiveAssetInfo = true;
-							
-						} else if (i == hoverObjectIndex) {
-						
-							backContext.fillStyle = 'rgba(55, 255, 100, 0.5)';
-							backContext.beginPath();
-							backContext.arc(x, y - CIRCLE_RADIUS * 0.5, CIRCLE_RADIUS, 0, Math.PI * 2, true);
-							backContext.fill();
-							
-							pos = sceneToCanvas(pos);
-							currentAssetInfoBox.setPosition(frontCanvas.offsetLeft + pos.x, frontCanvas.offsetTop  + pos.y - CIRCLE_RADIUS);
-							showCurrentAssetInfo = true;
-						}
-					}			
+						pos.mult(scene.totalScale);
+						var xx = pos.x - dx;
+						backContext.drawImage(markerShadow, xx, pos.y - markerShadow.height);
+						backContext.drawImage(markerIcons, 0, 0, markerIcons.width, 35, xx, pos.y - 35, markerIcons.width, 35);
+					}
+					
+					if (objectIndex > -1) {
+						var pos = objects[objectIndex].getPosition();
+						pos.mult(scene.totalScale);
+						backContext.fillStyle = 'rgba(55, 255, 55, 0.4)';
+						backContext.beginPath();
+						backContext.arc(pos.x, pos.y - CIRCLE_RADIUS * 0.5, CIRCLE_RADIUS, 0, Math.PI * 2, true);
+						backContext.fill();
+					}
 					
 					// Show the map to the world
 					frontContext.drawImage(backCanvas, 0, 0);
-					
-					// Update the position of the info box
-					activeAssetInfoBox.setVisible(showActiveAssetInfo);
-					currentAssetInfoBox.setVisible(showCurrentAssetInfo);
 				}
 				
 				/**
@@ -476,7 +340,7 @@
 					if (percent < 0)
 						return;
 
-					updateMousePosition(event, false);
+					updateMouseInfo(event, false);
 					if (percent > 0) {
 						scene.targetScale = ensureRange(scene.scale * percent, minScale, maxScale);
 						scene.targetPosition.lerp(mouse.position, scene.position, scene.targetScale / scene.scale);
@@ -490,7 +354,7 @@
 				}
 				
 				function sceneToCanvas(pos) {
-					var result = new Vector2D();
+					var result = new TVector2D();
 					result.multAddSet(scene.position, pos, scene.totalScale);
 					return result;
 				}
@@ -509,10 +373,28 @@
 					}
 				}
 				
-				function updateMousePosition(event, updateVelocity) {
+				function updateMouseInfo(event, updateVelocity) {
 					if (event) {
 						var x  = event.layerX;// - frontCanvas.offsetLeft;
 						var y  = event.layerY;// - frontCanvas.offsetTop;
+						if (updateVelocity) {
+							mouse.velocity.x = x - mouse.position.x;
+							mouse.velocity.y = y - mouse.position.y;
+						}
+						mouse.position.x = x;
+						mouse.position.y = y;
+					} else {
+						mouse.position.assign(frontCanvasCenter);
+					}
+					var s = 1 / scene.totalScale;
+					mouse.transformedPosition.x = (mouse.position.x - scene.position.x) * s;
+					mouse.transformedPosition.y = (mouse.position.y - scene.position.y) * s;
+				}
+				
+				function updateTouchInfo(event, updateVelocity) {
+					if (event) {
+						var x  = event.touches[0].pageX;
+						var y  = event.touches[0].pageY;
 						if (updateVelocity) {
 							mouse.velocity.x = x - mouse.position.x;
 							mouse.velocity.y = y - mouse.position.y;
@@ -543,20 +425,20 @@
 				 *	<this> in the following event handlers refers to the mapCanvas
 				 */
 				 
-				function maskMouseDown(event) {
+				function canvasMouseDown(event) {
 					if (event.button == 0) {
 						stopAnimation();
 						mouse.isLeftButtonDown = true;
-						updateMousePosition(event, true);
+						updateMouseInfo(event, true);
 						event.preventDefault();
 					}
 				}
 				
-				function maskMouseUp(event) {
+				function canvasMouseUp(event) {
 					if (event.button == 0) {
 						this.style.cursor = 'default';
 						mouse.isLeftButtonDown = false;
-						updateMousePosition(event, false);
+						updateMouseInfo(event, false);
 						
 						if ( !mouse.velocity.equals(ZeroVector2D, 2) ) {
 							scene.targetPosition.multAddSet(scene.position, mouse.velocity, 2);
@@ -567,8 +449,8 @@
 					}
 				}
 				
-				function maskMouseMove(event) {		
-					updateMousePosition(event, true);
+				function canvasMouseMove(event) {		
+					updateMouseInfo(event, true);
 					
 					if (mouse.isLeftButtonDown) {
 						this.style.cursor = 'url(http://maps.gstatic.com/intl/en_us/mapfiles/closedhand_8_8.cur), move';
@@ -582,7 +464,7 @@
 					event.preventDefault();
 				}
 				
-				function maskMouseWheel(event) {
+				function canvasMouseWheel(event) {
 					var delta = event.detail ? -event.detail * 0.1 : event.wheelDelta * 0.0025;
 					var percent = 1 + delta;
 					if (delta < 0)
@@ -595,371 +477,31 @@
 				function canvasDoubleClick(event) {
 					self.zoom(null, 1.6);
 				}
-			}
-			
-			function newElement(tagName, className) {
-				var result = document.createElement(tagName);
-				if (result) {
-					result.className = className;
-					return result;
-				}
-				return null;
-			}
-			
-			/** class TCellList */
-			
-			/**
-			 *	TCellList
-			 *
-			 *	@class	TCellList	The list itself.
-			 *	@class	TListItem	The items in the list.
-			 *	@class	TFocusedItem	The currently focused item.
-			 *	@class	TSelectedItem	The currently selected item.
-			 *	@class	TMatchedString	The string in any item that matches a given string.
-			 */
-			function TCellList() {
-
-			/* private common */
-				var self = this;
-				var element = newElement('div', 'TCellList');
-			
-			/* private */
-				var TListItem = 'TListItem';
-				var TFocusedItem = 'TFocusedItem';
-				var TSelectedItem = 'TSelectedItem';
-				var TMatchedString = 'TMatchedString';
 				
-				var items;				// An array of items contained in this list, the items must have a toString() function
-				var matchString = '';	// If an item whose propertyName contains matchString, the item will be
-										// displayed. Setting this to null will cause all items to be displayed
-				var selectedIndex = -1;	// Index of the selected item
-				var focusedIndex = -1;
-				var attachedTextBox = null;	// HTMLInputElement box associated with this list.
-				var isNavigationKey = false;	// True if key = up, down, enter, tab
-				var isFocused = false;
+				/* Touch event handlers */
 				
-			/* public */
-				this.autoHide = false;
-				this.caseSensitive = false;
-				this.showIndex = false;
-				this.maxDisplayedItemCount = 5;
-				
-				/**	onChanged()
-				 *	This event happens when another item is selected
-				 *	Implement this handler to capture the event
-				 */
-				this.onChanged = null;
-
-				/**
-				 *	onHoverChanged()
-				 *	Happens when the temporary selected item has been changed.
-				 */
-				this.onHoverChanged = null;
-				
-				this.getElement = function () {
-					return element;
+				function canvasTouchStart(event) {
+					stopAnimation();
+					updateTouchInfo(event, true);
+					event.preventDefault();
 				}
 				
-				this.getSelectedIndex = function () {
-					return selectedIndex;
-				}
-				
-				this.getFocusedIndex = function () {
-					return focusedIndex;
-				}
-
-				this.getItems = function () {
-					return items;
-				}
-				
-				this.getMaxDisplayedItemCount = function () {
-					return maxDisplayedItemCount;
-				}
-				
-				/**
-				 *	
-				 *	@param	aItems	{Array}	An array of items to be displayed
-				 *
-				 *	@param	reverse	{Boolean}	If true, the order of the items is reversed
-				 */
-				this.setItems = function (aItems, reverse) {
-					if (items != aItems) {
-						items = aItems;
-						
-						// Rebuild the list
-						var s = '';
-						var high = -1;
-						if (items) {
-							high = items.length - 1;
-							if (reverse) {
-								for (var i = high; i >= 0; i--)
-									s += newItemString(high - i, items[i].toString());
-							} else {
-								for (var i = 0; i <= high; i++)
-									s += newItemString(i, items[i].toString());
-							}
-						}
-						element.innerHTML = s;
-						for (var i = high; i >= 0; i--) {
-							s = element.childNodes[i];
-							s.onclick = itemClick;
-							s.onmouseout = itemMouseOut;
-							s.onmouseover = itemMouseOver;
-						}
-						element.style.maxHeight = s.offsetHeight * self.maxDisplayedItemCount + SPixel;
-					}
-				}
-				
-				function newItemString(idx, text) {
-					var idxElement = '';
-					if (self.showIndex)
-						idxElement = '<div class="TListItemIndex">' + (idx + 1) + '</div>';
-					return '<div id="' + idx + '" class="TListItem">' + idxElement + '<div class="TListItemText">' + text + '</div></div>';
-				}
-				
-				this.attachTextBox = function (textBox) {
-					if (attachedTextBox != textBox) {
-						if (attachedTextBox) {
-							attachedTextBox.removeEventListener(SFocus, show, false);
-							attachedTextBox.removeEventListener(SBlur, onBlur, false);
-							attachedTextBox.removeEventListener(SKeyDown, textBoxKeyDown, false);
-							attachedTextBox.removeEventListener(SKeyUp, textBoxKeyUp, false);
-							document.addEventListener(SClick, documentClick, false);
-						}
-						if (textBox) {
-							textBox.addEventListener(SFocus, show, false);
-							textBox.addEventListener(SBlur, onBlur, false);
-							textBox.addEventListener(SKeyDown, textBoxKeyDown, false);
-							textBox.addEventListener(SKeyUp, textBoxKeyUp, false);
-							document.addEventListener(SClick, documentClick, false);
-						}
-						attachedTextBox = textBox;
-					}
-				}
-				
-				/**
-				 *	Sets the match string. The list will be automatically invalidated
-				 *	if the new value is different from the current value.
-				 *
-				 *	@param	value	{String}	The new match string.
-				 */
-				this.setMatchString = function (value) {
-					if (matchString != value) {
-						matchString = value;
-						self.invalidate();
-					}
-				}
-
-				/**
-				 *	Scrolls the list to show an item if it is invisible.
-				 *
-				 *	@param	item	{HTMLDivElement}	The item to be shown.
-				 */
-				// item: DOM div element
-				function showItem(item) {
-					var t = item.offsetTop - element.offsetTop;
-					if (t < element.scrollTop)
-						element.scrollTop = t;
-					else {
-						t += item.offsetHeight - element.clientHeight;
-						if (t > element.scrollTop)
-							element.scrollTop += t;
-					}
-				}
-					
-				this.setSelectedIndex = function (value) {
-					if (selectedIndex != value) {
-						if (selectedIndex > -1)
-							element.childNodes[selectedIndex].className = TListItem;
-						
-						if (value > -1) {
-							var item = element.childNodes[value];
-							item.className = TSelectedItem;
-							showItem(item);
-						}
-						
-						selectedIndex = value;
-						
-						if (self.onChanged)
-							self.onChanged();
-					}
-				}
-
-				this.setFocusedIndex = function (value) {
-					if (focusedIndex != value) {
-						if (focusedIndex > -1) {
-							var item = element.childNodes[focusedIndex];
-							if (item.id != selectedIndex)
-								item.className = TListItem;
-							else
-								item.className = TSelectedItem;
-						}
-						
-						if (value > -1) {
-							var item = element.childNodes[value];
-							if (item.id != selectedIndex)
-								item.className = TFocusedItem;
-							showItem(item);
-						}
-						
-						focusedIndex = value;
-						if (self.onHoverChanged) {
-							self.onHoverChanged();
-						}
-					}
-				}
-				
-				// Refresh the list currently displayed
-				this.invalidate = function () {
-					self.setFocusedIndex(-1);
-					
-					var showAll = (matchString == null) || (matchString == '');
-					var tagBegin = '<span class="' + TMatchedString + '">';
-					var tagEnd = '</span>';
-					
-					var anyMatched = false;
-					var modifier = self.caseSensitive ? '' : 'i';
-					var regExp = new RegExp(matchString, modifier);
-					var matches;
-					
-					var idx = 0;
-					if (self.showIndex)
-						idx = 1;
-					
-					for (var i = element.childNodes.length - 1; i >= 0; i--) {
-						var text = items[i].toString();
-						var node = element.childNodes[i];
-
-						var textNode = node.childNodes[idx];
-						textNode.innerHTML = text;
-						
-						if (showAll == false) {
-							matches = text.match(regExp);
-							if (matches) {
-								textNode.innerHTML = text.replace(matches[0], tagBegin + matches[0] + tagEnd);
-								node.style.display = SBlock;
-								anyMatched = true;
-							} else {
-								node.style.display = SNone;
-							}
-						} else {
-							node.style.display = SBlock;
-							anyMatched = true;
-						}
-					}
-					
-					if (!anyMatched && self.autoHide)
-						element.style.visibility = SHidden;
-				}
-				
-				/**
-				 *	Focus the next displayed item.
-				 *
-				 *	@param	direction	> 0 means down, else up.
-				 */
-				this.focusNextItem = function (direction) {
-					var nodes = element.childNodes;
-					
-					var i = -1;
-					if (focusedIndex >= 0 && nodes[focusedIndex].style.display != SNone)
-						i = focusedIndex;
-										
-					if (direction > 0) {
-						do {
-							i++;
-						} while ((i < nodes.length) && (nodes[i].style.display == SNone));
-						if (i == nodes.length)
-							i = -1;
+				function canvasTouchEnd(event) {
+					updateTouchInfo(event, false);
+					if ( !mouse.velocity.equals(ZeroVector2D, 2) ) {
+						scene.targetPosition.multAddSet(scene.position, mouse.velocity, 2);
+						startAnimation();
 					} else {
-						if (i == -1)
-							i = nodes.length;
-						do {
-							i--;
-						} while ((i > -1) && (nodes[i].style.display == SNone));
+						self.setObjectIndex(getHoveredObjectIndex());
 					}
-
-					self.setFocusedIndex(i);
-				}				
-				
-				function itemClick(event) {
-					isFocused = true;
-					self.setSelectedIndex(this.id);
-					//TODO: Remove
-					if (attachedTextBox)
-						attachedTextBox.value = items[selectedIndex].toString();
-					//event.preventDefault();
 				}
 				
-				function itemMouseOut(event) {
-					self.setFocusedIndex(-1);
+				function canvasTouchMove(event) {		
+					updateTouchInfo(event, true);
+					scene.targetPosition.add(mouse.velocity);
+					scene.position.assign(scene.targetPosition);
+					self.invalidate();
 					event.preventDefault();
-				}
-				
-				function itemMouseOver(event) {
-					self.setFocusedIndex(this.id);
-					event.preventDefault();
-				}
-				
-				function show() {
-					isFocused = true;
-					if (self.autoHide)
-						element.style.visibility = SVisible;
-				}
-				
-				function onBlur() {
-					if (self.autoHide)
-						setTimeout(hide, 200);
-				}
-				
-				function hide() {
-					if (!isFocused)
-						element.style.visibility = SHidden;
-				}
-				
-				// Printable Keys: 32..126
-				function textBoxKeyDown(event) {
-					show();
-					isNavigationKey = false;
-					switch (event.keyCode) {
-						case 13:	/* Enter */
-							self.setSelectedIndex(focusedIndex);
-							onBlur();
-							break;
-						case 38:	/* Up   */
-						case 40:	/* Down */
-							self.focusNextItem(event.keyCode - 39);
-							if (focusedIndex > -1)
-								this.value = items[focusedIndex].toString();
-							else
-								this.value = matchString;
-							break;
-						case 9:		/* Tab */
-						case 27:	/* Esc */
-							this.value = '';
-							onBlur();
-							break;
-						default:
-							self.setMatchString(this.value);
-							return;
-					}
-					isNavigationKey = true;
-				}
-				
-				function textBoxKeyUp(event) {
-					if (!isNavigationKey)
-						self.setMatchString(this.value);
-				}
-				
-				function documentClick(event) {
-					if (self.autoHide)
-						if ((event.target == attachedTextBox) || (event.target == element)) {
-							show();
-						} else {
-							isFocused = false;
-							hide();
-							if (attachedTextBox)
-								attachedTextBox.blur();
-						}
 				}
 			}
 			
@@ -967,7 +509,7 @@
 			
 			function AssetInfoItem(timestamp, x, y, battery) {
 				this.timestamp = timestamp;
-				this.location = new Vector2D();
+				this.location = new TVector2D();
 				this.location.x = x;
 				this.location.y = y;
 				this.battery = battery;
@@ -992,7 +534,9 @@
 			
 			Asset.prototype = {
 				getPosition: function () {
-					return this.infoList[this.historyIndex].location;
+					var result = new TVector2D();
+					result.assign(this.infoList[this.historyIndex].location);
+					return result;
 				},
 				
 				toString: function () {
@@ -1000,38 +544,11 @@
 				},
 				
 				toHtml: function () {
-					return '<table cellspacing="0"><tr><td style="font-weight: bold;">Name</td><td>:</td><td style="color: blue;">' + this.id + '</td></tr>' + '<tr><td style="font-weight: bold;">Battery</td><td>:</td><td style="color: blue;">' +this.infoList[this.historyIndex].battery + '%</td></tr></table>';
+					return '<table cellspacing="0" cellpadding="0" style="border-collapse: collapse;"><tr><td style="font-weight: bold;">Name</td><td>:</td><td style="color: White;">' + this.id + '</td></tr>' + '<tr><td style="font-weight: bold;">Battery</td><td>:</td><td style="color: White;">' +this.infoList[this.historyIndex].battery + '%</td></tr></table>';
 				}
 			};
 			
-			function InfoBox() {
-				var box = document.createElement('div');
-				box.className = 'InfoBox ShowOnReady AbsPos';
-				box.innerHTML = '<div class="InfoBoxContent"></div><img class="Pink" src="images/Pink.png" />';
 
-				document.body.appendChild(box);
-				
-				var content = box.childNodes[0];
-				var pink = box.childNodes[1];
-				var cx = (box.offsetWidth - pink.width) * 0.5;
-				var cy = box.offsetHeight;
-			
-				this.setVisible = function (value) {
-					box.style.visibility = value ? 'visible' : SHidden;
-				}
-				
-				this.setContent = function (html) {
-					content.innerHTML = html;
-					cx = (box.offsetWidth - pink.width) * 0.5;
-					cy = box.offsetHeight;
-					pink.style.left = cx + SPixel;
-				}
-				
-				this.setPosition = function (x, y) {
-					box.style.left = (x - cx) + SPixel;
-					box.style.top  = (y - cy) + SPixel;
-				}
-			}
 			
 			/** Global variables. Some of these are references to DOM elements. */
 			
@@ -1044,15 +561,12 @@
 			var markerShadow;			// DOM image element that holds the shadow of the spot marker icons
 
 			var headerPanel;
-			var logo;
-			var searchPanel;
 			var searchBox;
 			
 			var assetListPanel;
 			var assets = [];			// An array that stores the information of all tracked asset tags
-			var activeAsset;			// The asset that is currently selected
-			var activeAssetInfoBox;		// An InfoBox object which shows the active asset's info
-			var currentAssetInfoBox;	// An InfoBox object which shows the currently selected asset's info
+			var selectedAsset;			// The asset that is currently selected
+			var infoPanel;
 
 			var ajax;					// XMLHttpRequest object to communicate with the server
 			var updateTimerHandle;
@@ -1093,15 +607,20 @@
 			onresize = function () {
 				// Resize the map canvas
 				map.setSize(window.innerWidth, window.innerHeight - headerPanel.offsetHeight);
-
+				map.invalidate();
+				
 				// Adjust the position of the map toolbar
+				var dy = 0;
+				if (infoPanel.style.visibility != SHidden)
+					dy = infoPanel.offsetHeight;
 				mapToolbar.style.left = (window.innerWidth - mapToolbar.offsetWidth - 10) + SPixel;
-				mapToolbar.style.top  = (window.innerHeight - mapToolbar.offsetHeight - 10) + SPixel;
+				mapToolbar.style.top  = (window.innerHeight - mapToolbar.offsetHeight - dy - 10) + SPixel;
 
 				// Adjust the position of the asset list panel
-				assetListPanel.style.left = searchPanel.offsetLeft + SPixel;
-				assetListPanel.style.top = searchPanel.offsetTop + searchPanel.offsetHeight + SPixel;
-
+				assetListPanel.style.left = searchBox.offsetLeft + SPixel;
+				assetListPanel.style.top = searchBox.offsetTop + searchBox.offsetHeight + SPixel;
+				
+				infoPanel.style.top = (window.innerHeight - infoPanel.offsetHeight) + SPixel;
 			}
 			
 			/* body onload event handler */
@@ -1109,10 +628,9 @@
 				// Get references of various UI elements, just to support Firefox shit.
 				mapCanvas = $('mapCanvas');
 				headerPanel = $('headerPanel');
-				logo = $('logo');
-				searchPanel = $('searchPanel');
 				searchBox = $('searchBox');
 				mapToolbar = $('mapToolbar');
+				infoPanel = $('infoPanel');
 				
 				// If the browser does not support HTML5 Canvas, show a waring message and get done :D
 				if (mapCanvas.getContext == null) {
@@ -1149,12 +667,18 @@
 				}
 				map.onChanged = function () {
 					var index = this.getObjectIndex();
+					var dy = 0;
 					if (index > -1) {
-						activeAsset = assets[index];
-						activeAssetInfoBox.setContent(activeAsset.toHtml());
+						selectedAsset = assets[index];
+						infoPanel.innerHTML = selectedAsset.toHtml();
+						infoPanel.style.top = (window.innerHeight - infoPanel.offsetHeight) + SPixel;
+						infoPanel.style.visibility = SVisible;
+						dy = infoPanel.offsetHeight;
 					} else {
-						activeAsset = null;
+						selectedAsset = null;
+						infoPanel.style.visibility = SHidden;
 					}
+					mapToolbar.style.top  = (window.innerHeight - mapToolbar.offsetHeight - dy - 10) + SPixel;
 					assetList.setSelectedIndex(index);
 				}
 				
@@ -1162,17 +686,19 @@
 				assetList = new TCellList();
 				assetList.onChanged = function () {
 					var index = this.getSelectedIndex();
+					var dy = 0;
 					if (index > -1) {
-						activeAsset = assets[index];
-						activeAssetInfoBox.setContent(activeAsset.toHtml());
+						selectedAsset = assets[index];
+						infoPanel.innerHTML = selectedAsset.toHtml();
+						infoPanel.style.top = (window.innerHeight - infoPanel.offsetHeight) + SPixel;
+						infoPanel.style.visibility = SVisible;
+						dy = infoPanel.offsetHeight;
 					} else {
-						activeAsset = null;
+						selectedAsset = null;
+						infoPanel.style.visibility = SHidden;
 					}
+					mapToolbar.style.top  = (window.innerHeight - mapToolbar.offsetHeight - dy - 10) + SPixel;
 					map.setObjectIndex(index);
-					assetListPanel.style.visibility = SHidden;
-				}
-				assetList.onHoverChanged = function () {
-					map.setHoverObjectIndex(this.getFocusedIndex());
 				}
 				assetList.autoHide = true;
 				assetList.attachTextBox(searchBox);
@@ -1180,18 +706,7 @@
 				assetListPanel = assetList.getElement();
 				assetListPanel.className += ' AbsPos ShowOnReady';
 				document.body.appendChild(assetListPanel);
-				assetListPanel.style.width = searchPanel.style.width;
-				
-				activeAssetInfoBox = new InfoBox();
-				currentAssetInfoBox = new InfoBox();				
-
-				// Add click handler to the search icon
-				$('searchIcon').onclick = function (event) {
-					searchBox.focus();
-					searchBox.select();
-					event.preventDefault();
-				}
-				
+								
 				// Initialize the AJAX object
 				ajax = new XMLHttpRequest();
 				ajax.onreadystatechange = function () {
@@ -1257,22 +772,23 @@
 		</script>
 		
 		<link href="TIUTrackingMobile.css" rel="stylesheet" type="text/css"/>
+		
+		<script type="application/javascript" src="js/Utils.js"></script>
+		<script type="application/javascript" src="js/Vector2D.js"></script>
+		<script type="application/javascript" src="js/CellList.js"></script>
+		<script type="application/javascript" src="js/InfoBox.js"></script>
 	</head>
 
 	<body>
-			<center id="headerPanel" class="Float AbsPos">
-				<div id="searchPanel">
-					<input type="textbox" id="searchBox" placeholder="Search for an asset"/><div id="searchIcon"></div>
-				</div>
-			</center>
-		
+		<center id="headerPanel" class="Float AbsPos">
+			<input type="textbox" id="searchBox" placeholder="Search for an asset"/>
+		</center>
 		<canvas id="mapCanvas" class="AbsPos"></canvas>
-
-		<div id="statusBar" class="ShowOnReady AbsPos"></div>
 		<div id="mapToolbar" class="Float ShowOnReady AbsPos">
 			<button id="zoomOutButton" class="LeftPill TextIcon Translucent" onclick="map.zoom(null, 0.625);">-</button>
 			<button id="zoomFitButton" class="Middle TextIcon Translucent" onclick="map.zoom(null, 0);">[]</button>
 			<button id="zoomInButton" class="RightPill TextIcon Translucent" onclick="map.zoom(null, 1.6);">+</button>
 		</div>
+		<center id="infoPanel" class="ShowOnReady AbsPos"></center>
 	</body>
 </html>
