@@ -1,5 +1,8 @@
 /* Global constant */
 
+var SUndefined	= 'undefined';
+var SIndexOutOfRange = 'Index out of range: ';
+
 var SPixel		= 'px';
 
 var SNone		= 'none';
