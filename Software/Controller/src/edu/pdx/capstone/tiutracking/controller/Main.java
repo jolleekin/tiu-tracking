@@ -26,6 +26,7 @@
 package edu.pdx.capstone.tiutracking.controller;
 import edu.pdx.capstone.tiutracking.common.*;
 
+import edu.pdx.capstone.tiutracking.gammaengine.BetaEngine;
 import edu.pdx.capstone.tiutracking.gammaengine.GammaEngine;
 import edu.pdx.capstone.tiutracking.kengine.KEngine;
 import edu.pdx.capstone.tiutracking.locator.FingerPrint;
@@ -47,6 +48,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Date;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.swing.JComboBox;
 import java.awt.event.ComponentAdapter;
@@ -73,6 +75,7 @@ import javax.swing.table.TableModel;
 import javax.swing.UIManager;
 
 import java.sql.*;
+
 import javax.swing.JTabbedPane;
 import javax.swing.JMenuItem;
 import javax.swing.JTable;
@@ -90,9 +93,11 @@ public class Main {
 	
 	private enum LocatorChoices{
 		FINGERPRINT,
-		GAMMA,
+		BETA,
 		KEWTON
 	}
+	
+	private ConcurrentLinkedQueue<String> generalDisplayMessages=null;
 	private LocatorChoices locatorChoice=LocatorChoices.KEWTON;
 	private LocationEngine locator;
 	private AppViewMode appViewMode;
@@ -127,6 +132,14 @@ public class Main {
 	private JMenuItem mntmExit;
 	private JTable tblLocatorConfiguration;
 	private JScrollPane scrollPane;
+	private JTextField txtModifyTagId;
+	private JTextField txtModifyBlockId;
+	private JTextField txtModifyDetectorId;
+	private JTextField txtModifyRSSIIndex;
+	private JTextField textField;
+	private JTextField textField_1;
+	private JTextField txtModifyNewValue;
+	private JLabel lblNewValue;
 	private JScrollPane scrollPane_1;
 	/**
 	 * Launch the application.
@@ -148,8 +161,8 @@ public class Main {
 		switch (locatorChoice){
 		case FINGERPRINT:
 			return (LocationEngine)new FingerPrint();
-		case GAMMA:
-			return(LocationEngine)new GammaEngine();
+		case BETA:
+			return(LocationEngine)new BetaEngine();
 		case KEWTON:
 			return(LocationEngine)new KEngine();
 		}
@@ -192,6 +205,56 @@ public class Main {
 									   SerialPort.PARITY_NONE);
 		return true;
 	}
+	
+	/*loadCalibrationData
+	 * 	deserializes an ArrayList<DataPacket> from the local filesystem
+	 * 	and returns it on success. returns null if there does not exist
+	 * 	previously serialized calibration data.
+	 */
+	@SuppressWarnings("unchecked")
+	private ArrayList<DataPacket> loadCalibrationData()
+			throws ClassNotFoundException, SQLException, IOException {
+		File calFile = new File("calibrationdata.dat");
+		if (!calFile.exists()){
+			//System.out.println("Calibration data not found.");
+			printDisplayMessage("Calibration data not found\n");
+			return null;
+		}									
+		return (ArrayList<DataPacket>)ObjectFiler.load("calibrationdata.dat");
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void storeCalibrationData(int tagId, int blockId, DataPacket dataPacket)
+			throws ClassNotFoundException, SQLException, IOException {
+		//TODO: make cal data directory and data file configurable.
+		ArrayList<DataPacket> calibrationData=null;			
+		File calFile = new File("calibrationdata.dat");
+		if (calFile.exists()){				
+			calibrationData = (ArrayList<DataPacket>)ObjectFiler.load("calibrationdata.dat");
+		}else{
+			calibrationData = new ArrayList<DataPacket>();
+		}
+		
+		//If it exists, replace entry with a matching block Id, else just append it.
+		boolean foundExisting=false;		
+		for (int h = 0;h < calibrationData.size();h++){
+			if (calibrationData.get(h).blockId == blockId && calibrationData.get(h).tagId == tagId){
+				calibrationData.set(h, dataPacket);
+				foundExisting = true;
+				break;
+			}
+		}
+		if (!foundExisting){
+			calibrationData.add(dataPacket);
+		}
+		//Serialize Calibration Data..
+		ObjectFiler.save("calibrationdata.dat", calibrationData);
+	}
+	
+	public void printDisplayMessage(String message){
+		txtOutput.append(message);
+		txtOutput.setCaretPosition(txtOutput.getDocument().getLength());
+	}
 	/**
 	 * Create the application.
 	 */
@@ -215,14 +278,16 @@ public class Main {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
+		generalDisplayMessages = new ConcurrentLinkedQueue<String>();
+		
 		frmController = new JFrame();
 		frmController.setTitle("Controller");
-		frmController.setBounds(100, 100, 655, 520);
+		frmController.setBounds(100, 100, 971, 520);
 		frmController.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmController.getContentPane().setLayout(null);
 		
 		tabbedPaneMain = new JTabbedPane(JTabbedPane.TOP);
-		tabbedPaneMain.setBounds(10, 245, 615, 205);
+		tabbedPaneMain.setBounds(10, 234, 935, 227);
 		
 		JPanel pnlSettings = new JPanel();		
 		JPanel pnlCollect = new JPanel();
@@ -244,7 +309,7 @@ public class Main {
 		pnlSettings.add(lblLocatorConfiguration);
 		
 		scrollPane = new JScrollPane();
-		scrollPane.setBounds(10, 87, 590, 79);
+		scrollPane.setBounds(10, 87, 741, 101);
 		pnlSettings.add(scrollPane);
 		
 		tblLocatorConfiguration = new JTable();
@@ -252,7 +317,7 @@ public class Main {
 		
 		JPanel panel = new JPanel();
 		panel.setBorder(new TitledBorder(null, "Locator Engine", TitledBorder.LEADING, TitledBorder.TOP, null, null));
-		panel.setBounds(435, 0, 165, 87);
+		panel.setBounds(755, 80, 165, 111);
 		pnlSettings.add(panel);
 		panel.setLayout(null);
 		
@@ -269,11 +334,11 @@ public class Main {
 		rdbtnFingerPrintEngine.setBounds(6, 21, 145, 23);
 		panel.add(rdbtnFingerPrintEngine);
 		
-		final JRadioButton rdbtnGammaEngine = new JRadioButton("Gamma Engine");
+		final JRadioButton rdbtnGammaEngine = new JRadioButton("Beta Engine");
 		rdbtnGammaEngine.addChangeListener(new ChangeListener() {
 			public void stateChanged(ChangeEvent arg0) {
 				if (rdbtnGammaEngine.isSelected()){
-					locatorChoice = LocatorChoices.GAMMA;
+					locatorChoice = LocatorChoices.BETA;
 					locator = Main.createLocator(locatorChoice);				
 					Main.populateConfigurationTable(locator, tblLocatorConfiguration);
 				}
@@ -316,7 +381,7 @@ public class Main {
 		pnlCollect.add(lblPreviousLocationDescription);
 		
 		btnStartCollecting = new ToggleButton("Start Collecting", "Stop Collecting");
-		btnStartCollecting.setBounds(11, 70, 264, 31);
+		btnStartCollecting.setBounds(10, 157, 264, 31);
 		pnlCollect.add(btnStartCollecting);
 		btnStartCollecting.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -376,7 +441,7 @@ public class Main {
 		pnlCalibrate.add(lblNewLabel_1);
 		
 		btnStartCalibrating = new ToggleButton("Start Calibrating", "Stop Calibrating");
-		btnStartCalibrating.setBounds(10, 144, 265, 31);
+		btnStartCalibrating.setBounds(10, 157, 265, 31);
 		pnlCalibrate.add(btnStartCalibrating);
 		btnStartCalibrating.setToolTipText("Saves collected data into the database");
 		
@@ -427,6 +492,10 @@ public class Main {
 						writerThread.join();
 						readerThread.join();
 						serialPort.close();
+						int oldBlockId = Integer.parseInt(txtCalibrateBlockNumber.getText());
+						oldBlockId++;
+						txtCalibrateBlockNumber.setText(String.format("%1$d",oldBlockId));
+						
 						btnStartCalibrating.toggleTitle();
 					}
 				} catch (NoSuchPortException e) {
@@ -451,9 +520,29 @@ public class Main {
 		pnlLocate.setLayout(null);
 		
 		btnStartLocating = new ToggleButton("Start Locating", "Stop Locating");
-		btnStartLocating.setBounds(10, 11, 265, 31);
+		btnStartLocating.setBounds(10, 157, 265, 31);
 		pnlLocate.add(btnStartLocating);
 		btnStartLocating.setToolTipText("Passes collected data to the Locating engine");
+		
+		textField = new JTextField();
+		textField.setText("5");
+		textField.setBounds(10, 27, 86, 20);
+		pnlLocate.add(textField);
+		textField.setColumns(10);
+		
+		JLabel lblTimeout = new JLabel("Broadcast Window Timeout");
+		lblTimeout.setBounds(10, 13, 160, 14);
+		pnlLocate.add(lblTimeout);
+		
+		textField_1 = new JTextField();
+		textField_1.setText("4");
+		textField_1.setBounds(10, 71, 86, 20);
+		pnlLocate.add(textField_1);
+		textField_1.setColumns(10);
+		
+		JLabel lblMinimumSamplesPer = new JLabel("Minimum samples per Broadcast");
+		lblMinimumSamplesPer.setBounds(10, 58, 160, 14);
+		pnlLocate.add(lblMinimumSamplesPer);
 		btnStartLocating.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {				
 				try {					
@@ -499,9 +588,143 @@ public class Main {
 		
 		
 		frmController.getContentPane().add(tabbedPaneMain);
+		JPanel pnlInfo = new JPanel();
+		
+		tabbedPaneMain.addTab("Info", pnlInfo);
+		pnlInfo.setLayout(null);
+		
+		JButton btnShowCalibrationData = new JButton("Show Calibration Data");
+		btnShowCalibrationData.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				try {
+					//Deserialize calibration data
+					ArrayList<DataPacket> calibrationData;
+					
+					calibrationData = loadCalibrationData();
+						
+					//Debug printing..
+					//System.out.println("FingerPrintTable:");
+					printDisplayMessage("Calibration Data:\n");
+					for(DataPacket t: calibrationData){
+						//System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagId, t.blockId));
+						printDisplayMessage(String.format("TagID=%1$d, BlockNumber=%2$d\n",t.tagId, t.blockId));
+						for (Map.Entry<Integer, ArrayList<Integer>> e: t.rssiTable.entrySet()){						
+							//System.out.print(String.format("\tDetectorID %1$d: ", e.getKey()));
+							printDisplayMessage(String.format("\tDetectorID %1$d: ", e.getKey()));
+							for (Integer rssi: e.getValue()){
+								//System.out.print(String.format("%1$d  ", rssi));
+								printDisplayMessage(String.format("%1$d  ", rssi));
+							}
+							//System.out.println();
+							printDisplayMessage("\n");
+						}
+						//System.out.println();
+						printDisplayMessage("\n");
+					}	
+				} catch (ClassNotFoundException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}			
+			}
+		});
+		btnShowCalibrationData.setBounds(10, 157, 265, 31);
+		pnlInfo.add(btnShowCalibrationData);
+		
+		JPanel panel_1 = new JPanel();
+		panel_1.setBorder(new TitledBorder(null, "Modify Cal Data", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		panel_1.setBounds(731, 0, 199, 199);
+		pnlInfo.add(panel_1);
+		panel_1.setLayout(null);
+		
+		txtModifyTagId = new JTextField();
+		txtModifyTagId.setBounds(10, 62, 86, 20);
+		panel_1.add(txtModifyTagId);
+		txtModifyTagId.setColumns(10);
+		
+		txtModifyBlockId = new JTextField();
+		txtModifyBlockId.setBounds(10, 29, 86, 20);
+		panel_1.add(txtModifyBlockId);
+		txtModifyBlockId.setColumns(10);
+		
+		txtModifyDetectorId = new JTextField();
+		txtModifyDetectorId.setBounds(10, 95, 86, 20);
+		panel_1.add(txtModifyDetectorId);
+		txtModifyDetectorId.setColumns(10);
+		
+		txtModifyRSSIIndex = new JTextField();
+		txtModifyRSSIIndex.setBounds(10, 128, 86, 20);
+		panel_1.add(txtModifyRSSIIndex);
+		txtModifyRSSIIndex.setColumns(10);
+		
+		JButton btnModifyCalData = new JButton("Modify");
+		btnModifyCalData.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				try {
+					int blockId = Integer.parseInt(txtModifyBlockId.getText());
+					int tagId = Integer.parseInt(txtModifyTagId.getText());
+					ArrayList<DataPacket> calibrationData = loadCalibrationData();
+					for (int g = 0;g < calibrationData.size();g++){
+						if (calibrationData.get(g).tagId == tagId){
+							if (calibrationData.get(g).blockId == blockId){								
+								int detectorId =Integer.parseInt(txtModifyDetectorId.getText());
+								int rssiIndex= Integer.parseInt(txtModifyRSSIIndex.getText());
+								int rssiNewValue =Integer.parseInt(txtModifyNewValue.getText());
+								calibrationData.get(g).rssiTable.get(detectorId).set(rssiIndex,rssiNewValue);
+								storeCalibrationData(tagId, blockId, calibrationData.get(g));
+								break;
+							}
+						}
+					}
+					
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+			}
+		});
+		btnModifyCalData.setBounds(103, 165, 86, 23);
+		panel_1.add(btnModifyCalData);
+		
+		JLabel lblTagid = new JLabel("TagId");
+		lblTagid.setBounds(10, 49, 46, 14);
+		panel_1.add(lblTagid);
+		
+		JLabel lblBlockid = new JLabel("BlockId");
+		lblBlockid.setBounds(10, 17, 46, 14);
+		panel_1.add(lblBlockid);
+		
+		JLabel lblDetectorid = new JLabel("DetectorId");
+		lblDetectorid.setBounds(10, 83, 66, 14);
+		panel_1.add(lblDetectorid);
+		
+		JLabel lblRssiIndex = new JLabel("RSSI Index");
+		lblRssiIndex.setBounds(10, 116, 66, 14);
+		panel_1.add(lblRssiIndex);
+		
+		txtModifyNewValue = new JTextField();
+		txtModifyNewValue.setBounds(103, 128, 86, 20);
+		panel_1.add(txtModifyNewValue);
+		txtModifyNewValue.setColumns(10);
+		
+		lblNewValue = new JLabel("New Value");
+		lblNewValue.setBounds(103, 116, 66, 14);
+		panel_1.add(lblNewValue);
 		
 		scrollPane_1 = new JScrollPane();
-		scrollPane_1.setBounds(10, 9, 615, 225);
+		scrollPane_1.setBounds(10, 11, 935, 221);
 		frmController.getContentPane().add(scrollPane_1);
 		
 		txtOutput = new JTextArea();
@@ -647,6 +870,10 @@ public class Main {
 				ArrayList<Byte> list = new ArrayList<Byte>();				
 				DataPacket dataBlock = null;
 				boolean firstSample=true;
+				int targetTagId = Integer.parseInt(txtCalibrateTagID.getText());
+				int blockId = Integer.parseInt(txtCalibrateBlockNumber.getText());
+				double x = Double.parseDouble(txtCalibrateX.getText());
+				double y = Double.parseDouble(txtCalibrateY.getText());
 				while (!done){		
 					RawSample rawSample = new RawSample();
 					int bufferSize = 6;
@@ -654,12 +881,9 @@ public class Main {
 					if (list.size() >= bufferSize){						
 						parseRawSample(list, rawSample);						
 						printRawSample(rawSample);						
-						int targetTagId = Integer.parseInt(txtCalibrateTagID.getText());
+						
 						if (targetTagId == rawSample.tagId ){//Only calibrate for specified tag
-							if (firstSample){
-								int blockId = Integer.parseInt(txtCalibrateBlockNumber.getText());
-								double x = Double.parseDouble(txtCalibrateX.getText());
-								double y = Double.parseDouble(txtCalibrateY.getText());
+							if (firstSample){								
 								dataBlock = new DataPacket(blockId, rawSample.tagId, new Vector2D(x,y));
 								firstSample = false;
 							}							
@@ -668,7 +892,12 @@ public class Main {
 					}					
 				}
 				//Serialize calibration data
-				storeCalibrationData(dataBlock);			
+				if (dataBlock == null){
+					//System.out.println(String.format("No calibration data for Tag %1$d", targetTagId));
+					printDisplayMessage(String.format("No calibration data for Tag %1$d", targetTagId));
+				}else{
+					storeCalibrationData(targetTagId,blockId, dataBlock);
+				}
 			}catch (IOException e){
 				e.printStackTrace();
 			}catch (RuntimeException e){
@@ -691,34 +920,7 @@ public class Main {
 			}
 			samples.add(rawSample.rssi);
 			dataPacket.rssiTable.put(rawSample.detectorId, samples);
-		}
-		@SuppressWarnings("unchecked")
-		private void storeCalibrationData(DataPacket dataPacket)
-				throws ClassNotFoundException, SQLException, IOException {
-			//TODO: make cal data directory and data file configurable.
-			ArrayList<DataPacket> calibrationData=null;			
-			File calFile = new File("calibrationdata.dat");
-			if (calFile.exists()){				
-				calibrationData = (ArrayList<DataPacket>)ObjectFiler.load("calibrationdata.dat");
-			}else{
-				calibrationData = new ArrayList<DataPacket>();
-			}
-			
-			//If it exists, replace entry with a matching block Id, else just append it.
-			boolean foundExisting=false;
-			int blockId = Integer.parseInt(txtCalibrateBlockNumber.getText());
-			for (int h = 0;h < calibrationData.size();h++){
-				if (calibrationData.get(h).blockId == blockId){
-					calibrationData.set(h, dataPacket);
-					foundExisting = true;
-					break;
-				}
-			}
-			if (!foundExisting){
-				calibrationData.add(dataPacket);
-			}
-			ObjectFiler.save("calibrationdata.dat", calibrationData);
-		}		
+		}				
 	}
 	
 	/*class CollectorReader
@@ -759,6 +961,7 @@ public class Main {
 		}
 	}
 
+	
 	/*class LocatorReader
 	 * 	This class implements a thread that reads raw samples from a (Serial)Port.
 	 *  It investigates the TagId and MsgId; If it has not seen that combination,
@@ -789,29 +992,13 @@ public class Main {
 				
 				//Get all detector Info from DB
 				Hashtable<Integer,Vector2D> detectorLocations = getDetectorInfo();
-				//Deserialize calibration data
-				ArrayList<DataPacket> calibrationData =loadCalibrationData();				
-				//Debug printing..
-				System.out.println("FingerPrintTable:");
-				for(DataPacket t: calibrationData){
-					System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagId, t.blockId));
-					for (Map.Entry<Integer, ArrayList<Integer>> e: t.rssiTable.entrySet()){						
-						System.out.print(String.format("\tDetectorID %1$d: ", e.getKey()));
-						for (Integer rssi: e.getValue()){
-							System.out.print(String.format("%1$d  ", rssi));
-						}
-						System.out.println();
-					}
-					System.out.println();
-				}			
 				
+				ArrayList<DataPacket> calibrationData = loadCalibrationData();
 				//Create locator instance, pass in calibration data, and 
-				//information about detector locations
-				//FingerPrint locator = new FingerPrint(calibrationData);
-				//LocationEngine locator = (LocationEngine)new KEngine();
+				//information about detector locations				
 				LocationEngine locator = Main.createLocator(locatorChoice);
 				locator.learn(calibrationData, detectorLocations);				
-				
+				Hashtable<Integer,ArrayList<DataPacket>> results = new Hashtable<Integer,ArrayList<DataPacket>>();			
 				while (!done){				
 					RawSample rawSample = new RawSample();
 					int bufferSize = 6;
@@ -824,7 +1011,7 @@ public class Main {
 						//Start a new time window, and associate with key, if key has not been seen.
 						if (!ttl.containsKey(key)){
 							Calendar currentMoment = Calendar.getInstance();
-							currentMoment.add(Calendar.SECOND, 5);
+							currentMoment.add(Calendar.SECOND, 10);
 							ttl.put(key, currentMoment);						
 						}
 					}				
@@ -836,25 +1023,101 @@ public class Main {
 							//Getting all RawSamples associated with TagId+MsgId key
 							ArrayList<RawSample> rawSamples = rawSampleTable.get(e.getKey());
 							//TODO: don't give a DataPacket to the locator, if less then N detectors are participating
-							DataPacket dataPacket=null;
-							boolean first=true;
-							for (int s = 0;s < rawSamples.size();s++){
-								if (first){									
-									dataPacket = new DataPacket(-1,rawSamples.get(0).tagId,null);
-									first =false;
+							if (rawSamples.size() >= 4){
+								DataPacket dataPacket=null;
+								boolean first=true;
+								for (int s = 0;s < rawSamples.size();s++){
+									if (first){									
+										dataPacket = new DataPacket(-1,rawSamples.get(0).tagId,null);
+										first =false;
+									}
+									ArrayList<Integer> rssiSingle =  new ArrayList<Integer>();
+									rssiSingle.add(rawSamples.get(s).rssi);//Only one
+									dataPacket.rssiTable.put(rawSamples.get(s).detectorId,rssiSingle );
 								}
-								ArrayList<Integer> rssiSingle =  new ArrayList<Integer>();
-								rssiSingle.add(rawSamples.get(s).rssi);//Only one
-								dataPacket.rssiTable.put(rawSamples.get(s).detectorId,rssiSingle );
+								String displayString;
+								//A Transaction is ready to give to the Locator...but first..
+								//Location Calculations
+								displayString = String.format("Frame prepared for Locator:\n");
+								printDisplayMessage(displayString);
+								//System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagId, t.blockId));
+								printDisplayMessage(String.format("\tTagID=%1$d, BlockNumber=%2$d\n",dataPacket.tagId, dataPacket.blockId));
+								for (Map.Entry<Integer, ArrayList<Integer>> g: dataPacket.rssiTable.entrySet()){						
+									//System.out.print(String.format("\tDetectorID %1$d: ", e.getKey()));
+									printDisplayMessage(String.format("\t\tDetectorID %1$d: ", g.getKey()));
+									for (Integer rssi: g.getValue()){
+										//System.out.print(String.format("%1$d  ", rssi));
+										printDisplayMessage(String.format("%1$d  ", rssi));
+									}
+									//System.out.println();
+									printDisplayMessage("\n");
+								}
+								locator.locate(dataPacket);
+								
+								//Print to txtOutput
+								/*displayString = String.format("Rx'd From Locator: TagId=%1$d at (%2$f, %3$f), Block=%4$d\n", dataPacket.tagId, dataPacket.location.x, dataPacket.location.y, dataPacket.blockId);
+								txtOutput.append(displayString);
+								txtOutput.setCaretPosition(txtOutput.getDocument().getLength());*/
+								///////////////////////////////////////////////////////////////
+								//After a locator, for a given tag, has calculated a location 5 times. 
+								//find the mode of the results..
+								//Then, put the mode into the DB.
+								
+								//Save results..
+								if (!results.containsKey(dataPacket.tagId)){
+									results.put(dataPacket.tagId, new ArrayList<DataPacket>());
+								}
+								ArrayList<DataPacket> dp = results.get(dataPacket.tagId);
+								dp.add(dataPacket);
+								results.put(dataPacket.tagId,dp);
+								
+								if (results.get(dataPacket.tagId).size()>=7){
+									//Determine which blockId was calculated most often..								
+									//First, sort by frequency of occurence of location								
+									//Hashtable<Vector2D, Integer> freqTable = new Hashtable<Vector2D, Integer>();
+									Hashtable<Integer, Integer> freqTable = new Hashtable<Integer, Integer>();
+									for (DataPacket d: results.get(dataPacket.tagId)){
+										if (!freqTable.containsKey(d.blockId)){
+											freqTable.put(d.blockId, 0);
+										}
+										int freq = freqTable.get(d.blockId);
+										freq++;
+										printDisplayMessage(String.format("%1$d has %2$d votes\n",d.blockId,freq));
+										freqTable.put(d.blockId, freq);
+									}								
+									//Now, tally the occurences up
+									//pick the most frequent
+									int max=-1;
+									//Vector2D current=null;
+									int current=-1;
+									for(Map.Entry<Integer, Integer> f:freqTable.entrySet()){
+										if (f.getValue() > max){
+											max = f.getValue();
+											current = f.getKey();
+										}
+									}								
+									//Then, go back into the the list of previous location results, and pick the first one
+									//that has the same location as the most frequently occuring..
+									//since they are all the same tag, tagId, and battery should be the same regardless of which
+									//old DataPacket we choose.
+									for (DataPacket d:results.get(dataPacket.tagId)){
+										if (d.blockId == current){
+											//We found one with the same location as the most frequently occuring.
+											//Store it into the DB
+											String displayString2 = String.format("Winner, with %1$d votes:\n \tBlockId=%2$d\n\t(X,Y)=(%3$f,%4$f)\n",max,d.blockId,d.location.x,d.location.y);
+											printDisplayMessage(displayString2);
+											storeResult(d);
+											freqTable.clear();
+											results.clear();
+											break;
+										}
+									}							
+								}
+								//storeResult(dataPacket);
+								///////////////////////////////////////////////////////////////							
+							}else{								
+								printDisplayMessage("Dropping samples, they came in too slow.\n");
 							}
-
-							locator.locate(dataPacket);
-							storeResult(dataPacket);
-							
-							//Print to txtOutput
-							String displayString = String.format("TagId=%1$d at (%2$f, %3$f), Block=%4$d\n", dataPacket.tagId, dataPacket.location.x, dataPacket.location.y, dataPacket.blockId);
-							txtOutput.append(displayString);
-							txtOutput.setCaretPosition(txtOutput.getDocument().getLength());
 							//Expire Transaction
 							expiredItems.add(e.getKey());							
 						}
@@ -891,8 +1154,7 @@ public class Main {
 				connect = DriverManager.getConnection("jdbc:mysql://db.cecs.pdx.edu/hoangman?" + 
 				 "user=hoangman&password=c@p2011$#tT");
 				// Statements allow to issue SQL queries to the database
-				statement = connect.createStatement();	
-				
+				statement = connect.createStatement();					
 				//Remove rows from CalibrateBlock and BlockDate where BlockNumber == User Specified BlockNumber 
 				String query1 = String.format("insert into TagInfo values(%1$d, '%2$s', %3$f, %4$f, %5$d)",
 											  dataPacket.tagId, 
@@ -928,14 +1190,16 @@ public class Main {
 				
 				//Package results into a Hashtable<Integer, Vector2D>
 				Hashtable<Integer,Vector2D> detectorTable = new Hashtable<Integer, Vector2D>();
-				System.out.println("Getting Detectors:");
+				//System.out.println("Getting Detectors:");
+				printDisplayMessage("Getting Detectors:\n");
 				while (detectorsResult.next()){
 					int detectorId = detectorsResult.getInt("DetectorID");
 					double x = detectorsResult.getFloat("X");
 					double y = detectorsResult.getFloat("Y");
 					Vector2D location = new Vector2D(x,y);
 					detectorTable.put(detectorId, location);
-					System.out.println("\tDetectorId="+detectorId+", (X,Y)=("+x+","+y+")");
+					//System.out.println(String.format("\tDetectorId=%1$d, (X,Y)=(%2$f, %3$f)\n",detectorId,x,y));
+					printDisplayMessage(String.format("\tDetectorId=%1$d, (X,Y)=(%2$f, %3$f)\n",detectorId,x,y));
 				}
 				
 				return detectorTable;
@@ -967,21 +1231,6 @@ public class Main {
 			}
 			samples.add(rawSample);
 			rawDataTable.put(key, samples);
-		}
-		/*loadCalibrationData
-		 * 	deserializes an ArrayList<DataPacket> from the local filesystem
-		 * 	and returns it on success. returns null if there does not exist
-		 * 	previously serialized calibration data.
-		 */
-		@SuppressWarnings("unchecked")
-		private ArrayList<DataPacket> loadCalibrationData()
-				throws ClassNotFoundException, SQLException, IOException {
-			File calFile = new File("calibrationdata.dat");
-			if (!calFile.exists()){
-				System.out.println("Calibration data not found.");
-				return null;
-			}									
-			return (ArrayList<DataPacket>)ObjectFiler.load("calibrationdata.dat");
 		}
 	}	
 }
