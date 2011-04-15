@@ -46,5 +46,14 @@ public class ConfigurationTableModel extends AbstractTableModel{
 		}
 		return null;
 	}
+	@Override
+	public boolean isCellEditable(int row, int column) {
+		return true;
+	}
+	@Override
+	public void setValueAt(Object value, int rowIndex, int columnIndex){
+		configParams.get(rowIndex).setValue((String)value);
+		fireTableCellUpdated(rowIndex, columnIndex);
+	}
 
 }
