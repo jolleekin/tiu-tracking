@@ -30,18 +30,26 @@ function TTabPanel() {
 	/**
 	 *	Adds a new tab page.
 	 *
-	 *	@param	name	{HTML}	Name of the tab page.
-	 *	@param	content	{HTML}	Content of the tab page.
-	 *	@return	Index of the added tag page.
+	 *	@param	name	{HTMLElement or String}	Name of the tab page.
+	 *	@param	content	{HTMLElement or String}	Content of the tab page.
+	 *	@return	Index of the added tab page.
 	 */
 	this.add = function (name, content) {
 		var nameNode = newElement('li', 'TTabName');
-		nameNode.innerHTML = name;
+		if (name instanceof HTMLElement)
+			nameNode.appendChild(name);
+		else
+			nameNode.innerHTML = name;
 		namePanel.appendChild(nameNode);
 		
-		var contentNode = newElement('div', 'TTabContent');
-		contentNode.innerHTML = content;
-		contentPanel.appendChild(contentNode);
+		if (content instanceof HTMLElement)
+			contentPanel.appendChild(content);
+		else {
+			var contentNode = newElement('div', 'TTabContent');
+			contentNode.style.display = SNone;
+			contentNode.innerHTML = content;
+			contentPanel.appendChild(contentNode);
+		}
 		
 		tabCount++;
 		return tabCount - 1;
@@ -58,7 +66,7 @@ function TTabPanel() {
 			contentPanel.removedChild(contentPanel.childNodes[index]);
 			tabCount--;
 		} else
-			throw 'Index out of range: ' + index;
+			throw  SIndexOutOfRange + index;
 	}
 	
 	/**
@@ -67,18 +75,21 @@ function TTabPanel() {
 	 *	@param	index {Integer}	Index of the tab page to be selected.
 	 */
 	this.selectTab = function (index) {
-		if (selectedIndex != index) {
-			namePanel.childNodes[selectedIndex].className = TTabName;
-			contentPanel.childNodes[selectedIndex].style.display = SNone;
-			
-			namePanel.childNodes[index].className = TSelectTabName;
-			contentPanel.childNodes[index].style.display = SBlock;
-			
-			selectedIndex = index;
-			
-			if (self.onChanged)
-				self.onChanged();
-		}
+		if (isInRange(index, 0, tabCount - 1)) {
+			if (selectedIndex != index) {
+				namePanel.childNodes[selectedIndex].className = TTabName;
+				contentPanel.childNodes[selectedIndex].style.display = SNone;
+				
+				namePanel.childNodes[index].className = TSelectTabName;
+				contentPanel.childNodes[index].style.display = SBlock;
+				
+				selectedIndex = index;
+				
+				if (self.onChanged)
+					self.onChanged();
+			}
+		} else
+			throw SIndexOutOfRange + index;
 	}
 	
 	/**
