@@ -76,20 +76,19 @@
 	2.	If not fetched or database changed then
 			Refetch tag table
 	*/
-	$assets = array();
+	$assetTags = array();
 	
 	// Connect and select the database
 	$connection = mysql_connect(URL, User, Password) or die(mysql_error());
 	mysql_select_db(Database) or die('Could not select database');
 
 	$assetId = $_GET['id'];
-	// Perform SQL query
+
 	$result = mysql_query('SELECT * FROM Tags') or die(mysql_error());
 
-	// Print results in JSON
 	while ($row = mysql_fetch_row($result))
-		$assets[$row[0]] = $row[1];	// row[0] = TagID, row[1] = AssetName
-	$assetCount = count($assets);
+		$assetTags[$row[0]] = $row[1];	// row[0] = TagID, row[1] = AssetName
+	$assetCount = count($assetTags);
 
 	mysql_free_result($result);
 
@@ -112,15 +111,16 @@
 		(10, now(), rand() * @FloorWidth, rand() * @FloorHeight, 100)') or die(mysql_error());
 	*/
 	
-	if ($assetId == '')
-		$result = mysql_query('SELECT * FROM TagInfo ORDER BY `Timestamp` DESC LIMIT ' . $assetCount) or die(mysql_error());
-	
 	echo '[';
-	$i = 0;
-	while ($row = mysql_fetch_row($result))
+	if ($assetId == '')
 	{
-		printf('{id:"%s",iL:[{t:"%s",x:%0.1f,y:%0.1f,b:%d}]},', $assets[$row[0]], $row[1], $row[2], $row[3], $row[4]);
-		$i++;
+		foreach ($assetTags as $tagId => $assetName)
+		{
+			$result = mysql_query('SELECT * FROM TagInfo WHERE TagID = ' . $tagId . ' ORDER BY `Timestamp` DESC LIMIT 1') or die(mysql_error());
+			if ($row = mysql_fetch_row($result))
+				printf('{id:"%s",iL:[{t:"%s",x:%0.1f,y:%0.1f,b:%d}]},', $assetName, $row[1], $row[2], $row[3], $row[4]);
+			mysql_free_result($result);
+		}
 	}
 	echo '{}]';	// Attach a dummy element
 	
