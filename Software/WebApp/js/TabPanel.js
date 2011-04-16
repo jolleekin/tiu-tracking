@@ -11,8 +11,11 @@ function TTabPanel() {
 
 /* private */
 
+	var TTabName = 'TTabName';
+	
 	var self = this;
 	var tabCount = 0;
+	var selectedIndex = -1;
 	var element = newElement('div', 'TTabPanel');
 	var namePanel = newElement('ul', 'TTabNamePanel');
 	var contentPanel = newElement('div', 'TTabContentPanel');
@@ -20,6 +23,11 @@ function TTabPanel() {
 	element.appendChild(namePanel);
 	element.appendChild(contentPanel);
 	
+	function tabNameClick(event) {
+		console.log(this.__idx);
+		self.selectTab(this.__idx);
+		event.preventDefault();
+	}
 	
 /* public */
 
@@ -35,11 +43,14 @@ function TTabPanel() {
 	 *	@return	Index of the added tab page.
 	 */
 	this.add = function (name, content) {
-		var nameNode = newElement('li', 'TTabName');
+		var nameNode = newElement('li', TTabName);
 		if (name instanceof HTMLElement)
 			nameNode.appendChild(name);
 		else
 			nameNode.innerHTML = name;
+		nameNode.__idx = tabCount;
+		nameNode.onclick = tabNameClick;
+		console.log(nameNode.onclick);
 		namePanel.appendChild(nameNode);
 		
 		if (content instanceof HTMLElement)
@@ -52,6 +63,7 @@ function TTabPanel() {
 		}
 		
 		tabCount++;
+		console.log('Tab Count = ' + tabCount);
 		return tabCount - 1;
 	}
 	
@@ -77,10 +89,11 @@ function TTabPanel() {
 	this.selectTab = function (index) {
 		if (isInRange(index, 0, tabCount - 1)) {
 			if (selectedIndex != index) {
-				namePanel.childNodes[selectedIndex].className = TTabName;
-				contentPanel.childNodes[selectedIndex].style.display = SNone;
-				
-				namePanel.childNodes[index].className = TSelectTabName;
+				if (selectedIndex > -1) {
+					namePanel.childNodes[selectedIndex].className = TTabName;
+					contentPanel.childNodes[selectedIndex].style.display = SNone;
+				}
+				namePanel.childNodes[index].className = 'TSelectedTabName';
 				contentPanel.childNodes[index].style.display = SBlock;
 				
 				selectedIndex = index;
