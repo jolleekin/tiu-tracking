@@ -9,23 +9,40 @@ body {
 }
 
 .TTabPanel {
-
+	position: absolute;
+	top: 50px;
+	width: 200px;
+	height: 800px;
+	z-index: 1px;
 }
 
 .TTabNamePanel {
+	display: block;
+	position: relative;
+	list-style-type: none;
+}
 
+.TTabName, .TSelectedTabName {
+	margin: 0;
+	float: left;
+	display: inline;
 }
 
 .TTabName {
-
+	display: block;
+	color: White;
+	background-color: Blue;
 }
 
 .TSelectedTabName {
-
+	color: Blue;
+	background-color: White;
 }
 
 .TTabContentPanel {
-
+	position: relative;
+	top: 1px;
+	border: 1px solid Gray;
 }
 
 .Float {

@@ -598,6 +598,8 @@
 			var ajax;					// XMLHttpRequest object to communicate with the server
 			var updateTimerHandle;
 
+			var tabPanel;
+			
 			/** Global constants */
 			
 			var UPDATE_INTERVAL = 10000;	// The interval that the web app requests new info of the tags, in ms
@@ -640,17 +642,12 @@
 				map.invalidate();
 				
 				// Adjust the position of the map toolbar
-				var dy = 0;
-				if (infoPanel.style.visibility != SHidden)
-					dy = infoPanel.offsetHeight;
 				mapToolbar.style.left = (window.innerWidth - mapToolbar.offsetWidth - 10) + SPixel;
-				mapToolbar.style.top  = (window.innerHeight - mapToolbar.offsetHeight - dy - 10) + SPixel;
+				mapToolbar.style.top  = (window.innerHeight - mapToolbar.offsetHeight - 10) + SPixel;
 
 				// Adjust the position of the asset list panel
 				assetListPanel.style.left = searchBox.offsetLeft + SPixel;
 				assetListPanel.style.top = searchBox.offsetTop + searchBox.offsetHeight + SPixel;
-				
-				infoPanel.style.top = (window.innerHeight - infoPanel.offsetHeight) + SPixel;
 			}
 			
 			/* body onload event handler */
@@ -660,7 +657,6 @@
 				headerPanel = $('headerPanel');
 				searchBox	= $('searchBox');
 				mapToolbar	= $('mapToolbar');
-				infoPanel	= $('infoPanel');
 				
 				// If the browser does not support HTML5 Canvas, show a waring message and get done :D
 				if (mapCanvas.getContext == null) {
@@ -798,6 +794,13 @@
 				this.onresize();
 				updateAssetInfo();
 				//updateTimerHandle = setInterval(updateAssetInfo, UPDATE_INTERVAL);
+				
+				tabPanel = new TTabPanel();
+				tabPanel.add('Assets', 'Hello');
+				tabPanel.add('Detectors', 'Hello again :D');
+				tabPanel.selectTab(0);
+				element = tabPanel.getElement();
+				document.body.appendChild(element);
 			}
 		</script>
 		
@@ -820,6 +823,5 @@
 			<button id="zoomFitButton" class="Middle TextIcon Translucent" onclick="map.zoom(null, 0);">[]</button>
 			<button id="zoomInButton" class="RightPill TextIcon Translucent" onclick="map.zoom(null, 1.6);">+</button>
 		</div>
-		<center id="infoPanel" class="ShowOnReady AbsPos"></center>
 	</body>
 </html>

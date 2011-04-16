@@ -12,7 +12,7 @@
 
 			/** class SceneManager */
 			
-			var METTER_TO_PIXEL = 272;	// Number of pixels equivalent to 1m
+			var _30IN_TO_PIXEL = 119;	// Number of pixels equivalent to 1m
 			var CIRCLE_RADIUS = 25;
 			
 			function SceneManager(aCanvas) {
@@ -56,7 +56,7 @@
 					targetPosition: new TVector2D(),
 					scale: 1,						// Current scale of the scene
 					targetScale: 1,					// Target scale of the scene
-					totalScale: METTER_TO_PIXEL		// Scale * METTER_TO_PIXEL
+					totalScale: _30IN_TO_PIXEL		// Scale * _30IN_TO_PIXEL
 				};
 								
 				var FRAME_INTERVAL = 40;
@@ -120,7 +120,7 @@
 
 						scene.scale = 0.001;
 						scene.targetScale = fitScale;
-						scene.totalScale = scene.scale * METTER_TO_PIXEL;
+						scene.totalScale = scene.scale * _30IN_TO_PIXEL;
 
 						scene.position.multSubSet(frontCanvasCenter, mapCenter, scene.scale);
 						scene.targetPosition.multSubSet(frontCanvasCenter, mapCenter, scene.targetScale);
@@ -171,7 +171,7 @@
 					scene.position.y *= sh;
 					scene.targetPosition.assign(scene.position);
 					scene.targetScale = scene.scale = scene.scale * s;
-					scene.totalScale  = scene.scale * METTER_TO_PIXEL;
+					scene.totalScale  = scene.scale * _30IN_TO_PIXEL;
 				*/
 					frontCanvas.width  = backCanvas.width  = w;
 					frontCanvas.height = backCanvas.height = h;
@@ -217,7 +217,7 @@
 								self.invalidate();
 							else {
 								// Brings the object to the center.
-								scene.targetPosition.multSubSet(frontCanvasCenter, pos, scene.scale * METTER_TO_PIXEL);
+								scene.targetPosition.multSubSet(frontCanvasCenter, pos, scene.scale * _30IN_TO_PIXEL);
 								startAnimation();
 							}
 						} else {
@@ -266,7 +266,7 @@
 						if (isZero(ds, 0.001) == false) {
 							animationDone = false;
 							scene.scale += ds * LERP_FACTOR;
-							scene.totalScale = scene.scale * METTER_TO_PIXEL;
+							scene.totalScale = scene.scale * _30IN_TO_PIXEL;
 						}
 						
 						if (animationDone) {
