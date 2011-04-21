@@ -31,14 +31,14 @@
   *
   * functions provided in avr/power.h to disable other hardware modules:
   * power_adc_disable(),power_spi_disable(),power_timer0_disable(), 
-  * power_timer1_disable(),power_timer2_disable(),power_twi_disable() 
+  * power_timer1_disable(),power_timer2_disable(),power_twi_disable() power_usart0_disable
   */
 
  
 #include <RF12.h>
 #include <Ports.h>
 #include <avr/sleep.h>
-
+#include <avr/power.h>
 //************************************************************
 // Detector properties
 #define FROM_TAG 		0
@@ -63,7 +63,67 @@ int detMessageReceived=0;
 // sleep variables and functions
 int wakePin = 2;                 // pin used for waking up
 int sleepStatus = 0;             // variable to store a request for sleep
-int count = 0;                   // counter
+//int count = 0;                   // counter
+
+void power_down()         
+{
+    /* Now is the time to set the sleep mode. In the Atmega8 datasheet
+     * http://www.atmel.com/dyn/resources/prod_documents/doc2486.pdf on page 35
+     * there is a list of sleep modes which explains which clocks and 
+     * wake up sources are available in which sleep mode.
+     *
+     * In the avr/sleep.h file, the call names of these sleep modes are to be found:
+     *
+     * The 5 different modes are:
+     *     SLEEP_MODE_IDLE         -the least power savings 
+     *     SLEEP_MODE_ADC
+     *     SLEEP_MODE_PWR_SAVE
+     *     SLEEP_MODE_STANDBY
+     *     SLEEP_MODE_PWR_DOWN     -the most power savings
+     *
+     * For now, we want as much power savings as possible, so we 
+     * choose the according 
+     * sleep mode: SLEEP_MODE_PWR_DOWN
+     * 
+     */  
+     
+    set_sleep_mode(SLEEP_MODE_IDLE);   // sleep mode is set here
+
+    sleep_enable();          // enables the sleep bit in the mcucr register
+                             // so sleep is possible. just a safety pin 
+
+    /* Now it is time to enable an interrupt. We do it here so an 
+     * accidentally pushed interrupt button doesn't interrupt 
+     * our running program. 
+     */
+    
+    power_adc_disable();
+    //power_spi_disable();
+    //power_timer0_disable();
+    power_timer1_disable();
+    power_timer2_disable();
+    power_twi_disable() ;
+    power_usart0_disable();
+    
+    sleep_mode();            // here the device is actually put to sleep!!
+                             // THE PROGRAM CONTINUES FROM HERE AFTER WAKING UP
+
+    power_adc_enable();
+    //power_spi_enable();
+   // power_timer0_enable();
+    power_timer1_enable();
+    power_timer2_enable();
+    power_twi_enable() ;
+    power_usart0_enable();
+
+
+    sleep_disable();         // first thing after waking from sleep:
+                             // disable sleep...
+   // detachInterrupt(0);    // disables interrupt 0 on pin 2 so the 
+                             // wakeUpNow code will not be executed 
+                             // during normal running time.
+                        
+}
 
 void sleepNow()         
 {
@@ -87,7 +147,7 @@ void sleepNow()
      * 
      */  
      
-    set_sleep_mode(SLEEP_MODE_PWR_DOWN);   // sleep mode is set here
+    set_sleep_mode(SLEEP_MODE_IDLE);   // sleep mode is set here
 
     sleep_enable();          // enables the sleep bit in the mcucr register
                              // so sleep is possible. just a safety pin 
@@ -96,7 +156,7 @@ void sleepNow()
      * accidentally pushed interrupt button doesn't interrupt 
      * our running program. 
      */
-
+    
     sleep_mode();            // here the device is actually put to sleep!!
                              // THE PROGRAM CONTINUES FROM HERE AFTER WAKING UP
 
@@ -105,7 +165,9 @@ void sleepNow()
    // detachInterrupt(0);    // disables interrupt 0 on pin 2 so the 
                              // wakeUpNow code will not be executed 
                              // during normal running time.
+                        
 }
+
 
 //************************************************************
 void setup () 
@@ -147,12 +209,13 @@ void setup ()
 
 //*****************************************************************
 void loop () 
-{      
-  sleepNow();              // sleep function called here
+{     
+  power_down(); 
+  //sleepNow();              // sleep function called here
                            // radio is still listenning
                            // whenever it feels ready, it will interrupt MCU
                            // rf12_interrupt() will be triggered 
-  delay(1000);             // waits for a second ??? for MCU ready
+  //delay(500);             // waits for a second ??? for MCU ready
   broadcast();             // transmit received data
 }
 
