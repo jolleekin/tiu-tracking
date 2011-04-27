@@ -15,10 +15,6 @@ function TAssetTag() {
 	this.battery = SNormal;
 	this.element = newElement(SDiv, 'TAssetEntity');
 	this.element.appendChild(newElement(SDiv, 'TMarkerIcon'));
-	this.element.title = 'Asset';
-	this.element.onmouseover = function () {
-		document.title = this.assetId;
-	}
 }
 
 TAssetTag.prototype = {
