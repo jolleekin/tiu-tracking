@@ -1,150 +1,165 @@
 body {
+	margin: 0;
+	padding: 0;
 	width:  100%;
 	height: 100%;
-	margin: 0px;
-	padding: 0px;
 	overflow: hidden;
 	background-color: #D8DCE0;
 	font: normal 12px/1.8em Calibri, Sans-serif;
 }
 
+#headerPanel {
+	position: relative;
+	z-index: 2;
+	width: 100%;
+	white-space: nowrap;
+	font-size: 3em;
+	padding: 0.5em 0;
+	/*
+	background-color: #508ACD;	/* for non-webkit browsers *
+	background: -webkit-gradient(linear, left top, left bottom, from(#61A7F2), to(#508ACD));
+	*/
+	color: #FFF;
+	text-shadow: -1px -1px 0 #CCC;
+background: #4096ee; /* old browsers */
+background: -moz-linear-gradient(top, #4096ee 0%, #4096ee 100%); /* firefox */
+
+background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#4096ee), color-stop(100%,#4096ee)); /* webkit */
+
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#4096ee', endColorstr='#4096ee',GradientType=0 ); /* ie */
+
+background: -o-linear-gradient(top, #4096ee 0%,#4096ee 100%); /* opera */
+}
+
 .TTabPanel {
-	position: absolute;
-	top: 50px;
-	width: 200px;
-	height: 800px;
-	z-index: 1px;
+	position: relative;
+	left: 0;
+	top: 0;
+	width: 430px;
+	margin: 0;
+	padding: 0;
+	z-index: 2;
+	background-color: #FFF;
 }
 
 .TTabNamePanel {
-	display: block;
 	position: relative;
-	list-style-type: none;
-}
-
-.TTabName, .TSelectedTabName {
+	z-index: 3;
+	width: 100%;
 	margin: 0;
-	float: left;
-	display: inline;
+	padding: 0.5em 0 0 0;
+	cursor: default;
+	list-style-type: none;
+	background: #FFF; /* old browsers */
+	background: -moz-linear-gradient(top, #FFF 0%, #f6f6f6 47%, #E0E0E0 100%); /* firefox */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#FFF), color-stop(47%,#f6f6f6), color-stop(100%,#E0E0E0)); /* webkit */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#FFFFFF', endColorstr='#E0E0E0',GradientType=0 ); /* ie */
+	background: -o-linear-gradient(top, #FFF 0%,#f6f6f6 47%,#E0E0E0 100%); /* opera */
 }
 
 .TTabName {
-	display: block;
-	color: White;
-	background-color: Blue;
+	color: #0860B6;
+	cursor: pointer;
+	margin: 0 0 0 0.2em;
+	padding: 0.2em 0.5em 2px 0.5em;
+	display: inline;
+	font-size: 14px;
+	font-weight: bold;
+	border: 1px solid #E0E0E0;/*AECEEF;*/
+	border-radius: 0.3em 0.3em 0 0;
+	background-color: #F4FAFF;
+	user-select: none;
+	-moz-user-select: none;
+	-webkit-user-select: none;
 }
 
-.TSelectedTabName {
-	color: Blue;
-	background-color: White;
+.TTabName.Selected {
+	color: #1F75CC;
+	border-bottom-color: #FFF;
+	background-color: #FFF;
 }
 
 .TTabContentPanel {
 	position: relative;
-	top: 1px;
-	border: 1px solid Gray;
-}
-
-.Float {
-	box-shadow: rgba(0, 0, 0, 0.3) 2px 2px 2px 2px;
-}
-
-#headerPanel {
+	z-index: 2;
+	top: -1px;
 	width: 100%;
-	height: 35px;
-	color: white;
-	font-size: 14px;
+	color: #000;
+	border-top: 1px solid #CCC;
+	border-radius: 0 0 0.2em 0.2em;
+}
+
+.TTabContent {
+	padding: 1em;
+	overflow: auto;
+}
+
+.TFlexTable {
+	cursor: default;
+	clear: both;
+	display: block;
+	overflow: auto;
+	max-height: 500px;
+	text-align: left;
+	border-collapse: collapse;
+}
+
+.TableHeader {
+	color: #FFF;
 	font-weight: bold;
-	vertical-align: middle;
-	background-color: #508ACD;	/* for non-webkit browsers */
-	background: -webkit-gradient(linear, left top, left bottom, from(#68AFFF), to(#407ABD));
-	-webkit-background-origin: 0;
-	-webkit-background-size: 100%;
-	z-index: 1;
-}
-
-#searchBox {
-	margin-top: 5px;
-	padding: 3px 10px 1px 5px;
-	outline: none;
-	border: 1px solid #A0A0A0;
-	border-radius: 13px;
-	background: #FFF url(images/SearchIcon.png) no-repeat right center;
-	box-shadow: rgba(255, 255, 255, 1) 1px 1px 1px 0px;		
-}
-
-#mapCanvas {
+	border-top: none;
+	clear: both;
+	float: left;
 	margin: 0;
 	padding: 0;
-	border: none;
-}
-
-#mapToolbar {
-	border-radius: 19px;
-	display: inline-block;
-	z-index: 1;
-}
-
-#infoPanel {
-	width: 100%;
-	height: auto;
-	color: White;
-	background: -webkit-gradient(linear, left top, left bottom, from(#68AFFF), to(#407ABD));
+	/*background-color: #508ACD;	/* for non-webkit browsers *
+	background: -webkit-gradient(linear, left top, left bottom, from(#61A7F2), to(#508ACD));
 	-webkit-background-origin: 0;
 	-webkit-background-size: 100%;
+	*/
+	background: #6db3f2; /* old browsers */
+	background: -moz-linear-gradient(top, #6db3f2 0%, #54a3ee 50%, #3690f0 51%, #1e69de 100%); /* firefox */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#6db3f2), color-stop(50%,#54a3ee), color-stop(51%,#3690f0), color-stop(100%,#1e69de)); /* webkit */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#6db3f2', endColorstr='#1e69de',GradientType=0 ); /* ie */
+	background: -o-linear-gradient(top, #6db3f2 0%,#54a3ee 50%,#3690f0 51%,#1e69de 100%); /* opera */
 }
 
-.TCellList {
-	padding: 5px;
-	overflow-x: hidden;
-	overflow-y: auto;
-	white-space: nowrap;
-	text-align: left;
-	background-color: #FFFFFF;
-	border-radius: 6px;
-	box-shadow: rgba(0, 0, 0, 0.2) 3px 3px 4px 4px;
-	z-index: 3;
+tr {
+	border-bottom: 1px solid #DFDFDF;
 }
 
-.TListItem, .TFocusedItem, .TSelectedItem {
-	float: left;
-	width: 98.4%;
-	display: block;
-	cursor: default;
-	text-align: left;
-	border-bottom: 1px solid #F5F5F5;
-	margin-left: 1%;
-	border-radius: 3px 3px 5px 5px;
-}
-
-.TListItemIndex {
-	float: left;
-	width: 34px;
-	text-align: right;
-	padding-right: 10px;
-	border-right: 1px solid #D5D5D5;
-}
-
-.TListItemText {
-	float: left;
-	padding-left: 10px;
-}
-
-.TFocusedItem {
+tr.Focused {
+	/*
 	background-color: #F5F5F5;
 	background: -webkit-gradient(linear, left top, left bottom, from(#F2F4F6), to(#E8EAF6));
-	/*background: -webkit-gradient(linear, left top, left bottom, from(#F5F5F5), color-stop(0.3, #F8F8F8), to(#F0F0F0));*/
 	-webkit-background-origin: 0;
-	-webkit-background-size: 100%;
+	-webkit-background-size: 100%;*/
+	background: -moz-linear-gradient(top, #f6f8f9 0%, #e5ebee 50%, #d7dee3 51%, #f5f7f9 100%); /* firefox */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#f6f8f9), color-stop(50%,#e5ebee), color-stop(51%,#d7dee3), color-stop(100%,#f5f7f9)); /* webkit */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f6f8f9', endColorstr='#f5f7f9',GradientType=0 ); /* ie */
+	background: -o-linear-gradient(top, #f6f8f9 0%,#e5ebee 50%,#d7dee3 51%,#f5f7f9 100%); /* opera */
 }
 
-.TSelectedItem {
-	background-color: #D0FFE0;
-	/*background: -webkit-gradient(linear, left top, left bottom, from(#CDFDDD), color-stop(0.3, #D0FFE0), to(#C8F8D8));*/
+tr.Selected {
+	/*background-color: #D0FFE0;
 	background: -webkit-gradient(linear, left top, left bottom, from(#DEEFFF), to(#BEDFFF));
 	-webkit-background-origin: 0;
-	-webkit-background-size: 100%;
+	-webkit-background-size: 100%;*/
+	background: #ebf1f6; /* old browsers */
+	background: -moz-linear-gradient(top, #ebf1f6 0%, #B4D6ED 50%, #A4CDE8 51%, #d5ebfb 100%); /* firefox */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#ebf1f6), color-stop(50%,#B4D6ED), color-stop(51%,#A4CDE8), color-stop(100%,#d5ebfb)); /* webkit */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ebf1f6', endColorstr='#d5ebfb',GradientType=0 ); /* ie */
+	background: -o-linear-gradient(top, #ebf1f6 0%,#B4D6ED 50%,#A4CDE8 51%,#d5ebfb 100%); /* opera */
 }
+
+.Col {float: left; padding-left: 0.5em;}
+.Col.TagId, .Col.X, .Col.Y {text-align: right; padding-left: 0; padding-right: 0.5em;}
+
+.Col.TagId {width: 34px;}
+.Col.AssetId {width: 112px;}
+.Col.Timestamp {width: 112px;}
+.Col.X, .Col.Y {width: 12px;}
+.Col.Battery {width: 40px;}
 
 .TMatchedString {
 	color: Blue;
@@ -157,7 +172,7 @@ body {
 	position: relative;
 	border-radius: 5px;
 	border: 1px solid grey;
-	background-color: white;
+	background-color: #FFF;
 	box-shadow: rgba(0, 0, 0, 0.4) 7px 7px 4px 4px;
 }
 
@@ -166,29 +181,129 @@ body {
 	top: -1px;
 }
 
-.AbsPos {
+.TCastShadow {
+	box-shadow: rgba(0, 0, 0, 0.2) 2px 2px 2px 2px;
+}
+
+.TRoundedCorner {
+	border-radius: 0.3em;
+}
+
+input[type=checkbox] {
+	margin-bottom: 4px;
+	vertical-align: middle;
+}
+
+label {
+	vertical-align: middle;
+	user-select: none;
+	-moz-user-select: none;
+	-webkit-user-select: none;
+}
+
+input[type=textbox] {
+	outline: none;
+	border: 1px solid Gray;
+	background: #FFF; /* old browsers */
+	background: -moz-linear-gradient(top, #E8E8E8 0%, #FFF 35%); /* firefox */
+
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#E8E8E8), color-stop(35%,#FFF)); /* webkit */
+
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#E8E8E8', endColorstr='#FFFFFFFFF',GradientType=0 ); /* ie */
+
+	background: -o-linear-gradient(top, #E8E8E8 0%,#FFF 35%); /* opera */
+}
+
+input[type=textbox]:hover {
+	background-color: #FFF;
+	border: 1px solid #0A5;
+	box-shadow: rgba(0,170,85,0.2) 0px 0px 2px 2px;
+}
+
+input[type=textbox]:focus {
+	background-color: #FFF;
+	border: 1px solid #0A5;
+	box-shadow: rgba(0,200,100,0.2) 0px 0px 2px 2px;
+}
+
+.TSearchBox {
+	padding: 2px 5px;
+	background: rgba(0,0,0,0) url(images/SearchIcon.png) no-repeat right center;
+}
+
+#assetSearchBox, #detectorSearchBox {
+	margin: 0 0 1em 0;
+	width: 95%;
+	outline: none;
+}
+
+.TAssetEntity {
 	position: absolute;
-	left: 0px;
-	top: 0px;
+	z-index: 6;
+	width: 35px;
+	height: 35px;
+	background: rgba(0,0,0,0) url(images/MarkerShadow.png) no-repeat top top;
 }
 
-.ShowOnReady {
+.TMarkerIcon {
+	position: absolute;
+	width: 24px;
+	height: 35px;
+	background-position: 0;
+	background: rgba(0,0,0,0) url(images/Markers.png) no-repeat top;
+}
+
+#mask {
+	position: absolute;
+	z-index: 1;
+	overflow: hidden;
+	user-select: none;
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	background-color: rgba(255, 255, 255, 0);
+}
+
+#mapContainer {
+	position: absolute;
+	z-index: 0;
+	width: 100%;
+	height: 100%;
+}
+
+#elMapImage {
+	position: absolute;
+	z-index: 0;
+}
+
+#elMapToolbar {
+	z-index: 2;
+	position: absolute;
 	visibility: hidden;
+	white-space: nowrap;
+	border-radius: 19px;
 }
 
+/*
+ *	CSS3 Buttons
+ *
+ *	Source: http://css3buttons.michaelhenriksen.dk/
+ *
+ */
 button {
 	float: left;
 	margin: 0;
-	display: inline-block;
-	padding: 5px;
-	color: #3C3C3D;
-	text-shadow: 1px 1px 0 #FFFFFF;
-	background: #ECECEC url('images/ButtonBackground.png') 0 0 no-repeat;
-	overflow: visible;
-	text-decoration: none;
-	border: 1px solid #CACACA;
-	border-radius: 2px;
+	padding: 0.3em;
 	outline: none;
+	color: #3C3C3D;
+	display: inline-block;
+	border-radius: 2px;
+	border: 1px solid #CACACA;
+	text-shadow: 1px 1px 0 #FFF;
+	text-decoration: none;
+	background: #ECECEC url('images/ButtonBackground.png') 0 0 no-repeat;
+	user-select: none;
+	-moz-user-select: none;
+	-webkit-user-select: none;
 }
 
 button.Primary {
@@ -196,11 +311,10 @@ button.Primary {
 }
 
 button:hover {
-	color: #FFFFFF;
+	color: #FFF;
 	border-color: #388AD4;
 	background-color: #2D7DC5;
 	background-position: 0 -40px;
-	text-decoration: none;
 	text-shadow: -1px -1px 0 rgba(0,0,0,0.3);
 }
 

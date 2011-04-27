@@ -60,7 +60,7 @@
 				};
 								
 				var FRAME_INTERVAL = 40;
-				var LERP_FACTOR = FRAME_INTERVAL * 0.004; /*some unit / ms^2 */;
+				var LERP_FACTOR = FRAME_INTERVAL * 0.005; /*some unit / ms^2 */;
 				
 				var timerHandle;		// Timer handle, used for scene animation
 			
@@ -441,7 +441,7 @@
 						updateMouseInfo(event, false);
 						
 						if ( !mouse.velocity.equals(ZeroVector2D, 2) ) {
-							scene.targetPosition.multAddSet(scene.position, mouse.velocity, 2);
+							scene.targetPosition.multAddSet(scene.position, mouse.velocity, 6);
 							startAnimation();
 						} else {
 							self.setObjectIndex(getHoveredObjectIndex());
@@ -489,7 +489,7 @@
 				function canvasTouchEnd(event) {
 					updateTouchInfo(event, false);
 					if ( !mouse.velocity.equals(ZeroVector2D, 2) ) {
-						scene.targetPosition.multAddSet(scene.position, mouse.velocity, 2);
+						scene.targetPosition.multAddSet(scene.position, mouse.velocity, 6);
 						startAnimation();
 					} else {
 						self.setObjectIndex(getHoveredObjectIndex());
