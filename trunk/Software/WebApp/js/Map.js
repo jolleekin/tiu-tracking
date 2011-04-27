@@ -60,8 +60,9 @@ function TMap() {
 	// prevent user from selecting the map image.
 	var fMask = document.createElement(SDiv);
 	fMask.id = 'mask';
+	fMask.style.position = 'fixed';
 	fMask.style.backgroundColor = 'rgba(255,255,255,0)';
-	document.body.appendChild(fMask);
+	fMapContainer.appendChild(fMask);
 
 	
 	fMapCenter.x = fMask.offsetWidth * 0.5;
@@ -187,9 +188,9 @@ function TMap() {
 	function updateMouseInfo(event, updateVelocity) {
 		if (event) {
 			// Mouse position w.r.t. the window.
-			var x  = event.layerX + fMask.offsetLeft;
-			var y  = event.layerY + fMask.offsetTop;
-			//console.log(x, y);
+			var x  = event.layerX + fMapContainer.offsetLeft + fMask.offsetLeft;
+			var y  = event.layerY + fMapContainer.offsetTop  + fMask.offsetTop;
+			console.log(x, y);
 			if (updateVelocity) {
 				fMouse.velocity.x = x - fMouse.position.x;
 				fMouse.velocity.y = y - fMouse.position.y;
