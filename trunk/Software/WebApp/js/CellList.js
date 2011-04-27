@@ -65,10 +65,6 @@ function TCellList() {
 		return items;
 	}
 	
-	this.getMaxDisplayedItemCount = function () {
-		return maxDisplayedItemCount;
-	}
-	
 	/**
 	 *	
 	 *	@param	aItems	{Array}	An array of items to be displayed
@@ -99,7 +95,11 @@ function TCellList() {
 				s.onmouseout = itemMouseOut;
 				s.onmouseover = itemMouseOver;
 			}
-			element.style.height = s.offsetHeight * self.maxDisplayedItemCount + SPixel;
+			
+			if (self.maxDisplayedItemCount > 0)
+				element.style.height = s.offsetHeight * self.maxDisplayedItemCount + SPixel;
+			else
+				element.style.height = SAuto;
 		}
 	}
 	
@@ -294,15 +294,14 @@ function TCellList() {
 	}
 	
 	function hide() {
-		if (self.autoHide && element.style.visibility != SHidden) {
-			if (attachedTextBox) {
-				if (self.clearTextBoxOnExit)
-					attachedTextBox.value = '';
-				else if (selectedIndex > -1)
-					attachedTextBox.value = items[selectedIndex].toString();
-			}
-			element.style.visibility = SHidden;
+		if (attachedTextBox) {
+			if (self.clearTextBoxOnExit)
+				attachedTextBox.value = '';
+			else if (selectedIndex > -1)
+				attachedTextBox.value = items[selectedIndex].toString();
 		}
+		if (self.autoHide)
+			element.style.visibility = SHidden;
 	}
 	
 	// Printable Keys: 32..126
