@@ -1,5 +1,9 @@
 /* Global constants */
 
+// Http request methods
+var SPost		= 'POST';
+var SGet		= 'GET';
+
 var SDiv		= 'div';
 
 var SUndefined	= 'undefined';
@@ -71,10 +75,26 @@ function ensureRange(x, min, max) {
 	return x;
 }
 
-function parsePixelString(str) {
-	return parseInt(str.replace('px', ''));
-}
-
-function isKeyPrintable(key) {
-	return (key >= 32) && (key <= 126);
+/**
+ *	Creates an AJAX object.
+ *
+ *	@param	method	{String}	'GET' or 'POST'.
+ *	@param	url		{String}	The request url.
+ *	@param	params	{String}	Params to send along, e.g. 'username=abc&password=123'
+ *	@param	callback	{Function(xhr, args)}	The function to be called upon receiving the response.
+ *	@param	args	{Object}	Arguments to pass to callback.
+ */
+function AJAX(method, url, params, callback) {
+	var xhr = new XMLHttpRequest();
+	xhr.onreadystatechange = callback;
+	if (method == 'GET') {
+		xhr.open(method, url + '?' + params, true);
+		xhr.send();
+	} else {
+		xhr.open(method, url, true);
+		xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+		//xhr.setRequestHeader('Content-length', params.length);
+		//xhr.setRequestHeader('Connection', 'close');
+		xhr.send(params);
+	}
 }

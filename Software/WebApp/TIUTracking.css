@@ -5,7 +5,7 @@ body {
 	height: 100%;
 	overflow: hidden;
 	background-color: #D8DCE0;
-	font: normal 12px/1.8em Calibri, Sans-serif;
+	font: normal 13px/1.8em Calibri, Sans-serif;
 }
 
 #headerPanel {
@@ -29,17 +29,6 @@ background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#4096e
 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#4096ee', endColorstr='#4096ee',GradientType=0 ); /* ie */
 
 background: -o-linear-gradient(top, #4096ee 0%,#4096ee 100%); /* opera */
-}
-
-.TTabPanel {
-	position: relative;
-	left: 0;
-	top: 0;
-	width: 430px;
-	margin: 0;
-	padding: 0;
-	z-index: 2;
-	background-color: #FFF;
 }
 
 .TTabNamePanel {
@@ -101,6 +90,7 @@ background: -o-linear-gradient(top, #4096ee 0%,#4096ee 100%); /* opera */
 	overflow: auto;
 	max-height: 500px;
 	text-align: left;
+	vertical-align: middle;
 	border-collapse: collapse;
 }
 
@@ -155,25 +145,36 @@ tr.Selected {
 .Col {float: left; padding-left: 0.5em;}
 .Col.TagId, .Col.X, .Col.Y {text-align: right; padding-left: 0; padding-right: 0.5em;}
 
-.Col.TagId {width: 34px;}
-.Col.AssetId {width: 112px;}
-.Col.Timestamp {width: 112px;}
-.Col.X, .Col.Y {width: 12px;}
-.Col.Battery {width: 40px;}
+.Col.TagId {width: 35px;}
+.Col.AssetId {width: 120px;}
+.Col.Timestamp {width: 120px;}
+.Col.X, .Col.Y {width: 20px;}
+.Col.Battery {width: 40px; padding-right: 0.5em;}
+.Col.More {width: 25px;}
 
 .TMatchedString {
 	color: Blue;
 	font-weight: bold;
 }
 
+.TInfoBox {
+	margin: 0;
+	padding: 0;
+	position: absolute;
+	z-index: 1;
+}
+
 .TInfoBoxContent {
+	user-select: all;
+	-moz-user-select: all;
+	-webkit-user-select: all;
 	white-space: nowrap;
 	padding: 5px 10px;
 	position: relative;
 	border-radius: 5px;
 	border: 1px solid grey;
 	background-color: #FFF;
-	box-shadow: rgba(0, 0, 0, 0.4) 7px 7px 4px 4px;
+	box-shadow: rgba(0, 0, 0, 0.4) 10px 10px 4px 4px;
 }
 
 .TPink {
@@ -201,8 +202,11 @@ label {
 	-webkit-user-select: none;
 }
 
-input[type=textbox] {
+input[type=textbox], input[type=password] {
+	height: 1.5em;
+	padding: 0 5px;
 	outline: none;
+	margin: 0;
 	border: 1px solid Gray;
 	background: #FFF; /* old browsers */
 	background: -moz-linear-gradient(top, #E8E8E8 0%, #FFF 35%); /* firefox */
@@ -214,65 +218,47 @@ input[type=textbox] {
 	background: -o-linear-gradient(top, #E8E8E8 0%,#FFF 35%); /* opera */
 }
 
-input[type=textbox]:hover {
+input[type=textbox]:hover, input[type=password]:hover {
 	background-color: #FFF;
 	border: 1px solid #0A5;
 	box-shadow: rgba(0,170,85,0.2) 0px 0px 2px 2px;
 }
 
-input[type=textbox]:focus {
+input[type=textbox]:focus, input[type=password]:hover {
 	background-color: #FFF;
 	border: 1px solid #0A5;
-	box-shadow: rgba(0,200,100,0.2) 0px 0px 2px 2px;
+	box-shadow: rgba(0,100,200,0.2) 0px 0px 2px 2px;
 }
 
 .TSearchBox {
-	padding: 2px 5px;
 	background: rgba(0,0,0,0) url(images/SearchIcon.png) no-repeat right center;
 }
 
 #assetSearchBox, #detectorSearchBox {
 	margin: 0 0 1em 0;
-	width: 95%;
+	width: 290px;
 	outline: none;
 }
 
-.TAssetEntity {
+.TMapEntity {
 	position: absolute;
-	z-index: 6;
 	width: 35px;
 	height: 35px;
-	background: rgba(0,0,0,0) url(images/MarkerShadow.png) no-repeat top top;
+	background: rgba(0,0,0,0) url(images/MarkerShadow.png) no-repeat top;
 }
 
-.TMarkerIcon {
+.TAssetIcon {
 	position: absolute;
 	width: 24px;
 	height: 35px;
-	background-position: 0;
 	background: rgba(0,0,0,0) url(images/Markers.png) no-repeat top;
 }
 
-#mask {
+.TDetectorIcon {
 	position: absolute;
-	z-index: 1;
-	overflow: hidden;
-	user-select: none;
-	-moz-user-select: none;
-	-webkit-user-select: none;
-	background-color: rgba(255, 255, 255, 0);
-}
-
-#mapContainer {
-	position: absolute;
-	z-index: 0;
-	width: 100%;
-	height: 100%;
-}
-
-#elMapImage {
-	position: absolute;
-	z-index: 0;
+	width: 24px;
+	height: 35px;
+	background: rgba(0,0,0,0) url(images/Markers.png) no-repeat 0 -114px;
 }
 
 #elMapToolbar {
@@ -292,7 +278,7 @@ input[type=textbox]:focus {
 button {
 	float: left;
 	margin: 0;
-	padding: 0.3em;
+	padding: 0.2em 0.3em;
 	outline: none;
 	color: #3C3C3D;
 	display: inline-block;
@@ -305,6 +291,23 @@ button {
 	-moz-user-select: none;
 	-webkit-user-select: none;
 }
+button:focus,
+button:hover { color: #FFF; border-color: #388AD4; text-decoration: none; text-shadow: -1px -1px 0 rgba(0,0,0,0.3); background-position: 0 -40px; }
+
+div.DeleteButton {
+	margin: 6px 0 5px;
+	width: 12px;
+	height: 12px;
+	background: url('images/DeleteIcon.png') no-repeat 0 0;
+}
+
+div.DeleteButton:hover {
+	background-position: -13px 0;
+}
+
+button.Negative:focus,
+button.Negative:hover { color: #FFFFFF; background-position: 0 -121px; background-color: #D84743; border-color: #911D1B; }
+button.Negative:active { background-position: 0 -161px; background-color: #A5211E; border-color: #911D1B; }
 
 button.Primary {
 	font-weight: bold;
@@ -340,17 +343,21 @@ button.Middle {
 
 button.TextIcon {
 	font-weight: 900;
-	font: 16px "Courier New";
+	font: 1.2em "Courier New";
 }
 
 button.Translucent {
 	opacity: 0.8;
-	transition: opacity 200ms ease-in 0s;
-	-o-transition: opacity 200ms ease-in 0s;
-	-moz-transition: opacity 200ms ease-in 0s;
-	-webkit-transition: opacity 200ms ease-in 0s;
 }
 
 button.Translucent:hover {
 	opacity: 1;
+}
+
+.HasBorder {
+	border: 1px solid #CCC;
+}
+
+legend {
+	font-weight: bold;
 }

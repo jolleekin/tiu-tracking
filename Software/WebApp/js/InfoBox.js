@@ -5,34 +5,26 @@
  *	@author	Man Hoang	
  *	@version	1.0
  */
-function TInfoBox() {
-	var element = newElement('div', 'TInfoBox ShowOnReady AbsPos');
+function newInfoBox() {
+	var element = newElement('div', 'TInfoBox AbsPos');
 	element.innerHTML = '<div class="TInfoBoxContent"></div><img class="TPink" src="images/Pink.png" />';
+	element.style.visibility = SHidden;
+	
+	element.setContent = function (html) {
+		var pointer = this.childNodes[1];
+		this.childNodes[0].innerHTML = html;
+		pointer.style.left = (this.offsetWidth - pointer.offsetWidth) * 0.5 + SPixel;
+	}
 
-	document.body.appendChild(element);
-	
-	var content = element.childNodes[0];
-	var pink = element.childNodes[1];
-	var cx = (element.offsetWidth - pink.width) * 0.5;
-	var cy = element.offsetHeight;
-
-	this.getElement = function () {
-		return element;
+	element.setPosition = function (x, y) {
+		this.style.left = (x - this.offsetWidth * 0.5 + this.childNodes[1].offsetWidth) + SPixel;
+		this.style.top  = (y - this.offsetHeight + 7) + SPixel;
 	}
 	
-	this.setVisible = function (value) {
-		element.style.visibility = value ? SVisible : SHidden;
+	element.draw = function (scale) {
+		this.style.left = (this.x * scale - this.offsetWidth * 0.5 + this.childNodes[1].offsetWidth) + SPixel;
+		this.style.top  = (this.y * scale - this.offsetHeight) + SPixel;
 	}
 	
-	this.setContent = function (html) {
-		content.innerHTML = html;
-		cx = (element.offsetWidth - pink.width) * 0.5;
-		cy = element.offsetHeight;
-		pink.style.left = cx + SPixel;
-	}
-	
-	this.setPosition = function (x, y) {
-		element.style.left = (x - cx) + SPixel;
-		element.style.top  = (y - cy) + SPixel;
-	}
+	return element;
 }
