@@ -8,8 +8,6 @@ var cnFocusedRow	= 'Focused';
 var cnSelectedRow	= 'Selected';
 var cnMatchedString	= 'TMatchedString';
 
-var STableRow		= 'table-row';
-
 /**
  *
  *	@param	container	{HTMLTableElement}	An empty table.
@@ -27,6 +25,7 @@ function TFlexTable(container) {
 	var fData;
 	var fFilterColumnIndex = -1;
 	var fFilterValue = '';
+	var fFilterRequired = false;
 	
 	var fSelectedIndex = -1;	// Index of the selected row
 	var fFocusedIndex = -1;
@@ -54,7 +53,7 @@ function TFlexTable(container) {
 	 */
 	this.focusNextRow = function (direction) {	
 		var i = -1;
-		if (fFocusedIndex > -1 && fRows[fFocusedIndex].style.display != SNone)
+		if ((fFocusedIndex > -1) && (fRows[fFocusedIndex].style.display != SNone))
 			i = fFocusedIndex;
 							
 		if (direction > 0) {
@@ -75,7 +74,7 @@ function TFlexTable(container) {
 	}
 	
 	function rowClick(event) {
-		self.setSelectedIndex(this.sectionRowIndex);
+		self.setSelectedIndex(this.rowIndex);
 		event.preventDefault();
 	}
 	
@@ -85,29 +84,30 @@ function TFlexTable(container) {
 	}
 	
 	function rowMouseOver(event) {
-		self.setFocusedIndex(this.sectionRowIndex);
+		self.setFocusedIndex(this.rowIndex);
 		event.preventDefault();
 	}
 
+	//TODO: Implement this handler
+	function cellDoubleClick(event) {
+		if (this.__readonly)
+			return;
+		
+	}
+	
 	function textBoxFocus() {
 		self.filter(-1, this.value);
 	}
 	
-	function textBoxBlur() {
-		if (self.autoClearTextBox) {
-			this.value = '';
-			self.filter(-1, '');
-		}
-	}
-	
 	function textBoxKeyDown(event) {
-		switch (event.which) {
+		fFilterRequired = false;
+		switch (event.keyCode) {
 			case 13:	/* Enter */
 				self.setSelectedIndex(fFocusedIndex);
 				break;
 			case 38:	/* Up   */
 			case 40:	/* Down */
-				self.focusNextRow(event.which - 39);
+				self.focusNextRow(event.keyCode - 39);
 				if (fFocusedIndex > -1) {
 					if (browser.isChrome || browser.isIE)
 						this.value = fRows[fFocusedIndex].cells[fFilterColumnIndex].innerText;
@@ -116,18 +116,18 @@ function TFlexTable(container) {
 				break;
 			case 9:		/* Tab */
 			case 27:	/* Esc */
-				if (self.autoClearTextBox)
+				if (self.autoClearTextBox) {
 					this.value = '';
+					self.filter(-1, '');
+				}
 				break;
-			//default:
-			//	self.filter(-1, this.value);
-			//	return;
+			default:
+				fFilterRequired = true;
 		}
 	}
 	
 	function textBoxKeyUp(event) {
-		var c = event.which;
-		if (c != 38 && c != 40)
+		if (fFilterRequired)
 			self.filter(-1, this.value);
 	}
 	
@@ -174,16 +174,18 @@ function TFlexTable(container) {
 	
 	this.setSelectedIndex = function (value) {
 		if (fSelectedIndex != value) {
-			if (fSelectedIndex > -1)
+			// Upper bound checking is needed since user may delete the last row,
+			// which may be the selected row.
+			if ((fSelectedIndex > -1) && (fSelectedIndex < fRows.length))
 				fRows[fSelectedIndex].className = '';
 			
-			if (value > -1) {
+			if (value > -1 && value < fRows.length) {
 				var row = fRows[value];
 				row.className = cnSelectedRow;
 				showRow(row);
-			}
-			
-			fSelectedIndex = value;
+				fSelectedIndex = value;
+			} else			
+				fSelectedIndex = -1;
 			
 			if (self.onChange)
 				self.onChange();
@@ -194,24 +196,21 @@ function TFlexTable(container) {
 		if (fFocusedIndex != value) {
 			if (fFocusedIndex > -1) {
 				var row = fRows[fFocusedIndex];
-				if (row.sectionRowIndex != fSelectedIndex)
+				if (row.rowIndex != fSelectedIndex)
 					row.className = '';
-				else
-					row.className = cnSelectedRow;
 			}
 			
-			if (value > -1) {
+			if (value > -1 && value < fRows.length) {
 				var row = fRows[value];
-				if (row.sectionRowIndex != fSelectedIndex)
+				if (row.rowIndex != fSelectedIndex)
 					row.className = cnFocusedRow;
 				showRow(row);
-			}
-			
-			fFocusedIndex = value;
+				fFocusedIndex = value;
+			} else
+				fFocusedIndex = -1;
 
-			if (self.onFocusChange) {
+			if (self.onFocusChange)
 				self.onFocusChange();
-			}
 		}
 	}
 	
@@ -220,13 +219,11 @@ function TFlexTable(container) {
 		if (fTextBox != textBox) {
 			if (fTextBox) {
 				fTextBox.removeEventListener(SFocus	 , textBoxFocus	, false);
-				fTextBox.removeEventListener(SBlur	 , textBoxBlur	, false);
 				fTextBox.removeEventListener(SKeyUp	 , textBoxKeyUp	, false);
 				fTextBox.removeEventListener(SKeyDown, textBoxKeyDown, false);
 			}
 			if (textBox) {
 				textBox.addEventListener(SFocus	 , textBoxFocus	 , false);
-				textBox.addEventListener(SBlur	 , textBoxBlur	 , false);
 				textBox.addEventListener(SKeyUp	 , textBoxKeyUp	 , false);
 				textBox.addEventListener(SKeyDown, textBoxKeyDown, false);
 			}
@@ -298,7 +295,12 @@ function TFlexTable(container) {
 	}
 
 	this.deleteRow = function(index) {
+		self.setFocusedIndex(-1);
 		fElement.deleteRow(index);
+		if (fSelectedIndex > index)
+			self.setSelectedIndex(fSelectedIndex - 1);
+		else if (fSelectedIndex == index)
+			self.setSelectedIndex(-1);
 	}
 	
 	this.cells = function(row, col) {

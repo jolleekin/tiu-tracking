@@ -1,10 +1,14 @@
 <?php
 
-	const URL = 'db.cecs.pdx.edu';
-	const User = 'hoangman';
-	const Password = 'c@p2011$#tT';
-	const Database = 'hoangman';
+session_start();
 
+if (!$_SESSION['Valid'])
+	$_SESSION['Valid'] = 1;
+
+	const DBURL = 'db.cecs.pdx.edu';
+	const DBUsername = 'hoangman';
+	const DBPassword = 'c@p2011$#tT';
+	const DBName = 'hoangman';
 
 	/*
 	global $connection;
@@ -13,8 +17,8 @@
 	{
 		if ($connection == null)
 		{
-			$connection = mysql_connect(URL, User, Password) or die('Could not connect: ' . mysql_error());
-			mysql_select_db(Database) or die('Could not select database');
+			$connection = mysql_connect(DBURL, DBUsername, DBPassword) or die('Could not connect: ' . mysql_error());
+			mysql_select_db(DBName) or die('Could not select database');
 		}
 	  return true;
 	}
@@ -79,8 +83,8 @@
 	$assetTags = array();
 	
 	// Connect and select the database
-	$connection = mysql_connect(URL, User, Password) or die(mysql_error());
-	mysql_select_db(Database) or die('Could not select database');
+	$connection = mysql_connect(DBURL, DBUsername, DBPassword) or die(mysql_error());
+	mysql_select_db(DBName) or die('Could not select database');
 
 	$assetId = $_GET['id'];
 
@@ -122,7 +126,7 @@
 			mysql_free_result($result);
 		}
 	}
-	echo '{}]';	// Attach a dummy element
+	echo '{' . session_id() . '}]';	// Attach a dummy element
 	
 	mysql_free_result($result);
 
