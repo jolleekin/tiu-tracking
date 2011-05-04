@@ -5,15 +5,24 @@
 function TMap() {
 
 /* private */
+
+/* const - IE doen't support const keyword yet. It sucks. */
 	var ScaleEpsilon = 0.002;
 	
-	var VelocityEpsilon = 5;	// If he magnitues of both the components of the mouse velocity
+	var VelocityEpsilon = 5;	// If the magnitues of both the components of the mouse velocity
 								// are less than this value, the mouse is considered not moving.
-	var VelocityScale = 6;
+	/**
+		Upon left mouse up, if the mouse's velocity is not zero ((|x| > VelocityEpsilon) or (|y| > VelocityEpsilon)),
+		The mouse velocity will be multiplied with this value to determine the target position of the map.
+	 */
+	var VelocityScale = 8;
 	
-	var FrameInterval = 40;			// ms
-	var LerpFactor = FrameInterval * 0.005; //Some unit / ms^2
-	
+	var FrameInterval		= 40;	// ms
+	var PositionLerpFactor	= FrameInterval * 0.005;
+	var ScaleLerpFactor		= FrameInterval * 0.006;
+	var LerpFactorFactor	= 1.05;
+
+/* fields */
 	var self = this;
 	var fComponentState = csLoading;
 	
@@ -25,6 +34,14 @@ function TMap() {
 	
 	var fMinScale = 0;			// The scale at which the scene fits perfectly inside the mapCanvas
 	var fMaxScale = 0;		
+	
+	/**
+		The current lerp factor controls how fast the map can move or scale in the current frame.
+		When the animation timer is enabled, this variable is set to @PositionLerpFactor or @ScaleLerpFactor.
+		Then on every frame, this variable is scaled by @LerpFactorFactor.
+		Think about @PositionLerpFactor as speed and @LerpFactorFactor as acceleration.
+	*/
+	var fCurrentLerpFactor = PositionLerpFactor;
 	
 	var fMouse = {
 		position: new TVector2D(),
@@ -44,23 +61,45 @@ function TMap() {
 	// Timer used for scene animation
 	var fTimer = new TTimer(FrameInterval, function () {
 		updateMapTransform();
-		self.invalidate();
+		fCurrentLerpFactor *= LerpFactorFactor;
 	});
 
 	var fEntities = [];
+	var fSelectedEntity = null;
 	
 	// Create a map layer on top of the map image to capture events and
 	// prevent user from selecting the map image.
 	var fMap = document.createElement(SDiv);
-	fMap.id = 'map';
+	// For Firefox and IE, the background-color must explicitly be set for the map to receive events. A value of (0, 0, 0, 0) won't work :D
 	fMap.setAttribute('style', 'position: absolute; z-index: 0; overflow: hidden; background-color: rgba(255, 255, 255, 0);');
 	document.body.appendChild(fMap);
 	
 	var fMapContainer = document.createElement(SDiv);
-	fMapContainer.id = 'mapContainer';
 	fMapContainer.style.position = 'absolute';
 	fMap.appendChild(fMapContainer);
 
+	var FadeInFadeOutAnimationParams = {
+		type: 'opacity',
+		unit: '',
+		to: 100,
+		step: 10,
+		delay: 25,
+		onfinish: function () {
+			if (parseFloat(this.style.opacity) == 0)
+				this.style.visibility = SHidden;	// Hide the box to prevent it from receiving events
+		}
+	};
+		
+	var fFocusedEntityInfoBox = TInfoBox();
+	fFocusedEntityInfoBox.style.zIndex	= 101;
+	fFocusedEntityInfoBox.style.opacity	= 0;
+	fFocusedEntityInfoBox.style.color	= '#0860B6';
+	fMapContainer.appendChild(fFocusedEntityInfoBox);
+	$fx(fFocusedEntityInfoBox).fxAdd(FadeInFadeOutAnimationParams);
+	
+	var fSelectedEntityInfoBox = TInfoBox();
+	fSelectedEntityInfoBox.style.zIndex = 100;
+	fMapContainer.appendChild(fSelectedEntityInfoBox);
 	
 	fMapCenter.x = fMap.offsetWidth * 0.5;
 	fMapCenter.y = fMap.offsetHeight * 0.5;
@@ -81,12 +120,10 @@ function TMap() {
 			this.style.cursor = 'move';//'url(images/closedhand_8_8.cur), move';
 			fMapTransform.targetPosition.add(fMouse.velocity);
 			fMapTransform.position.assign(fMapTransform.targetPosition);
-			self.invalidate();
+			//self.invalidate();
+			moveMap();
 			event.preventDefault();
-		} else {
-			//self.setHoverObjectIndex(getObjectUnderMouse());
 		}
-		
 	}
 	
 	mapMouseUp = function (event) {
@@ -97,11 +134,10 @@ function TMap() {
 			
 			if ( !fMouse.velocity.equals(ZeroVector2D, VelocityEpsilon) ) {
 				fMapTransform.targetPosition.multAddSet(fMapTransform.position, fMouse.velocity, VelocityScale);
-				LerpFactor = LerpFactor;
+				fCurrentLerpFactor = PositionLerpFactor;
 				fTimer.setEnabled(true);
-			} else {
-				//self.setObjectIndex(getObjectUnderMouse());
-			}
+			} else
+				self.selectEntity(null);
 		}
 	}
 	
@@ -122,37 +158,56 @@ function TMap() {
 
 	mapDoubleClick = function (event) {
 		self.zoom(event, 2);
+		event.preventDefault();
 	}
 	
 	/* Touch event handlers */
 	
-	function mapTouchStart(event) {
-		fTimer.setEnabled(false);
+	function simulateMouse(event) {
 		var touch = event.touches[0];
-		updateMouseInfo({layerX: touch.pageX, layerY: touch.pageY}, false);
-		event.preventDefault();
+		event.pageX = touch.pageX;
+		event.pageY = touch.pageY;
+		event.button = 0;	
+	}
+	
+	function mapTouchStart(event) {
+		simulateMouse(event);
+		mapMouseDown(event);
 	}
 	
 	function mapTouchEnd(event) {
-		var touch = event.touches[0];
-		updateMouseInfo({layerX: touch.pageX, layerY: touch.pageY}, false);
-		if ( !mouse.velocity.equals(ZeroVector2D, VELOCITY_THRESHOLD) ) {
-			scene.targetPosition.multAddSet(scene.position, mouse.velocity, 2);
-			LerpFactor = LerpFactor;
-			fTimer.setEnabled(true);
-		} else {
-			self.setObjectIndex(getObjectUnderMouse());
-		}
+		simulateMouse(event);
+		mapMouseUp(event);
 	}
 	
 	function mapTouchMove(event) {		
-		var touch = event.touches[0];
-		updateMouseInfo({layerX: touch.pageX, layerY: touch.pageY}, true);
-		scene.targetPosition.add(mouse.velocity);
-		scene.position.assign(scene.targetPosition);
-		self.invalidate();
-		event.preventDefault();
+		simulateMouse(event);
+		mapMouseMove(event);
 	}
+	
+	/* Entity event handlers */
+	
+	function entityMouseOver() {
+		if (this != fSelectedEntity) {
+			fFocusedEntityInfoBox.setContent(this.getInfo());
+			fFocusedEntityInfoBox.setPosition(this.mX, this.mY, 0, -this.offsetHeight, fMapTransform.totalScale);
+			fFocusedEntityInfoBox.style.visibility = SVisible;
+			FadeInFadeOutAnimationParams.to = 100;
+			fFocusedEntityInfoBox.fxRun();
+		}
+	}
+	
+	function entityMouseOut() {
+		FadeInFadeOutAnimationParams.to = 0;
+		fFocusedEntityInfoBox.fxRun();
+	}
+	
+	function entityClick(event) {
+		self.selectEntity(this);
+		// Prevent mapMouseUp from being called.
+		event.stopPropagation();
+	}
+	
 	
 	function recalculateScales() {
 		if (fMapImage) {
@@ -172,7 +227,7 @@ function TMap() {
 
 		fMapTransform.position.multSubSet(fMapCenter, fMapImageCenter, fMapTransform.scale);
 		fMapTransform.targetPosition.multSubSet(fMapCenter, fMapImageCenter, fMapTransform.targetScale);
-		LerpFactor = LerpFactor;
+		fCurrentLerpFactor = PositionLerpFactor;
 		fTimer.setEnabled(true);
 	}
 	
@@ -187,7 +242,6 @@ function TMap() {
 			// Mouse position w.r.t. the map.
 			var x  = event.pageX - fMap.offsetLeft;
 			var y  = event.pageY - fMap.offsetTop;
-			//console.log(x, y);
 			if (updateVelocity) {
 				fMouse.velocity.x = x - fMouse.position.x;
 				fMouse.velocity.y = y - fMouse.position.y;
@@ -204,18 +258,22 @@ function TMap() {
 	
 	function updateMapTransform() {
 		var animationDone = true;
-		if (fMapTransform.position.equals(fMapTransform.targetPosition, 1) == false) {
+		if ( !fMapTransform.position.equals(fMapTransform.targetPosition, 1) ) {
 			animationDone = false;
-			fMapTransform.position.lerp(fMapTransform.position, fMapTransform.targetPosition, LerpFactor);
+			fMapTransform.position.lerp(fMapTransform.position, fMapTransform.targetPosition, fCurrentLerpFactor);
+			moveMap();
 		}
 		
 		var ds = fMapTransform.targetScale - fMapTransform.scale;
-		if (isZero(ds, ScaleEpsilon) == false) {
+		if ( !isZero(ds, ScaleEpsilon) ) {
 			animationDone = false;
-			fMapTransform.scale += ds * LerpFactor;
+			fMapTransform.scale += ds * fCurrentLerpFactor;
 			fMapTransform.totalScale = fMapTransform.scale * fPixelsPerUnitLength;
+			scaleMap();
+			fFocusedEntityInfoBox.onScaleChange(fMapTransform.totalScale);
+			fSelectedEntityInfoBox.onScaleChange(fMapTransform.totalScale);
 			for (var i = 0; i < fEntities.length; i++)
-				fEntities[i].draw(fMapTransform.totalScale);
+				fEntities[i].onScaleChange(fMapTransform.totalScale);
 		}
 		
 		if (animationDone) {
@@ -273,11 +331,22 @@ function TMap() {
 	
 	}
 	
-	this.invalidate = function () {
+	function moveMap() {
 		fMapContainer.style.left = fMapTransform.position.x + SPixel;
 		fMapContainer.style.top  = fMapTransform.position.y + SPixel;
+	}
+	
+	function scaleMap() {
 		fMapImage.style.width  = 2 * fMapImageCenter.x * fMapTransform.scale + SPixel;
 		fMapImage.style.height = 2 * fMapImageCenter.y * fMapTransform.scale + SPixel;
+	}
+	
+	/**
+	 *	Updates the map's position and scale.
+	 */
+	this.invalidate = function () {
+		moveMap();
+		scaleMap();
 	}
 
 	/**
@@ -289,7 +358,7 @@ function TMap() {
 	 *								> 1 means zoom in
 	 *								< 1 means zoom out
 	 *								= 0 means zoom fit
-	 *								< 0 means error (ignored fore now)
+	 *								< 0 means error (ignored for now)
 	 */
 	this.zoom = function (event, factor) {
 		if (factor < 0)
@@ -305,12 +374,17 @@ function TMap() {
 		}
 		
 		if ( !(fMapTransform.position.equals(fMapTransform.targetPosition, VelocityEpsilon) &&
-			isZero(fMapTransform.scale - fMapTransform.targetScale, ScaleEpsilon)) ) {
-			LerpFactor = LerpFactor;
+			  isZero(fMapTransform.scale - fMapTransform.targetScale, ScaleEpsilon)) ) {
+			fCurrentLerpFactor = ScaleLerpFactor;
 			fTimer.setEnabled(true);
 		}
 	}
 
+	/**
+	 *	Sets the position and dimension of the bounding box (i.e. the window/the canvas) of the map.
+	 *
+	 *	@params	l, t, r, b	{Double}	Left, top, right, bottom in pixels.
+	 */
 	this.setRect = function (l, t, r, b) {
 		var w = r - l;
 		var h = b - t;
@@ -330,7 +404,8 @@ function TMap() {
 		recalculateScales();
 		
 		if (fComponentState == csLoaded)
-			self.invalidate();
+			//self.invalidate();
+			moveMap();
 	}
 
 	/**
@@ -341,49 +416,93 @@ function TMap() {
 	this.bringToCenter = function (entity) {
 		if (entity && (entity.parentNode == fMapContainer)) {
 			// Don't rely on entity.offsetLeft and entity.offsetTop
-			var x = entity.x * fMapTransform.totalScale;
-			var y = entity.y * fMapTransform.totalScale;
-			if (!isInRange(fMapContainer.offsetLeft + x, 0, fMap.offsetWidth ) ||
-				!isInRange(fMapContainer.offsetTop  + y, 0, fMap.offsetHeight)) {
-				fMapTransform.targetPosition.x = fMapCenter.x - x;
-				fMapTransform.targetPosition.y = fMapCenter.y - y;
-				fTimer.setEnabled(true);
-			}
-		}
-	}
-	
-	this.addEntity = function (entity) {
-		if (entity) {
-			fEntities.push(entity);
-			fMapContainer.appendChild(entity);
-			entity.draw(fMapTransform.totalScale);
+			fMapTransform.targetPosition.x = fMapCenter.x - entity.mX * fMapTransform.totalScale;
+			fMapTransform.targetPosition.y = fMapCenter.y - entity.mY * fMapTransform.totalScale;
+			fCurrentLerpFactor = PositionLerpFactor;
+			fTimer.setEnabled(true);
 		}
 	}
 	
 	/**
-	 *	Creates a new entity and returns it.
-	 *	The entity is a HTMLDivElement.
+	 *	Adds a new entity to the map.
 	 *
+	 *	@param	entity	{HTMLElement TMapEntity}	A DOM element that has mX, mY, getInfo(), and onScaleChange() attributes.
 	 */
-	// this.newEntity = function (className) {
-		// var entity = newElement(SDiv, className);
-		// entity.appendChild(newElement(SDiv, 'TMarkerIcon'));
-		// fEntities.push(entity);
-		// fMapContainer.appendChild(entity);
-		// entity.x = 0;
-		// entity.y = 0;
-		// entity.draw = function (scale) {
-			// this.style.left = (this.x * scale - 12) + SPixel;
-			// this.style.top  = (this.y * scale - this.offsetHeight) + SPixel;
-		// }
-		// entity.draw(fMapTransform.totalScale);
-		// return entity;
-	// }
+	this.addEntity = function (entity) {
+		if (entity && (entity.parentNode != fMapContainer)) {
+			entity.addEventListener(SClick, entityClick, false);
+			entity.addEventListener(SMouseOut, entityMouseOut, false);
+			entity.addEventListener(SMouseOver, entityMouseOver, false);
+			fEntities.push(entity);
+			fMapContainer.appendChild(entity);
+			entity.onScaleChange(fMapTransform.totalScale);
+		}
+	}
 	
+	/**
+	 *	Selects an entity and brings it the the center of the map if out of bounds.
+	 *
+	 *	@param	entity	{HTMLElement TMapEntity}	The entity to be selected or null.
+	 */
+	this.selectEntity = function (entity) {
+		if (entity != fSelectedEntity) {
+			if (entity && (entity.parentNode == fMapContainer)) {
+				fFocusedEntityInfoBox.style.visibility = SHidden;
+				fSelectedEntityInfoBox.setContent(entity.getInfo());
+				fSelectedEntityInfoBox.setPosition(entity.mX , entity.mY, 0, -entity.offsetHeight, fMapTransform.totalScale);
+				fSelectedEntityInfoBox.style.visibility = SVisible;
+				
+				var el = entity.offsetLeft,
+					et = entity.offsetTop,
+					er = entity.offsetWidth + el,
+					eb = entity.offsetHeight + et,
+					
+					bl = fSelectedEntityInfoBox.offsetLeft,
+					bt = fSelectedEntityInfoBox.offsetTop,
+					br = fSelectedEntityInfoBox.offsetWidth + bl,
+					bb = fSelectedEntityInfoBox.offsetHeight + bt,
+				
+					l = Math.min(el, bl) + fMapContainer.offsetLeft,
+					t = Math.min(et, bt) + fMapContainer.offsetTop,
+					r = Math.max(er, br) + fMapContainer.offsetLeft,
+					b = Math.max(eb, bb) + fMapContainer.offsetTop;
+
+				if ( (l < 0) || (t < 0) || (r > fMap.offsetWidth) || (b > fMap.offsetHeight) )
+					self.bringToCenter(entity);
+			} else
+				fSelectedEntityInfoBox.style.visibility = SHidden;
+			fSelectedEntity = entity;
+			if (self.onSelectChange)
+				self.onSelectChange();
+		}
+	}
+
+	/**
+	 *	Removes an entity out of the map.
+	 *
+	 *	@param	index	{Integer}	Index of the entity to be removed.
+	 *	@throws	SIndexOutOfRange
+	 */
 	this.removeEntity = function (index) {
 		checkRange(index, 0, fEntities.length - 1);
 		fMapContainer.removeChild(fEntities.splice(index, 1)[0]);
 	}
 	
+	this.getSelectedEntity = function () {
+		return fSelectedEntity;
+	}
+	
+	this.getScale = function () {
+		return fMapTransform.totalScale;
+	}
+	
+	/**
+	 *	onLoad() event. Get called after the entrance zoom-in animation.
+	 */
 	this.onLoad = null;
+	
+	/**
+	 *	onSelectChange() event. Get called when a new entity is selected.
+	 */
+	this.onSelectChange = null;
 }

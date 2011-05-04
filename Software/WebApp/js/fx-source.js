@@ -1,21 +1,22 @@
-function $fx(initElm){
+/**
+ *	$fx() animation library.
+ *
+ *	@source	http://fx.inetcat.com
+ *	@modify	Man Hoang
+ */
+function $fx(elementRefOrIdStr) {
 	
-	var csPaused = 0;
-	var csRunning = 1;
-	var csStopped = 2;
-	
-	if (initElm.nodeType && initElm.nodeType==1)
-		var elm = initElm;
-	else if (String(initElm).match(/^#([^$]+)$/i)){
-		var elm = document.getElementById(RegExp.$1+'');
-		if(!elm)
+	if (elementRefOrIdStr.nodeType && elementRefOrIdStr.nodeType == 1)
+		var elm = elementRefOrIdStr;
+	else if (String(elementRefOrIdStr).match(/^#([^$]+)$/i)) {
+		var elm = document.getElementById(RegExp.$1);
+		if (!elm)
 			return null;
-	}else 
+	} else 
 		return null;
 	
-	if (typeof(elm.fx) != 'undefined' && elm.fx){
+	if (typeof(elm.fx) != 'undefined' && elm.fx)
 		return elm;
-	};
 	
 	elm.fxVersion = 0.1;
 	elm.fx = {};
@@ -41,8 +42,8 @@ function $fx(initElm){
 		
 		backgroundx: function (value, unit) {
 			var x = 0, y = 0;
-			var matches = (new RegExp('^(-?\\d+)[^\\d\\-]+(-?\\d+)')).exec(elm.style.backgroundPosition + '');
-			if (matches){
+			var matches = (new RegExp('^(-?\\d+)[^\\d\\-]+(-?\\d+)')).exec(elm.style.backgroundPosition);
+			if (matches) {
 				x = parseInt(matches[1]);
 				y = parseInt(matches[2]);
 			}
@@ -54,8 +55,8 @@ function $fx(initElm){
 		
 		backgroundy: function (value, unit) {
 			var x = 0, y = 0;
-			var matches = (new RegExp('^(-?\\d+)[^\\d\\-]+(-?\\d+)')).exec(elm.style.backgroundPosition + '');
-			if (matches){
+			var matches = (new RegExp('^(-?\\d+)[^\\d\\-]+(-?\\d+)')).exec(elm.style.backgroundPosition);
+			if (matches) {
 				x = parseInt(matches[1]);
 				y = parseInt(matches[2]);
 			}
@@ -64,32 +65,9 @@ function $fx(initElm){
 			else
 				return y;
 		}
-	};
-	
-	var defaults = {
-		width: function(){
-			return elm.offsetWidth;
-		},
-		height: function(){
-			return elm.offsetHeight;
-		},
-		left: function(){
-			var left = 0;
-			for (var el=elm; el; el=el.offsetParent) left += el.offsetLeft;
-			return left;
-			
-			/*return elm.offsetLeft;*/
-		},
-		top: function(){
-			/*var top = 0;
-			for (var el=elm; el; el=el.offsetParent) top += el.offsetTop;
-			return top;
-			*/
-			return elm.offsetTop;
-		}
-	};
-	
-	elm.fxAddSet = function(){
+	}
+
+	elm.fxAddSet = function () {
 		var currSetIndex = this.fx.sets.length;
 		this.fx.currentSetIndex = currSetIndex;
 		this.fx.sets[currSetIndex] = {
@@ -98,21 +76,20 @@ function $fx(initElm){
 			effects: [],
 			effectsDone: 0,
 			holdTime: 0,
-			isRunning: false,
-			onfinal: function(){}
+			isRunning: false
 		}
 		return this;
-	};
+	}
 	
-	elm.fxHold = function(time, setIndex){
+	elm.fxHold = function (time, setIndex) {
 		if (!elm.fx.sets[this.fx.currentSetIndex].isRunning)
 			this.fx.sets[isNaN(setIndex) ? this.fx.currentSetIndex : setIndex].holdTime = time;
 		return this; 
-	};
+	}
 	
-	elm.fxAdd = function(params) {
-		var currSetIndex = this.fx.currentSetIndex;
-		if (this.fx.sets[currSetIndex].isRunning)
+	elm.fxAdd = function (params) {
+		var set = this.fx.sets[this.fx.currentSetIndex];
+		if (set.isRunning)
 			return this;
 		
 		for (var p in requiredParams) {
@@ -122,52 +99,39 @@ function $fx(initElm){
 		
 		if (!params.unit) {
 			for (var mask in units)
-				if ((new RegExp(mask,'i').test(params.type))){
+				if ((new RegExp(mask,'i').test(params.type))) {
 					params.unit = units[mask];
 					break;
 				}
 		};
 		
-		params.onstart = (params.onstart && params.onstart.call) ? params.onstart : function(){}; 
-		
-		if (!this.fx[params.type]){
+		if (!this.fx[params.type]) {
 			if (specialHandlers[params.type])
 				this.fx[params.type] = specialHandlers[params.type];
-			else{
-				//var elm = this;
+			else
 				this.fx[params.type] = function (value, unit) {
-					if (value != null) {
-					elm.style[params.type] = value + unit;
-					}
-					else {
+					if (value != null)
+						elm.style[params.type] = value + unit;
+					else
 						return parseInt(elm.style[params.type]);
-					}
 				}
-			}
-		};
-		if (isNaN(params.from)) {
-			if (isNaN(this.fx[params.type](null, ''))) {
-				if (defaults[params.type])
-					params.from = defaults[params.type](); 
-				else
-					params.from = 0;
-			} else
-				params.from = this.fx[params.type](null, '');
 		}
+
+		if (params.from == null)
+			params.from = this.fx[params.type](null, null);
 		params.initial = params.from;
-		//this.fx[params.type](params.from, params.unit);
-		this.fx.sets[currSetIndex].effects.push(params);
+		set.effects.push(params);
 		return this;
-	};
+	}
 	
-	elm.fxRun = function(finalCallback, loops, loopCallback){
+	elm.fxRun = function (finalCallback, loops, loopCallback) {
 		var set = elm.fx.sets[elm.fx.currentSetIndex];		
 		
-		if (set.isRunning){
+		if (set.isRunning) {
 			return this;
 		}
 		
-		setTimeout(function(){
+		setTimeout(function () {
 
 			if (set.isRunning)
 				return elm;
@@ -176,75 +140,86 @@ function $fx(initElm){
 			
 			if (set.effectsDone > 0)
 				return elm;
-			set.onfinal = (finalCallback && finalCallback.call) ? finalCallback : function(){};
-			set.onloop = (loopCallback && loopCallback.call) ? loopCallback : function(){};
+			set.onfinal = finalCallback;
+			set.onloop = loopCallback;
 			if(!isNaN(loops))
 				set.loopCount = loops;
 			 		
-			for (var i=0; i<set.effects.length; i++){
-				set.effects[i].onstart.call(elm);
+			for (var i = 0, effect; i < set.effects.length; i++) {
+				effect = set.effects[i];
+				if (effect.onstart)
+					effect.onstart.call(elm);
 				elm.fx.animate(elm.fx.currentSetIndex, i);
 			}
 		}, set.holdTime);
 		
 		return this;
-	};
+	}
 	
 	elm.fxStop = function (setNum) {
 		this.fx.sets[!isNaN(setNum) ? setNum : this.fx.currentSetIndex].isRunning = false;
 		return this;
-	};
+	}
 	
-	elm.fxReset = function(){
-			for (var i = 0; i < this.fx.sets.length; i++){
-				for (var j = 0; j < this.fx.sets[i].effects.length; j++){
-					var params = this.fx.sets[i].effects[j];
-					this.fx[params.type](params.initial, params.unit);
-				}
+	elm.fxReset = function () {
+		var sets = this.fx.sets;
+		for (var i = 0; i < sets.length; i++) {
+			for (var j = 0; j < sets[i].effects.length; j++) {
+				var params = sets[i].effects[j];
+				this.fx[params.type](params.initial, params.unit);
 			}
-			var del = ['fx','fxHold','fxAdd','fxAddSet','fxRun','fxPause','fxStop','fxReset'];
-			for (var i = 0; i < del.length; i++)
-				try {
-					delete this[del[i]];
-				} catch (e) {
-					this[del[i]] = null;
-				}
-	};
+		}
+		var del = ['fx','fxHold','fxAdd','fxAddSet','fxRun','fxPause','fxStop','fxReset'];
+		for (var i = 0; i < del.length; i++)
+			try {
+				delete this[del[i]];
+			} catch (e) {
+				this[del[i]] = null;
+			}
+	}
 	
-	elm.fx.animate = function(setIndex, effectIndex){
+	elm.fx.animate = function (setIndex, effectIndex) {
 		var set = this.sets[setIndex];
-		if(!set || (!set.isRunning))
+		if(!set || !set.isRunning)
 			return;
 		
-		var ef = set.effects[effectIndex];
-		var param = this[ef.type](null, '');
-
-		if ((ef.step > 0 && param + ef.step < ef.to) || (ef.step < 0 && param + ef.step > ef.to)){
-			this[ef.type](param + ef.step, ef.unit);
+		var effect = set.effects[effectIndex];
+		var param = this[effect.type](null, null);
+		var step = Math.abs(effect.step);
+		var h = param + step;
+		var l = param - step;
+		if ((h < effect.to) || (l > effect.to)) {
+			if (h < effect.to)
+				this[effect.type](h, effect.unit);
+			else
+				this[effect.type](l, effect.unit);
 			var self = this;
-			setTimeout(function(){if (self.animate) self.animate(setIndex, effectIndex)}, ef.delay);
+			setTimeout(function () {if (self.animate) self.animate(setIndex, effectIndex)}, effect.delay);
 		} else {
-			this[ef.type](ef.to, ef.unit);
+			this[effect.type](effect.to, effect.unit);
 			set.effectsDone++;
-			if (ef.onfinish)
-				ef.onfinish.call(elm);
-			if (set.effects.length == set.effectsDone){
+			if (effect.onfinish)
+				effect.onfinish.call(elm);
+			
+			if (set.effects.length == set.effectsDone) {
 				set.effectsDone = 0;
 				set.loopsDone++;
-				set.onloop.call(elm, set.loopsDone);
-				if (set.loopsDone < set.loopCount || set.loopCount == -1){
-					for (var i = 0; i < set.effects.length; i++){
-						this[ef.type](ef.from, set.effects[i].unit);
+				if (set.onloop)
+					set.onloop.call(elm, set.loopsDone);
+				if (set.loopCount == -1 || set.loopsDone < set.loopCount) {
+					for (var i = 0; i < set.effects.length; i++) {
+						this[effect.type](effect.from, set.effects[i].unit);
 						set.effects[i].onstart.call(elm, set.loopsDone);
 						this.animate(setIndex, i);
 					}
 				} else {
-					set.onfinal.call(elm);
+					if (set.onfinal)
+						set.onfinal.call(elm);
 					set.isRunning = false;
 				}
 			}
 		}
-	};
+	}
 	
 	elm.fxAddSet();
 	
