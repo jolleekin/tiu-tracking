@@ -8,6 +8,8 @@ var cnFocusedRow	= 'Focused';
 var cnSelectedRow	= 'Selected';
 var cnMatchedString	= 'TMatchedString';
 
+var STableRow		= 'table-row';
+
 /**
  *
  *	@param	container	{HTMLTableElement}	An empty table.
@@ -155,41 +157,33 @@ function TFlexTable(container) {
 		return fFocusedIndex;
 	}
 
+	this.getFocusedRow = function () {
+		if (fFocusedIndex > -1)
+			return fRows[fFocusedIndex];
+		return null;
+	}
+	
 	/**
 	 *	Returns the index of the selected row or -1 if none.
 	 */
 	this.getSelectedIndex = function () {
 		return fSelectedIndex;
 	}
-
+	
+	this.getSelectedRow = function () {
+		if (fSelectedIndex > -1)
+			return fRows[fSelectedIndex];
+		return null;
+	}
+	
 	/**
 	 *	Should be called when there is at least one row.
 	 */
-	this.setMaxRowCount = function(value) {
-		var h = 'auto';
+	this.setMaxRowCount = function (value) {
+		var h = SAuto;
 		if (value > 0)
 			h = value * fRows[0].offsetHeight + SPixel;
 		fElement.style.maxHeight = h;
-	}
-	
-	this.setSelectedIndex = function (value) {
-		if (fSelectedIndex != value) {
-			// Upper bound checking is needed since user may delete the last row,
-			// which may be the selected row.
-			if ((fSelectedIndex > -1) && (fSelectedIndex < fRows.length))
-				fRows[fSelectedIndex].className = '';
-			
-			if (value > -1 && value < fRows.length) {
-				var row = fRows[value];
-				row.className = cnSelectedRow;
-				showRow(row);
-				fSelectedIndex = value;
-			} else			
-				fSelectedIndex = -1;
-			
-			if (self.onChange)
-				self.onChange();
-		}
 	}
 
 	this.setFocusedIndex = function (value) {
@@ -213,7 +207,27 @@ function TFlexTable(container) {
 				self.onFocusChange();
 		}
 	}
-	
+		
+	this.setSelectedIndex = function (value) {
+		if (fSelectedIndex != value) {
+			// Upper bound checking is needed since user may delete the last row,
+			// which may be the selected row.
+			if ((fSelectedIndex > -1) && (fSelectedIndex < fRows.length))
+				fRows[fSelectedIndex].className = '';
+			
+			if (value > -1 && value < fRows.length) {
+				var row = fRows[value];
+				row.className = cnSelectedRow;
+				showRow(row);
+				fSelectedIndex = value;
+			} else			
+				fSelectedIndex = -1;
+			
+			if (self.onSelectChange)
+				self.onSelectChange();
+		}
+	}
+
 	this.attachTextBox = function (textBox, columnIndex) {
 		fFilterColumnIndex = columnIndex;
 		if (fTextBox != textBox) {
@@ -317,7 +331,13 @@ function TFlexTable(container) {
 
 	/**
 	 *	onFocusChange()
-	 *	Happens when the temporary selected row has been changed.
+	 *	Happens when a new row gains focus.
 	 */
 	this.onFocusChange = null;
+	
+	/**
+	 *	onSelectChange()
+	 *	Happens when a new row is selected.
+	 */
+	this.onSelectChange = null;
 }

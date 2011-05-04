@@ -5,26 +5,53 @@
  *	@author	Man Hoang	
  *	@version	1.0
  */
-function newInfoBox() {
-	var element = newElement('div', 'TInfoBox AbsPos');
-	element.innerHTML = '<div class="TInfoBoxContent"></div><img class="TPink" src="images/Pink.png" />';
-	element.style.visibility = SHidden;
+function TInfoBox() {
+	var box = newElement('div', 'TInfoBox AbsPos');
+	box.innerHTML = '<div class="TInfoBoxContent"></div><img class="TPink" src="images/Pink.png" />';
+	box.style.visibility = SHidden;
 	
-	element.setContent = function (html) {
+	/**
+	 *	Sets content of the box.
+	 *
+	 *	@html	{HTML String}	The string that represents the content of the box.
+	 */
+	box.setContent = function (html) {
+		var content = this.childNodes[0];
 		var pointer = this.childNodes[1];
-		this.childNodes[0].innerHTML = html;
+		content.innerHTML = html;
 		pointer.style.left = (this.offsetWidth - pointer.offsetWidth) * 0.5 + SPixel;
+		this.style.height = (content.offsetHeight + pointer.offsetHeight) + SPixel;
 	}
 
-	element.setPosition = function (x, y) {
-		this.style.left = (x - this.offsetWidth * 0.5 + this.childNodes[1].offsetWidth) + SPixel;
-		this.style.top  = (y - this.offsetHeight + 7) + SPixel;
+	/**
+	 *	Sets the absolute position of the box. Also updates its logical coordinates (x, y).
+	 *
+	 *	@left and @top are in pixels.
+	 *	@scale is used to calculate @x and @y.
+	 *	@offsetX, @offsetY are scale independent offsets (in pixels) that are
+	 *	added to the box's left and top.
+	 *
+	 *	By using these offsets, the position of the box relative to some element
+	 *	can be maintained while the scale of the map is changing.
+	 */
+	box.setPosition = function (x, y, offsetX, offsetY, scale) {
+		this.mX = x;
+		this.mY = y;
+		this.mOffsetX = offsetX;
+		this.mOffsetY = offsetY;
+		this.onScaleChange(scale);
 	}
 	
-	element.draw = function (scale) {
-		this.style.left = (this.x * scale - this.offsetWidth * 0.5 + this.childNodes[1].offsetWidth) + SPixel;
-		this.style.top  = (this.y * scale - this.offsetHeight) + SPixel;
+	/**
+	 *	Updates the absolute position of the box when the scale of the map has changed.
+	 */
+	box.onScaleChange = function (scale) {
+		this.style.left = (this.mX * scale + this.mOffsetX - this.childNodes[1].offsetLeft) + SPixel;
+		this.style.top  = (this.mY * scale + this.mOffsetY - this.offsetHeight) + SPixel;
 	}
 	
-	return element;
+	box.mX = 0;
+	box.mY = 0;
+	
+	return box;
 }

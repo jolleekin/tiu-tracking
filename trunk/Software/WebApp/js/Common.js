@@ -27,6 +27,8 @@ var SKeyUp		= 'keyup';
 var SClick		= 'click';
 var SMouseDown	= 'mousedown';
 var SMouseMove	= 'mousemove';
+var SMouseOut	= 'mouseout';
+var SMouseOver	= 'mouseover';
 var SMouseUp	= 'mouseup';
 var SMouseWheel	= 'mousewheel';
 
@@ -73,28 +75,4 @@ function ensureRange(x, min, max) {
 	if (x < min) return min;
 	if (x > max) return max;
 	return x;
-}
-
-/**
- *	Creates an AJAX object.
- *
- *	@param	method	{String}	'GET' or 'POST'.
- *	@param	url		{String}	The request url.
- *	@param	params	{String}	Params to send along, e.g. 'username=abc&password=123'
- *	@param	callback	{Function(xhr, args)}	The function to be called upon receiving the response.
- *	@param	args	{Object}	Arguments to pass to callback.
- */
-function AJAX(method, url, params, callback) {
-	var xhr = new XMLHttpRequest();
-	xhr.onreadystatechange = callback;
-	if (method == 'GET') {
-		xhr.open(method, url + '?' + params, true);
-		xhr.send();
-	} else {
-		xhr.open(method, url, true);
-		xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-		//xhr.setRequestHeader('Content-length', params.length);
-		//xhr.setRequestHeader('Connection', 'close');
-		xhr.send(params);
-	}
 }
