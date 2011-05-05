@@ -20,7 +20,6 @@
  *****************************************************************/
 
 #include <RF12.h>
-#include <Ports.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 
@@ -34,13 +33,13 @@
 volatile boolean f_wdt=1;
 byte radioIsOn = 1;
 
-#define PAYLOAD_SIZE 6
+#define PAYLOAD_SIZE 8
 
-byte TagID = 9; 
+byte TagID = 10; 
 byte MessageID = 0;                
 
 //char payload[]= "bumble beeeeeeeeeeeeeeeee...";
-unsigned char payload[PAYLOAD_SIZE+1];
+unsigned char payload[PAYLOAD_SIZE];
 
 void setup(){
 
@@ -63,7 +62,8 @@ void setup(){
 
   // 0=16ms, 1=32ms,2=64ms,3=128ms,4=250ms,5=500ms
   // 6=1 sec,7=2 sec, 8=4 sec, 9= 8sec
-  setup_watchdog(9);
+  //random between (0 to 3) + 6
+  setup_watchdog(6);
 }
 
 
@@ -72,21 +72,21 @@ void setup(){
 void loop()
 {
 
-  if (!rf12_lowbat())//f_wdt==1) 
-  {  // wait for timed out watchdog / flag is set when a watchdog timeout occurs
+    // wait for timed out watchdog / flag is set when a watchdog timeout occurs
     f_wdt=0;       // reset flag
 
     //  broadcasting data
     rf12_recvDone();
     if (rf12_canSend()) 
     {       		
-      //payload[0] = '$';			//Start1
       payload[0] = 0;				//Source ID
       payload[1] = 0;				//Detector ID		
-      payload[2] = 0;				//RSSI value - we are the tag, we don't know this value.
-      payload[3] = TagID;			//Tag ID
-      payload[4] = MessageID;		        //Message ID	
-      payload[5] = 33;	                        //Reserved - put battery level here
+      payload[2] = 0;				//HIGH BYTE - RSSI value - we are the tag, we don't know this value.
+      payload[3] = 0;				//LOW BYTE - RSSI value - we are the tag, we don't know this value.
+      payload[4] = TagID;			//Tag ID
+      payload[5] = MessageID;		        //Message ID	
+      payload[6] = rf12_lowBat();               //Tag battery level
+      payload[7] = 0;                           //reserved for Detector battery level
       MessageID++;		
       rf12_sendStart(0, payload, PAYLOAD_SIZE);
       // see http://jeelabs.net/projects/cafe/wiki/POF_03_Wireless_light_sensor
@@ -111,12 +111,6 @@ void loop()
       }
       delay(2);           // for debugging, this will show bump of 3mA on scope
     }
-  }
-  else 
-  {
-    // notify low power...
-  }
-
 }
 //****************************************************************  
 //****************************************************************  
