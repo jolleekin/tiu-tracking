@@ -360,10 +360,10 @@ void rf12_initialize (uint8_t id, uint8_t band, uint8_t g) {
         rf12_xfer(0xCE2D); // SYNC=2D； 
     }
     rf12_xfer(0xC483); // @PWR,NO RSTRIC,!st,!fi,OE,EN 
-    //rf12_xfer(0x9850); // !mp,90kHz,MAX OUT ////0dB
+    rf12_xfer(0x9850); // !mp,90kHz,MAX OUT ////0dB
 	//rf12_xfer(0x9851); // !mp,90kHz,MAX OUT ////-3dB
 	//rf12_xfer(0x9852); // !mp,90kHz,MAX OUT ////-6dB
-	rf12_xfer(0x9853); // !mp,90kHz,MAX OUT ////-9dB
+	//rf12_xfer(0x9853); // !mp,90kHz,MAX OUT ////-9dB
 	//rf12_xfer(0x9854); // !mp,90kHz,MAX OUT ////-12dB
 	//rf12_xfer(0x9855); // !mp,90kHz,MAX OUT ////-15dB
 	//rf12_xfer(0x9856); // !mp,90kHz,MAX OUT ////-18dB
@@ -421,7 +421,7 @@ void rf12_sleep (char n) {
     rxstate = TXIDLE;
 }
 
-char rf12_lowbat () {
+char rf12_lowBat () {
     return (rf12_control(0x0000) & RF_LBD_BIT) != 0;
 }
 
