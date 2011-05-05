@@ -14,12 +14,11 @@
  *              VCC    ->  AVCC                                  *
  *****************************************************************/
 #include <RF12.h>
-#include <Ports.h>
 
 
 #define FROM_TAG 		0
 #define PAYLOAD_SIZE 	        8
-#define MyID			4
+#define MyID			9
 
 #define FASTADC 1
 
@@ -31,10 +30,7 @@
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif
 
-unsigned char payload[PAYLOAD_SIZE+1];
-int tagMessageReceived=0;
-int detMessageReceived=0;
-
+unsigned char payload[PAYLOAD_SIZE];
 
 void setup () 
 {
@@ -79,53 +75,37 @@ void loop ()
       //payload[0] = rf12_data[0];		//Start Delimiter
       payload[0] = MyID;			//Source ID
       payload[1] = rf12_data[1];		//Detector ID      
-      payload[2] = rf12_data[2];		//RSSI value 
-      payload[3] = rf12_data[3];		//Tag ID
-      payload[4] = rf12_data[4];		//Message ID 
-      payload[5] = rf12_data[5];		//Reserved      
-      //detMessageReceived=1;
+      payload[2] = rf12_data[2];		//HIGH BYTE - RSSI value 
+      payload[3] = rf12_data[3];		//LOW BYTE - RSSI value 
+      payload[4] = rf12_data[4];		//Tag ID
+      payload[5] = rf12_data[5];		//Message ID 
+      payload[6] = rf12_data[6];		//Tag Battery level
+      payload[7] = rf12_data[7];                //Detector Battery level
+
       digitalWrite(5,HIGH);
       delay(random(200)+50);   
       rf12_sendStart(0, payload, PAYLOAD_SIZE);                
       digitalWrite(5,LOW);      
     }
     else if (rf12_data[0] == FROM_TAG)//From Tag
-    {		
-
+    {
       // get RSSI        
-      int rssi = readRSSI()/2;        
-      payload[0] = MyID;			//Source ID
-      payload[1] = MyID;			//Detector ID      
-      payload[2] = (unsigned char)rssi;		//RSSI value - we are the tag, we don't know this value.
-      payload[3] = rf12_data[3];		//Tag ID
-      payload[4] = rf12_data[4];		//Message ID 
-      payload[5] = rf12_data[5];		//Reserved      
-      //tagMessageReceived=1;
+      int rssi = readRSSI();        
+      payload[0] = MyID;			        //Source ID
+      payload[1] = MyID;			        //Detector ID      
+      payload[2] = (unsigned char)((rssi & 0xFF00)>>8);	//HIGH BYTE - RSSI value - we are the tag, we don't know this value.
+      payload[3] = (unsigned char)(rssi & 0x00FF);	//LOW BYTE - RSSI value - we are the tag, we don't know this value.
+      payload[4] = rf12_data[4];		        //Tag ID
+      payload[5] = rf12_data[5];		        //Message ID 
+      payload[6] = rf12_data[6];		        //Tag Battery level      
+      payload[7] = rf12_lowBat();                       //Detector Battery level
+      
       digitalWrite(5,HIGH);
       delay(random(200)+50);   
       rf12_sendStart(0, payload, PAYLOAD_SIZE);                
       digitalWrite(5,LOW);
     }  
   }
-
-//  if ( ( tagMessageReceived  ) )
-//  {
-//    while (!rf12_canSend()){rf12_recvDone();}
-//    digitalWrite(5,HIGH);
-//    delay(random(200));
-//    rf12_sendStart(0, payload, PAYLOAD_SIZE);
-//         
-//    //Serial.print("From Tag\r\n");        
-//    tagMessageReceived=0;
-//    
-//
-//    //for (int y = 0;y < 8;y++){
-//     Serial.print(payload[4],DEC);
-//     //Serial.print(", "); 
-//     //}
-//     Serial.println();		
-//    digitalWrite(5,LOW);
-//  }
 }
 
 

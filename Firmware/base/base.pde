@@ -14,10 +14,9 @@
  *              VCC    ->  AVCC                                  *
  *****************************************************************/
 #include <RF12.h>
-#include <Ports.h>
 
 #define FROM_TAG 		0
-#define PAYLOAD_SIZE 	        6
+#define PAYLOAD_SIZE 	        8
 #define MyID			255
 
 #define FASTADC 1
@@ -41,6 +40,23 @@ void setup ()
   cbi(ADCSRA,ADPS0) ;
 #endif
   Serial.begin(19200);   
+  delay(3000);
+  Serial.print("$$$");//Get back into command mode
+  delay(2000);
+  Serial.println("reboot");//reboot so we're in a known state
+  delay(3000);
+  Serial.print("$$$");//get back into command mode
+  delay(2000);
+  Serial.println("set wlan auth 4");//WPA2-PSK
+  delay(2000);
+//  Serial.println("set wlan phrase balibear");
+  Serial.println("set wlan phrase 022-*VfIHF*Xj~FvLozvCEeAdMS9#46GCd9x4FnqRgoC+YZy092OIPnypDNpTDb");
+  delay(2000);
+//  Serial.println("join Giggles");
+  Serial.println("join Engine9AP");
+  delay(8000);
+  Serial.println("exit");
+  delay(1000);
   pinMode(5,OUTPUT);
   rf12_initialize(3, RF12_433MHZ,33);
 }
@@ -49,12 +65,6 @@ void loop ()
 {    
   if (rf12_recvDone() && rf12_crc == 0) 
   {
-    //Serial.print("rf12_len=");
-    //Serial.print(rf12_len,DEC);
-    //Serial.println();
-    //TODO: check to see if incoming message checksum is valid.
-    //      and skip this if it is invalid.
-
     //TODO: if source ID doesn't have an entry in my routing table
     //		then ignore message.
     //foreach entry in routingTable
@@ -62,55 +72,40 @@ void loop ()
     //		accept=true
     //endfor
     
-    //If From Detector, then just relay received data.
-    //If from Tag, then relay payload 
-
-      if (rf12_data[0] != FROM_TAG)//From Detector
-      {
-       // payload[0] = 13;		//Start Delimiter
+    //If From Detector, then relay received data to wifi, else ignore.
+    
+      if (rf12_data[0] != FROM_TAG){//From Detector
+        digitalWrite(5,HIGH);
+       
         payload[0] = MyID;			//Source ID
         payload[1] = rf12_data[1];		//Detector ID        
-        payload[2] = rf12_data[2];		//RSSI value 
-        payload[3] = rf12_data[3];		//Tag ID
-        payload[4] = rf12_data[4];		//Message ID 
-        payload[5] = rf12_data[5];		//Reserved
-       
-        // debug        
-//        Serial.print("from detector:");
-//        Serial.print(payload[1],DEC);
-//        Serial.print(" tag:");
-//        Serial.print(payload[3],DEC);
-//        Serial.print(" has RSSI:");
-//        Serial.print(payload[2],DEC);
-//        Serial.println();    
+        payload[2] = rf12_data[2];		//HIGH BYTE - RSSI value 
+        payload[3] = rf12_data[3];		//LOW BYTE - RSSI value 
+        payload[4] = rf12_data[4];		//Tag ID
+        payload[5] = rf12_data[5];		//Message ID 
+        payload[6] = rf12_data[6];		//Tag battery level
+        payload[7] = rf12_data[7];              //Detector battery level
+      
+        Serial.print("$");
+        Serial.print(payload[0],BYTE);
+        Serial.print(payload[1],BYTE);
+        Serial.print(payload[2],BYTE);
+        Serial.print(payload[3],BYTE);
+        Serial.print(payload[4],BYTE);
+        Serial.print(payload[5],BYTE);
+        Serial.print(payload[6],BYTE);
+        Serial.print(payload[7],BYTE);
+      
+        digitalWrite(5,LOW);
       }
-      else if (rf12_data[0] == FROM_TAG)//From Tag	
-      {		
-        // get RSSI
-        int rssi = readRSSI()/2;            
-        payload[0] = MyID;				//Source ID
-        payload[1] = MyID;				//Detector ID        
-        payload[2] = (unsigned char)rssi;		//RSSI value - we are the tag, we don't know this value.
-        payload[3] = rf12_data[3];		        //Tag ID
-        payload[4] = rf12_data[4];		        //Message ID 
-        payload[5] = rf12_data[5];			//Reserved - put batter level here
-       
-       // debug        
-//        Serial.print("tag:");
-//        Serial.print(payload[3],DEC);
-//        Serial.print(" has RSSI:");
-//        Serial.print(payload[2],DEC);
-//        Serial.println();        
-        
-      } 
-        // to proxy
-      Serial.print(payload[0],BYTE);
-      Serial.print(payload[1],BYTE);
-      Serial.print(payload[2],BYTE);
-      Serial.print(payload[3],BYTE);
-      Serial.print(payload[4],BYTE);
-      Serial.print(payload[5],BYTE);
-    }
+      // to Wifi
+//      Serial.print(payload[0],DEC);Serial.print(", ");
+//      Serial.print(payload[1],DEC);Serial.print(", ");
+//      Serial.print(payload[2],DEC);Serial.print(", ");
+//      Serial.print(payload[3],DEC);Serial.print(", ");
+//      Serial.print(payload[4],DEC);Serial.print(", ");
+//      Serial.println(payload[5],DEC);
+  }
 }
 
 

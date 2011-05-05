@@ -22,7 +22,6 @@
     
     
 #include <RF12.h>
-#include <Ports.h>
 
 #define PAYLOAD_SIZE 6
 
@@ -35,7 +34,7 @@
 // MINUMUM 2 BYTES
 
 // this will be retrieved eeprom in later development:
-byte TagID = 7; // 1...30 only, 0 is not allow in this lib
+byte TagID = 3; // 1...30 only, 0 is not allow in this lib
 byte MessageID=0;                
 
 //char payload[]= "bumble beeeeeeeeeeeeeeeee...";
@@ -50,22 +49,20 @@ void setup()
 void loop()
 {  
     rf12_recvDone();
-    if (rf12_canSend()) 
-    {     
-		
-       //payload[0] = '$';			//Start1
-	payload[0] = 0;				//Source ID
-	payload[1] = 0;				//Detector ID		
-	payload[2] = 0;				//RSSI value - we are the tag, we don't know this value.
-	payload[3] = TagID;			//Tag ID
-	payload[4] = MessageID;		        //Message ID	
-	payload[5] = 33;			//Reserved - put battery level here
-	MessageID++;		
-	rf12_sendStart(0, payload, PAYLOAD_SIZE);
-		
-        delay(300);
-    }
-	   
+    while (!rf12_canSend()){rf12_recvDone();} //Wait until clear to send
+    payload[0] = 0;			    //Source ID
+    payload[1] = 0;			    //Detector ID		
+    payload[2] = 0;			    //RSSI value - we are the tag, we don't know this value.
+    payload[3] = TagID;			    //Tag ID
+    payload[4] = MessageID;		    //Message ID	
+    payload[5] = 33;			    //Reserved - put battery level here
+    MessageID++;		
+    rf12_sendStart(0, payload, PAYLOAD_SIZE);
+    
+    digitalWrite(5,HIGH);
+    delay(250);
+    digitalWrite(5,LOW);
+    delay(250);
 }
 
 
