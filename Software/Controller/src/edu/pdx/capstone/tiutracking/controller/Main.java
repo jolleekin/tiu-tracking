@@ -58,6 +58,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JOptionPane;
@@ -82,6 +85,7 @@ import javax.swing.JTable;
 import javax.swing.JRadioButton;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
+import javax.swing.JCheckBox;
 
 public class Main {
 
@@ -107,6 +111,7 @@ public class Main {
 	
 	private CommPort commPort;
 	private SerialPort serialPort;
+	private Socket socketPort;
 	
 	Thread writerThread;
 	Thread readerThread;
@@ -141,6 +146,11 @@ public class Main {
 	private JTextField txtModifyNewValue;
 	private JLabel lblNewValue;
 	private JScrollPane scrollPane_1;
+	private JTextField txtProxyIPAddress;
+	private JTextField txtProxyPort;
+	private final ButtonGroup buttonGroup = new ButtonGroup();
+	JRadioButton rdbtnSerial;
+	JRadioButton rdbtnTcpip;
 	/**
 	 * Launch the application.
 	 */
@@ -186,23 +196,31 @@ public class Main {
 		}
 	}
 	public boolean openPort() throws NoSuchPortException,
-	PortInUseException, UnsupportedCommOperationException {
-		if (cbxCOMPorts.getItemCount() < 1 || cbxCOMPorts.getSelectedIndex() == -1){
-			JOptionPane.showMessageDialog(null,"A port was no selected. Please select a port.");
-			return false;
+	PortInUseException, UnsupportedCommOperationException, UnknownHostException, IOException {
+		
+		if (rdbtnSerial.isSelected()){
+			if (cbxCOMPorts.getItemCount() < 1 || cbxCOMPorts.getSelectedIndex() == -1){
+				JOptionPane.showMessageDialog(null,"A port was no selected. Please select a port.");
+				return false;
+			}
+			String selectedPortName = cbxCOMPorts.getItemAt(cbxCOMPorts.getSelectedIndex()).toString();
+			CommPortIdentifier port = CommPortIdentifier.getPortIdentifier(selectedPortName);
+			commPort = port.open("Controller",2000);
+			if (!(commPort instanceof SerialPort)){
+				JOptionPane.showMessageDialog(null,"Only Serial Ports are supported. Please select another port.");
+				return false;
+			}
+			serialPort = (SerialPort) commPort;
+			serialPort.setSerialPortParams(19200, 
+										   SerialPort.DATABITS_8, 
+										   SerialPort.STOPBITS_1, 
+										   SerialPort.PARITY_NONE);
+		}else if (rdbtnTcpip.isSelected()){
+			socketPort = new Socket();//txtProxyIPAddress.getText(), Integer.parseInt(txtProxyPort.getText()));
+			socketPort.setReuseAddress(true);
+			socketPort.connect(new InetSocketAddress(txtProxyIPAddress.getText(), Integer.parseInt(txtProxyPort.getText())), 1000);
+			
 		}
-		String selectedPortName = cbxCOMPorts.getItemAt(cbxCOMPorts.getSelectedIndex()).toString();
-		CommPortIdentifier port = CommPortIdentifier.getPortIdentifier(selectedPortName);
-		commPort = port.open("Controller",2000);
-		if (!(commPort instanceof SerialPort)){
-			JOptionPane.showMessageDialog(null,"Only Serial Ports are supported. Please select another port.");
-			return false;
-		}
-		serialPort = (SerialPort) commPort;
-		serialPort.setSerialPortParams(19200, 
-									   SerialPort.DATABITS_8, 
-									   SerialPort.STOPBITS_1, 
-									   SerialPort.PARITY_NONE);
 		return true;
 	}
 	
@@ -364,6 +382,37 @@ public class Main {
 		engineBtnGroup.add(rdbtnKewtonEngine);
 		rdbtnKewtonEngine.setBounds(6, 59, 109, 23);
 		panel.add(rdbtnKewtonEngine);
+		
+		txtProxyIPAddress = new JTextField();
+		txtProxyIPAddress.setText("192.168.16.3");
+		txtProxyIPAddress.setBounds(325, 24, 86, 20);
+		pnlSettings.add(txtProxyIPAddress);
+		txtProxyIPAddress.setColumns(10);
+		
+		JLabel lblProxyIpAddress = new JLabel("Proxy IP Address:");
+		lblProxyIpAddress.setBounds(325, 11, 102, 14);
+		pnlSettings.add(lblProxyIpAddress);
+		
+		txtProxyPort = new JTextField();
+		txtProxyPort.setText("2000");
+		txtProxyPort.setBounds(437, 24, 86, 20);
+		pnlSettings.add(txtProxyPort);
+		txtProxyPort.setColumns(10);
+		
+		JLabel lblProxyPort = new JLabel("Proxy Port:");
+		lblProxyPort.setBounds(437, 11, 67, 14);
+		pnlSettings.add(lblProxyPort);
+		
+		rdbtnSerial = new JRadioButton("Serial");
+		buttonGroup.add(rdbtnSerial);
+		rdbtnSerial.setBounds(166, 51, 109, 23);
+		pnlSettings.add(rdbtnSerial);
+		
+		rdbtnTcpip = new JRadioButton("TCP/IP");
+		rdbtnTcpip.setSelected(true);
+		buttonGroup.add(rdbtnTcpip);
+		rdbtnTcpip.setBounds(325, 51, 109, 23);
+		pnlSettings.add(rdbtnTcpip);
 		tabbedPaneMain.addTab("Collect", pnlCollect);
 		pnlCollect.setLayout(null);
 		
@@ -392,8 +441,15 @@ public class Main {
 							return;
 						}
 						openPort();
-						InputStream in = serialPort.getInputStream();
-						OutputStream out = serialPort.getOutputStream();						
+						InputStream in;// = serialPort.getInputStream();
+						OutputStream out;// = serialPort.getOutputStream();
+						if (rdbtnSerial.isSelected()){
+							in= serialPort.getInputStream();
+							out = serialPort.getOutputStream();
+						}else{
+							in = socketPort.getInputStream();
+							out = socketPort.getOutputStream();
+						}
 						collectorReader = new CollectorReader(in);
 						writer = new Writer(out);
 						writerThread = new Thread(collectorReader);
@@ -406,7 +462,11 @@ public class Main {
 						collectorReader.requestStop();
 						writerThread.join();
 						readerThread.join();
-						serialPort.close();
+						if (rdbtnSerial.isSelected()){
+							serialPort.close();
+						}else{
+							socketPort.close();
+						}
 						btnStartCollecting.toggleTitle();
 					}
 				} catch (NoSuchPortException e) {
@@ -477,8 +537,15 @@ public class Main {
 				try {					
 					if (btnStartCalibrating.getText() == btnStartCalibrating.getFirstTitle()){						
 						openPort();
-						InputStream in = serialPort.getInputStream();
-						OutputStream out = serialPort.getOutputStream();
+						InputStream in;// = serialPort.getInputStream();
+						OutputStream out;// = serialPort.getOutputStream();
+						if (rdbtnSerial.isSelected()){
+							in= serialPort.getInputStream();
+							out = serialPort.getOutputStream();
+						}else{
+							in = socketPort.getInputStream();
+							out = socketPort.getOutputStream();
+						}
 						calibratorReader = new CalibratorReader(in);
 						writer = new Writer(out);
 						writerThread = new Thread(calibratorReader);
@@ -491,7 +558,11 @@ public class Main {
 						calibratorReader.requestStop();
 						writerThread.join();
 						readerThread.join();
-						serialPort.close();
+						if (rdbtnSerial.isSelected()){
+							serialPort.close();
+						}else{
+							socketPort.close();
+						}
 						int oldBlockId = Integer.parseInt(txtCalibrateBlockNumber.getText());
 						oldBlockId++;
 						txtCalibrateBlockNumber.setText(String.format("%1$d",oldBlockId));
@@ -548,8 +619,15 @@ public class Main {
 				try {					
 					if (btnStartLocating.getText() == btnStartLocating.getFirstTitle()){						
 						openPort();
-						InputStream in = serialPort.getInputStream();
-						OutputStream out = serialPort.getOutputStream();
+						InputStream in;// = serialPort.getInputStream();
+						OutputStream out;// = serialPort.getOutputStream();
+						if (rdbtnSerial.isSelected()){
+							in= serialPort.getInputStream();
+							out = serialPort.getOutputStream();
+						}else{
+							in = socketPort.getInputStream();
+							out = socketPort.getOutputStream();
+						}
 						locatorReader = new LocatorReader(in);
 						writer = new Writer(out);
 						writerThread = new Thread(locatorReader);
@@ -563,7 +641,11 @@ public class Main {
 						locatorReader.requestStop();
 						writerThread.join();
 						readerThread.join();
-						serialPort.close();
+						if (rdbtnSerial.isSelected()){
+							serialPort.close();
+						}else{
+							socketPort.close();
+						}
 						btnStartLocating.toggleTitle();
 					}
 				} catch (NoSuchPortException e) {
@@ -808,18 +890,24 @@ public class Main {
 			DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 			Date date = new Date();
 			String time = dateFormat.format(date);			
-			String displayString = String.format("%1$s, D:%2$d, S:%3$d, T:%4$d, RSSI:%5$d, MsgID: %6$d, Reserved: %7$d\n",time, rawSample.detectorId, rawSample.sourceId, rawSample.tagId, rawSample.rssi, rawSample.messageId, rawSample.reserved);			
+			String displayString = String.format("%1$s, D:%2$d, S:%3$d, T:%4$d, RSSI:%5$d, MsgID: %6$d, TagBattery: %7$d, DetBattery: %8$d\n",time, rawSample.detectorId, rawSample.sourceId, rawSample.tagId, rawSample.rssi, rawSample.messageId, rawSample.tagBattery, rawSample.detectorBattery);			
 			txtOutput.append(displayString);
 			txtOutput.setCaretPosition(txtOutput.getDocument().getLength());
 			return displayString;
 		}
 		protected void parseRawSample(ArrayList<Byte> list, RawSample newSample) {
-			newSample.sourceId 		= list.get(0) & 0xff; 		list.remove(0);
-			newSample.detectorId 	= list.get(0) & 0xff; 		list.remove(0);
-			newSample.rssi 			= list.get(0) & 0xff;		list.remove(0);			
-			newSample.tagId 		= list.get(0) & 0xff;		list.remove(0);
-			newSample.messageId 	= list.get(0) & 0xff;		list.remove(0);
-			newSample.reserved 		= list.get(0) & 0xff;		list.remove(0);			
+			newSample.sourceId 			= list.get(0) & 0xff; 		
+			newSample.detectorId 		= list.get(1) & 0xff; 		
+			newSample.rssi 				= ((list.get(2) & 0xff) << 8) + (list.get(3) & 0xff);			
+			newSample.tagId 			= list.get(4) & 0xff;		
+			newSample.messageId 		= list.get(5) & 0xff;		
+			newSample.tagBattery		= list.get(6) & 0xff;	
+			newSample.detectorBattery 	= list.get(7) & 0xff;
+			
+			//Remove the message from the input buffer.
+			for (int r = 0;r < 8;r++)
+				list.remove(0);
+			
 			System.out.println("Parsing Sample From " + newSample.detectorId);
 		}
 		protected void readPort(ArrayList<Byte> list, int bufferSize)
@@ -827,6 +915,12 @@ public class Main {
 			byte[] buffer = new byte[bufferSize];
 			int bytesRead=0;					
 			if (in.available() > 0){
+				while (bytesRead != '$'){
+					bytesRead = in.read();
+					System.out.println("Searching for Start...");
+
+				}
+				System.out.println("Found Start.");
 				bytesRead = in.read(buffer,0, bufferSize);
 				System.out.println("Read: " + bytesRead + " bytes");
 				for (int k = 0;k < bytesRead;k++){
@@ -846,7 +940,8 @@ public class Main {
 		public int sourceId;
 		public int tagId;
 		public int messageId;
-		public int reserved;	
+		public int tagBattery;
+		public int detectorBattery;
 	}
 	
 	/*class CalibratorReader
@@ -874,9 +969,10 @@ public class Main {
 				int blockId = Integer.parseInt(txtCalibrateBlockNumber.getText());
 				double x = Double.parseDouble(txtCalibrateX.getText());
 				double y = Double.parseDouble(txtCalibrateY.getText());
+				
 				while (!done){		
 					RawSample rawSample = new RawSample();
-					int bufferSize = 6;
+					int bufferSize = 8;
 					readPort(list, bufferSize);					
 					if (list.size() >= bufferSize){						
 						parseRawSample(list, rawSample);						
@@ -939,9 +1035,14 @@ public class Main {
 			try{				
 				this.done=false;
 				ArrayList<Byte> list = new ArrayList<Byte>();
-				FileWriter fw = new FileWriter(txtLocationDescription.getText()+"_data.csv");				
+				FileWriter fw = new FileWriter(txtLocationDescription.getText()+"_data.csv");	
+				//Read the wifly connection string *HELLO*
+				for (int b =0;b < 7;b++){
+					System.out.print((char)in.read());
+				}
+				System.out.println();
 				while (!done){
-					int bufferSize = 6;
+					int bufferSize = 8;
 					readPort(list,bufferSize);
 					if (list.size() >= bufferSize){												
 						RawSample rawSample = new RawSample();
@@ -1001,7 +1102,7 @@ public class Main {
 				Hashtable<Integer,ArrayList<DataPacket>> results = new Hashtable<Integer,ArrayList<DataPacket>>();			
 				while (!done){				
 					RawSample rawSample = new RawSample();
-					int bufferSize = 6;
+					int bufferSize = 8;
 					readPort(list,bufferSize);
 					if (list.size() >= bufferSize){						
 						parseRawSample(list, rawSample);						
@@ -1023,7 +1124,7 @@ public class Main {
 							//Getting all RawSamples associated with TagId+MsgId key
 							ArrayList<RawSample> rawSamples = rawSampleTable.get(e.getKey());
 							//TODO: don't give a DataPacket to the locator, if less then N detectors are participating
-							if (rawSamples.size() >= 4){
+							if (rawSamples.size() >= 5){
 								DataPacket dataPacket=null;
 								boolean first=true;
 								for (int s = 0;s < rawSamples.size();s++){
@@ -1038,7 +1139,7 @@ public class Main {
 								String displayString;
 								//A Transaction is ready to give to the Locator...but first..
 								//Location Calculations
-								displayString = String.format("Frame prepared for Locator:\n");
+								/*displayString = String.format("Frame prepared for Locator:\n");
 								printDisplayMessage(displayString);
 								//System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagId, t.blockId));
 								printDisplayMessage(String.format("\tTagID=%1$d, BlockNumber=%2$d\n",dataPacket.tagId, dataPacket.blockId));
@@ -1051,7 +1152,7 @@ public class Main {
 									}
 									//System.out.println();
 									printDisplayMessage("\n");
-								}
+								}*/
 								locator.locate(dataPacket);
 								
 								//Print to txtOutput
@@ -1076,14 +1177,17 @@ public class Main {
 									//First, sort by frequency of occurence of location								
 									//Hashtable<Vector2D, Integer> freqTable = new Hashtable<Vector2D, Integer>();
 									Hashtable<Integer, Integer> freqTable = new Hashtable<Integer, Integer>();
+									
 									for (DataPacket d: results.get(dataPacket.tagId)){
-										if (!freqTable.containsKey(d.blockId)){
-											freqTable.put(d.blockId, 0);
+										int quantizedBlockId = d.blockId/100;
+										quantizedBlockId = quantizedBlockId*100;
+										if (!freqTable.containsKey(quantizedBlockId)){
+											freqTable.put(quantizedBlockId, 0);
 										}
-										int freq = freqTable.get(d.blockId);
+										int freq = freqTable.get(quantizedBlockId);
 										freq++;
-										printDisplayMessage(String.format("%1$d has %2$d votes\n",d.blockId,freq));
-										freqTable.put(d.blockId, freq);
+										printDisplayMessage(String.format("Group %1$d(%2$d) has %3$d votes\n",quantizedBlockId,d.blockId,freq));
+										freqTable.put(quantizedBlockId, freq);
 									}								
 									//Now, tally the occurences up
 									//pick the most frequent
@@ -1101,10 +1205,12 @@ public class Main {
 									//since they are all the same tag, tagId, and battery should be the same regardless of which
 									//old DataPacket we choose.
 									for (DataPacket d:results.get(dataPacket.tagId)){
-										if (d.blockId == current){
+										int quantizedBlockId = d.blockId/100;
+										quantizedBlockId = quantizedBlockId*100;
+										if (quantizedBlockId == current){
 											//We found one with the same location as the most frequently occuring.
 											//Store it into the DB
-											String displayString2 = String.format("Winner, with %1$d votes:\n \tBlockId=%2$d\n\t(X,Y)=(%3$f,%4$f)\n",max,d.blockId,d.location.x,d.location.y);
+											String displayString2 = String.format("Winner, with %1$d votes:\n \tBlockId=%2$d\n\t(X,Y)=(%3$f,%4$f)\n",max,quantizedBlockId,d.location.x,d.location.y);
 											printDisplayMessage(displayString2);
 											storeResult(d);
 											freqTable.clear();
