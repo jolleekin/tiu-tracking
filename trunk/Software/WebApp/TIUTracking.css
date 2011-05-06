@@ -35,7 +35,6 @@ body {
 .TTabNamePanel {
 	position: relative;
 	z-index: 3;
-	width: 100%;
 	margin: 0;
 	padding: 0.5em 0 0 0;
 	cursor: default;
@@ -73,7 +72,6 @@ body {
 	position: relative;
 	z-index: 2;
 	top: -1px;
-	width: 100%;
 	color: #000;
 	border-top: 1px solid #CCC;
 	border-radius: 0 0 0.2em 0.2em;
@@ -144,12 +142,12 @@ tr.Selected {
 }
 
 .Col {float: left; padding-left: 0.5em;}
-.Col.TagId, .Col.X, .Col.Y {text-align: right; padding-left: 0; padding-right: 0.5em;}
+.Col.Id, .Col.X, .Col.Y {text-align: right; padding-left: 0; padding-right: 0.5em;}
 
-.Col.TagId {width: 35px;}
+.Col.Id {width: 35px;}
 .Col.AssetId {width: 120px;}
 .Col.Timestamp {width: 120px;}
-.Col.X, .Col.Y {width: 20px;}
+.Col.X, .Col.Y {width: 25px;}
 .Col.Battery {width: 40px; padding-right: 0.5em;}
 .Col.More {width: 25px;}
 
@@ -166,6 +164,7 @@ tr.Selected {
 }
 
 .TInfoBoxContent {
+	min-width: 150px;
 	user-select: all;
 	-moz-user-select: all;
 	-webkit-user-select: all;
@@ -214,7 +213,7 @@ input[type=textbox], input[type=password] {
 
 	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#E8E8E8), color-stop(35%,#FFF)); /* webkit */
 
-	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#E8E8E8', endColorstr='#FFFFFFFFF',GradientType=0 ); /* ie */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#E8E8E8', endColorstr='#FFFFFF',GradientType=0 ); /* ie */
 
 	background: -o-linear-gradient(top, #E8E8E8 0%,#FFF 35%); /* opera */
 }
@@ -237,7 +236,7 @@ input[type=textbox]:focus, input[type=password]:hover {
 
 #assetSearchBox, #detectorSearchBox {
 	margin: 0 0 1em 0;
-	width: 290px;
+	width: 300px;
 	outline: none;
 }
 
@@ -248,21 +247,21 @@ input[type=textbox]:focus, input[type=password]:hover {
 	background: rgba(0,0,0,0) url(images/MarkerShadow.png) no-repeat 0 0;
 }
 
-.TAssetIcon {
+.TTag {
 	position: absolute;
 	width: 24px;
 	height: 35px;
 	background: rgba(0,0,0,0) url(images/Markers.png) no-repeat 0 0;
 }
 
-.TDetectorIcon {
+.TDetector {
 	position: absolute;
-	width: 24px;
+	width: 20px;
 	height: 35px;
-	background: rgba(0,0,0,0) url(images/Markers.png) no-repeat 0 -114px;
+	background: rgba(0,0,0,0) url(images/DetectorIcon.png) no-repeat 0 0;
 }
 
-#elMapToolbar {
+#mapToolbar {
 	z-index: 2;
 	position: absolute;
 	visibility: hidden;
@@ -308,7 +307,7 @@ div.DeleteButton:hover {
 }
 
 button.Negative:focus,
-button.Negative:hover { color: #FFFFFF; background-position: 0 -121px; background-color: #D84743; border-color: #911D1B; }
+button.Negative:hover { color: #FFF; background-position: 0 -121px; background-color: #D84743; border-color: #911D1B; }
 button.Negative:active { background-position: 0 -161px; background-color: #A5211E; border-color: #911D1B; }
 
 button.Primary {
@@ -356,7 +355,7 @@ button.Translucent:hover {
 	opacity: 1;
 }
 
-.HasBorder {
+fieldset {
 	border: 1px solid #CCC;
 }
 

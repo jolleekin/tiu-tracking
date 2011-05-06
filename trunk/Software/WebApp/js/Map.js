@@ -46,7 +46,6 @@ function TMap() {
 	var fMouse = {
 		position: new TVector2D(),
 		velocity: new TVector2D(),
-		transformedPosition: new TVector2D(),
 		isLeftButtonDown: false
 	};
 	
@@ -136,8 +135,16 @@ function TMap() {
 				fMapTransform.targetPosition.multAddSet(fMapTransform.position, fMouse.velocity, VelocityScale);
 				fCurrentLerpFactor = PositionLerpFactor;
 				fTimer.setEnabled(true);
-			} else
+			} else {
 				self.selectEntity(null);
+			
+				if (self.onClick) {
+					var s = 1 / fMapTransform.totalScale;
+					var x = (fMouse.position.x - fMapTransform.position.x) * s;
+					var y = (fMouse.position.y - fMapTransform.position.y) * s;
+					self.onClick(x, y);
+				}
+			}
 		}
 	}
 	
@@ -213,7 +220,7 @@ function TMap() {
 		if (fMapImage) {
 			var sw = fMap.offsetWidth  / fMapImageCenter.x;
 			var sh = fMap.offsetHeight / fMapImageCenter.y;
-			fMinScale = Math.min(sw, sh) * 0.48;	// 96%
+			fMinScale = Math.min(sw, sh) * 0.45;	// 90% of the actual fit scale.
 		} else
 			fMinScale = 1;
 
@@ -251,9 +258,6 @@ function TMap() {
 		} else {
 			fMouse.position.assign(fMapCenter);
 		}
-		var s = 1 / fMapTransform.totalScale;
-		fMouse.transformedPosition.x = (fMouse.position.x - fMapTransform.position.x) * s;
-		fMouse.transformedPosition.y = (fMouse.position.y - fMapTransform.position.y) * s;
 	}
 	
 	function updateMapTransform() {
@@ -342,11 +346,13 @@ function TMap() {
 	}
 	
 	/**
-	 *	Updates the map's position and scale.
+	 *	Refreshes the map and all the entities.
 	 */
 	this.invalidate = function () {
 		moveMap();
 		scaleMap();
+		for (var i = 0; i < fEntities.length; i++)
+			fEntities[i].onScaleChange(fMapTransform.totalScale);
 	}
 
 	/**
@@ -446,7 +452,7 @@ function TMap() {
 	 */
 	this.selectEntity = function (entity) {
 		if (entity != fSelectedEntity) {
-			if (entity && (entity.parentNode == fMapContainer)) {
+			if (entity) {
 				fFocusedEntityInfoBox.style.visibility = SHidden;
 				fSelectedEntityInfoBox.setContent(entity.getInfo());
 				fSelectedEntityInfoBox.setPosition(entity.mX , entity.mY, 0, -entity.offsetHeight, fMapTransform.totalScale);
@@ -477,15 +483,44 @@ function TMap() {
 		}
 	}
 
+	function doRemoveEntity(entity) {
+		entity.removeEventListener(SClick, entityClick, false);
+		entity.removeEventListener(SMouseOut, entityMouseOut, false);
+		entity.removeEventListener(SMouseOver, entityMouseOver, false);
+		fMapContainer.removeChild(entity);	
+	}
+	
 	/**
-	 *	Removes an entity out of the map.
+	 *	Removes an entity out of the map, given an entity index.
 	 *
 	 *	@param	index	{Integer}	Index of the entity to be removed.
 	 *	@throws	SIndexOutOfRange
 	 */
-	this.removeEntity = function (index) {
+	this.deleteEntity = function (index) {
 		checkRange(index, 0, fEntities.length - 1);
-		fMapContainer.removeChild(fEntities.splice(index, 1)[0]);
+		doRemoveEntity(fEntities.splice(index, 1)[0]);
+	}
+	
+	this.removeEntity = function (entity) {
+		this.deleteEntity(fEntities.indexOf(entity));
+	}
+	
+	/**
+	 *	Removes all entities.
+	 */
+	this.removeAll = function () {
+		for (var i = 0, entity; i < fEntities.length; i++)
+			doRemoveEntity(entity);
+		fEntities.length = 0;
+	}
+	
+	this.getEntity = function (index) {
+		checkRange(index, 0, fEntities.length - 1);
+		return fEntities[index];
+	}
+	
+	this.getEntityCount = function () {
+		return fEntities.length;
 	}
 	
 	this.getSelectedEntity = function () {
@@ -497,12 +532,17 @@ function TMap() {
 	}
 	
 	/**
-	 *	onLoad() event. Get called after the entrance zoom-in animation.
+	 *	onLoad() event. Gets called after the entrance zoom-in animation.
 	 */
 	this.onLoad = null;
 	
 	/**
-	 *	onSelectChange() event. Get called when a new entity is selected.
+	 *	onSelectChange() event. Gets called when a new entity is selected.
 	 */
 	this.onSelectChange = null;
+	
+	/**
+	 *	onClick(x, y) event. x, y are in logical unit, not in pixels.
+	 */
+	this.onClick = null;
 }

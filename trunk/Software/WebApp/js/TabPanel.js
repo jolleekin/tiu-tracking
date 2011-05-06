@@ -14,14 +14,14 @@ function TTabPanel() {
 	var TTabName = 'TTabName';
 	
 	var self = this;
-	var tabCount = 0;
-	var selectedIndex = -1;
-	var element = newElement('div', 'TTabPanel');
-	var namePanel = newElement('ul', 'TTabNamePanel');
-	var contentPanel = newElement('div', 'TTabContentPanel');
+	var fTabCount = 0;
+	var fSelectedIndex = -1;
+	var fElement = newElement('div', 'TTabPanel');
+	var fNamePanel = newElement('ul', 'TTabNamePanel');
+	var fContentPanel = newElement('div', 'TTabContentPanel');
 	
-	element.appendChild(namePanel);
-	element.appendChild(contentPanel);
+	fElement.appendChild(fNamePanel);
+	fElement.appendChild(fContentPanel);
 	
 	function tabNameClick(event) {
 		console.log(this.__idx);
@@ -32,7 +32,7 @@ function TTabPanel() {
 /* public */
 
 	this.getElement = function () {
-		return element;
+		return fElement;
 	}
 	
 	/**
@@ -48,23 +48,23 @@ function TTabPanel() {
 			nameNode.appendChild(name);
 		else
 			nameNode.innerHTML = name;
-		nameNode.__idx = tabCount;
+		nameNode.__idx = fTabCount;
 		nameNode.onclick = tabNameClick;
 		console.log(nameNode.onclick);
-		namePanel.appendChild(nameNode);
+		fNamePanel.appendChild(nameNode);
 		
 		if (content instanceof HTMLElement)
-			contentPanel.appendChild(content);
+			fContentPanel.appendChild(content);
 		else {
 			var contentNode = newElement('div', 'TTabContent');
 			contentNode.style.display = SNone;
 			contentNode.innerHTML = content;
-			contentPanel.appendChild(contentNode);
+			fContentPanel.appendChild(contentNode);
 		}
 		
-		tabCount++;
-		console.log('Tab Count = ' + tabCount);
-		return tabCount - 1;
+		fTabCount++;
+		console.log('Tab Count = ' + fTabCount);
+		return fTabCount - 1;
 	}
 	
 	/**
@@ -73,10 +73,10 @@ function TTabPanel() {
 	 *	@param	index	{Integer}	Index of the tag page to be removed.
 	 */
 	this.remove = function (index) {
-		if (isInRange(index, 0, tabCount - 1)) {
-			namePanel.removedChild(namePanel.childNodes[index]);
-			contentPanel.removedChild(contentPanel.childNodes[index]);
-			tabCount--;
+		if (isInRange(index, 0, fTabCount - 1)) {
+			fNamePanel.removedChild(fNamePanel.childNodes[index]);
+			fContentPanel.removedChild(fContentPanel.childNodes[index]);
+			fTabCount--;
 		} else
 			throw  SIndexOutOfRange + index;
 	}
@@ -87,16 +87,16 @@ function TTabPanel() {
 	 *	@param	index {Integer}	Index of the tab page to be selected.
 	 */
 	this.selectTab = function (index) {
-		if (isInRange(index, 0, tabCount - 1)) {
-			if (selectedIndex != index) {
-				if (selectedIndex > -1) {
-					namePanel.childNodes[selectedIndex].className = TTabName;
-					contentPanel.childNodes[selectedIndex].style.display = SNone;
+		if (isInRange(index, 0, fTabCount - 1)) {
+			if (fSelectedIndex != index) {
+				if (fSelectedIndex > -1) {
+					fNamePanel.childNodes[fSelectedIndex].className = TTabName;
+					fContentPanel.childNodes[fSelectedIndex].style.display = SNone;
 				}
-				namePanel.childNodes[index].className = 'TSelectedTabName';
-				contentPanel.childNodes[index].style.display = SBlock;
+				fNamePanel.childNodes[index].className = 'TSelectedTabName';
+				fContentPanel.childNodes[index].style.display = SBlock;
 				
-				selectedIndex = index;
+				fSelectedIndex = index;
 				
 				if (self.onChanged)
 					self.onChanged();
@@ -109,11 +109,11 @@ function TTabPanel() {
 	 *	Returns the index of currently selected tab page.
 	 */
 	this.getSelectedIndex = function () {
-		return selectedIndex;
+		return fSelectedIndex;
 	}
 	
 	this.getTabCount = function () {
-		return tabCount;
+		return fTabCount;
 	}
 	
 	/**
