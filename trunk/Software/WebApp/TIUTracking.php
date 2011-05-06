@@ -26,7 +26,7 @@ function createSalt()
 	return substr($s, 0, 3);
 }
 
-function getTagInfo()
+function getTagsInfo()
 {
 	$result = mysql_query('SELECT * FROM Tags') or die();
 	$tags = array();
@@ -42,20 +42,20 @@ function getTagInfo()
 	{
 		$result = mysql_query("SELECT * FROM TagInfo WHERE TagID = $tagId ORDER BY `Timestamp` DESC LIMIT 1") or die();
 		if ($row = mysql_fetch_array($result, MYSQL_ASSOC))
-			$info .= sprintf("{s:'%s',t:%d,a:'%s',x:%0.1f,y:%0.1f,b:%d},", $row['Timestamp'], $row['TagID'], $assetId, $row['X'], $row['Y'], $row['Battery']);
+			$info .= sprintf("{s:'%s',i:%d,a:'%s',x:%0.1f,y:%0.1f,b:%d},", $row['Timestamp'], $row['TagID'], $assetId, $row['X'], $row['Y'], $row['Battery']);
 		mysql_free_result($result);
 	}
 	$info .= '{}]';
 	return $info;
 }
 
-function getDetectorInfo()
+function getDetectorsInfo()
 {
 	$result = mysql_query('SELECT * FROM Detectors') or die();
 	
 	$info = '[';
 	while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
-		$info .= sprintf('{d:%d,x:%0.1f,y:%0.1f,b:%d},', $row['DetectorID'], $row['X'], $row['Y'], 0);
+		$info .= sprintf('{i:%d,x:%0.1f,y:%0.1f,b:%d},', $row['DetectorID'], $row['X'], $row['Y'], 0);
 	$info .= '{}]';
 
 	mysql_free_result($result);
@@ -109,11 +109,11 @@ switch ($request)
 		break;
 		
 	case 'get-tags':
-		printResponse(rsOK, getTagInfo());
+		printResponse(rsOK, getTagsInfo());
 		break;
 		
 	case 'get-detectors':
-		printResponse(rsOK, getDetectorInfo());
+		printResponse(rsOK, getDetectorsInfo());
 		break;
 		
 	default:
@@ -130,7 +130,8 @@ switch ($request)
 						//TODO: Valid asset id
 						$assetId = "'$assetId'";  // Add quotation marks since it's a string
 						mysql_query("INSERT INTO Tags VALUE ($tagId, $assetId) ON DUPLICATE KEY UPDATE AssetID = $assetId");
-						printResponse(rsOK, $tagId);
+						// Returns the info of the added tag.
+						printResponse(rsOK, "{i:$tagId,a:'$assetId',x:$x,y:$y,b:0}");
 					}
 					else
 						printResponse(rsError, "'Tag ID must be a positive integer: $tagIdStr'");
@@ -153,10 +154,11 @@ switch ($request)
 						if (is_numeric($x) && is_numeric($y))
 						{
 							mysql_query("INSERT INTO Detectors VALUE ($detectorId, $x, $y) ON DUPLICATE KEY UPDATE X = $x, Y = $y");
-							printResponse(rsOK, "{d:$detectorId,x:$x,y:$y,b:0}");	// Returns the added detector
+							// Returns the info of the added detector.
+							printResponse(rsOK, "{i:$detectorId,x:$x,y:$y,b:0}");
 						}
 						else
-							printResponse(rsError, "'Invalid (x, y): ($x, $y)'");
+							printResponse(rsError, "'Invalid location: ($x, $y)'");
 					}
 					else
 						printResponse(rsError, "'Detector ID must be a positive integer: $detectorId'");
