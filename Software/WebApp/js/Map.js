@@ -350,7 +350,8 @@ function TMap() {
 	 */
 	this.invalidate = function () {
 		moveMap();
-		scaleMap();
+		if (fMapImage)
+			scaleMap();
 		for (var i = 0; i < fEntities.length; i++)
 			fEntities[i].onScaleChange(fMapTransform.totalScale);
 	}

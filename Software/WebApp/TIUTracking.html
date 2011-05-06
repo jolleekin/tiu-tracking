@@ -5,6 +5,17 @@
 	<title>Asset Tracking System</title>
 	<link rel="shortcut icon" href= "favicon.ico">
 	<script type="application/x-javascript">
+		
+		/* TEntityType */
+		var etTag		= 0;
+		var etDetector	= 1;
+		
+		/* EntityNames: array[TEntityType] of String */
+		var EntityNames = ['tag', 'detector'];
+		
+		/* EntityClassNames: array[TEntityType] of String */
+		var EntityClassNames = ['TTag', 'TDetector'];
+		
 		/**
 		 *	Creates an AJAX object with 3 custom attributes (mMethod, mUrl, and doSend()).
 		 *
@@ -43,7 +54,185 @@
 
 			return xhr;
 		}
+		
+
+		function processResponse(ajax, entityType) {
+			
+			var response;
+			var table = tagTable;
+			var entities = tags;
+			if (entityType == etDetector) {
+				table = detectorTable;
+				entities = detectors;
+			}
+			
+			if (ajax.readyState == 4 && ajax.status == 200) {
+				try {
+					response = eval(ajax.responseText);
+					
+					if (!response)
+						return;
+					
+					if (response.request == 'login') {
+						var msg = '';
+						loginButton.disabled = false;
+						if (response.status == 0)
+							updateUI(true);
+						else
+							msg = response.data;
+						showStatus('Red', msg, true);
+						return;
+					}
+					
+					if (response.status != 0) {
+						showStatus('Red', response.data, true);
+						return;
+					}
+					
+					if (response.request.indexOf('get') > -1)
+						doGet();
+					else if (response.request.indexOf('add') > -1)
+						doAdd();
+					else
+						doDelete();
 				
+				} catch (e) {
+					console.log(e);
+				}
+			}
+			
+			function doDelete() {
+				table.deleteRow(deleteRowIndex);
+				map.removeEntity(entities.splice(deleteRowIndex, 1)[0]);
+				deleteRowIndex = -1;
+			}
+			
+			function doAdd() {
+				var entity, row;
+				var info = response.data;
+				info.b = BatteryStatus[info.b];
+				
+				// Check if the entity already exists.
+				for (var i = 0; i < entities.length; i++)
+					if (entities[i].mId == info.i) {
+						entity = entities[i];
+						break;
+					}
+				
+				if (entity) {
+					// Modify the info of the existing entity.
+					
+					row = entity.mLinkedRow;
+					if (entityType == etTag) {
+						row.cells[1].innerHTML = info.a;
+						row.cells[2].innerHTML = info.x.toFixed(1);
+						row.cells[3].innerHTML = info.y.toFixed(1);
+					} else {
+						row.cells[1].innerHTML = info.x.toFixed(1);
+						row.cells[2].innerHTML = info.y.toFixed(1);
+					}
+					entity.setPosition(info.x, info.y, map.getScale());
+				} else {
+					// Creates a new entity.
+					
+					row = table.insertRow(-1);
+					entity = TMapEntity(EntityClassNames[entityType]);
+
+					
+					var columnNames = ['Id', 'X', 'Y', 'Battery', 'More'];
+					var cellValues  = [info.i, info.x.toFixed(1), info.y.toFixed(1), info.b, ''];
+					
+					// If entity is a tag, insert Asset ID column at column 1.
+					if (entityType == etTag) {
+						columnNames.splice(1, 0, 'AssetId');
+						cellValues.splice(1, 0, info.a);
+					}
+					
+					var j, cell;
+					
+					for (j = 0; j < cellValues.length; j++) {
+						cell = row.insertCell(-1);
+						cell.innerHTML = cellValues[j];
+						cell.className = 'Col ' + columnNames[j];
+					}
+					// The last cell value is the delete button since the user is admin now.
+					cell.appendChild(createDeleteButton(entityType, row, table));
+
+					row.mLinkedEntity = entity;
+					entity.set(info, row, table);
+					
+					detectors.push(entity);
+					map.addEntity(entity);
+				}
+				// Forces the info box to be repositioned.
+				map.selectEntity(null);
+				map.selectEntity(entity);				
+			}
+
+			function doGet() {
+				var columnNames = ['Id', 'X', 'Y', 'Battery', 'More'];
+				if (entityType == etTag)
+					columnNames.splice(1, 0, 'AssetId');
+				
+				var newEntityCount = response.data.length - 1;
+				var curEntityCount = entities.length;
+				
+				// Someone else might have deleted some entities.
+				if (newEntityCount < curEntityCount) {
+					for (var i = curEntityCount - 1; i >= newEntityCount; i--) {
+						map.removeEntity(entities[i]);
+						detectorTable.deleteRow(-1);
+						entities[i] = null;
+					}
+				}
+				
+				entities.length = newEntityCount;
+				
+				var row, entity, info, cellValues, cell;
+				for (var i = 0; i < newEntityCount; i++) {
+					
+					info = response.data[i];
+					info.b = BatteryStatus[info.b];
+					cellValues = [info.i, info.x.toFixed(1), info.y.toFixed(1), info.b, '&nbsp;'];
+					if (entityType == etTag)
+						cellValues.splice(1, 0, info.a);
+					
+					// If the entity hasn't been created, we need to create it
+					// and add it to the table and the map.
+					if (!entities[i]) {
+						entity = TMapEntity(EntityClassNames[entityType]);
+						entities[i] = entity;
+						map.addEntity(entity);
+						row = table.insertRow(-1);
+						for (var j = 0; j < cellValues.length; j++) {
+							cell = row.insertCell(-1);
+							cell.innerHTML = cellValues[j];
+							cell.className = 'Col ' + columnNames[j];
+						}
+						
+						// If logged in, replace the last cell value with a delete button.
+						if (isLoggedIn) {
+							cell.innerHTML = '';
+							cell.appendChild(createDeleteButton(entityType, row, table));
+						}
+					} else {
+						entity = entities[i];
+						row = table.rows[i];
+						for (var j = 0; j < cellValues.length - 1; j++) {	// Ignore the last cell since it was updated by updateUI().
+							cell = row.cells[j];
+							cell.innerHTML = cellValues[j];
+						}
+					}
+					
+					row.mLinkedEntity = entity;
+					entity.set(info, row, table);
+					
+					map.invalidate();
+				}
+			}
+		}
+
+		
 		var headerPanel;
 		var tabControl;
 		var tabPanel;
@@ -60,6 +249,8 @@
 		
 		/**
 		 *	The table that has a row selected, either @tagTable or @detectorTable, exclusively.
+		 *	Initialize this variable to be either @tagTable or @detectorTable will help optimize
+		 *	map.onSelectChange().
 		 */
 		var activeTable;
 		
@@ -125,252 +316,27 @@
 		var BatteryStatus = ['Normal', 'Low!'];
 
 		var deleteRowIndex = -1;
-
-		/**
-		 *	An AJAX object responsible for communicating with the server.
-		 */
-		var tagRequestManager = AJAX('POST', 'TIUTracking.php', function () {
-			if (this.readyState == 4 && this.status == 200) {
-				/*
-					Data returned are in JSON format.
-				{	
-					request: String,			// 'login', 'get-tags', 'add-tag', 'del-tag', 'get-detectors', 'add-detector', 'del-detector'
-					status:	Integer,			// 0 for no error
-					data: RequestSpecificData	// The returned data, if status <> 0, this will be an error message.
-				}
-				*/
-				loginButton.disabled = false;
-				try {
-					var response = eval(this.responseText);
-					
-					if (!response)
-						return;
-					
-					if (response.status != 0) {
-						showStatus('Red', response.data, true);
-						return;
-					}
-					
-					switch (response.request) {
-						case 'login':
-							showStatus('Blue', '', true);
-							updateUI(true);
-							break;
-						
-						case 'get-tags':
-							var columnNames = ['Id', 'AssetId', 'X', 'Y', 'Battery', 'More'];
-							var newTagCount = response.data.length - 1;
-							var curTagCount = tags.length;
-							
-							// Someone else might have deleted some tags.
-							if (newTagCount < curTagCount) {
-								for (var i = curTagCount - 1; i >= newTagCount; i--) {
-									map.removeEntity(tags[i]);
-									tagTable.deleteRow(-1);
-									tags[i] = null;
-								}
-							}
-							
-							tags.length = newTagCount;
-							
-							var row, tag, tagData, cellValues;
-							for (var i = 0; i < newTagCount; i++) {
-								
-								tagData = response.data[i];
-								tagData.b = BatteryStatus[tagData.b];
-								cellValues = [tagData.t, tagData.a, tagData.x.toFixed(1), tagData.y.toFixed(1), tagData.b, '&nbsp;'];
-								
-								// If the tag hasn't been created, we need to create it
-								// and add it to the table and the map.
-								if (!tags[i]) {
-									tag = TMapEntity('TTag');
-									tags[i] = tag;
-									map.addEntity(tag);
-									row = tagTable.insertRow(-1);
-									for (var j = 0; j < cellValues.length; j++) {
-										var cell = row.insertCell(-1);
-										cell.innerHTML = cellValues[j];
-										cell.className = 'Col ' + columnNames[j];
-									}									
-								} else {
-									tag = tags[i];
-									row = tagTable.rows[i];
-									for (var j = 0; j < cellValues.length; j++) {
-										var cell = row.cells[j];
-										cell.innerHTML = cellValues[j];
-									}
-								}
-								
-								row.mLinkedEntity = tag;
-
-								tag.mTimestamp	= tagData.s;
-								tag.mId			= tagData.t;
-								tag.mAssetId	= tagData.a;
-								tag.mX			= tagData.x;
-								tag.mY			= tagData.y;
-								tag.mBattery	= tagData.b;
-								tag.mLinkedRow	= row;
-								tag.mLinkedTable = tagTable;
-								
-								map.invalidate();
-							}
-							break;
-						
-						case 'add-tag':
-							
-							break;
-						
-						case 'del-tag':
-							tagTable.deleteRow(deleteRowIndex);
-							map.removeEntity(tags.splice(deleteRowIndex, 1)[0]);
-							deleteRowIndex = -1;
-					}
-				} catch (e) {
-					console.log(e);
-				}
-			}
+		
+		/*
+			Data returned are in JSON format.
+		{	
+			request: String,			// 'login', 'get-tags', 'add-tag', 'del-tag', 'get-detectors', 'add-detector', 'del-detector'
+			status:	Integer,			// 0 for no error
+			data: RequestSpecificData	// The returned data, if status <> 0, this will be an error message.
+		}
+		*/
+		
+		var loginRequestManager = AJAX('POST', 'TIUTracking.php', function () {
+			processResponse(this, -1);
 		});
 		
+		var tagRequestManager = AJAX('POST', 'TIUTracking.php', function () {
+			processResponse(this, etTag);
+		});
+		
+		
 		var detectorRequestManager = AJAX('POST', 'TIUTracking.php', function () {
-			if (this.readyState == 4 && this.status == 200) {
-				try {
-					var response = eval(this.responseText);
-					
-					if (!response)
-						return;
-					
-					if (response.status != 0) {
-						showStatus('Red', response.data, true);
-						return;
-					}
-					
-					switch (response.request) {
-						case 'get-detectors':
-							var columnNames = ['Id', 'X', 'Y', 'Battery', 'More'];
-							var newDetectorCount = response.data.length - 1;
-							var curDetectorCount = detectors.length;
-							
-							// Someone else might have deleted some detectors.
-							if (newDetectorCount < curDetectorCount) {
-								for (var i = curDetectorCount - 1; i >= newDetectorCount; i--) {
-									map.removeEntity(detectors[i]);
-									detectorTable.deleteRow(-1);
-									detectors[i] = null;
-								}
-							}
-							
-							detectors.length = newDetectorCount;
-							
-							var row, detector, data, cellValues, cell;
-							for (var i = 0; i < newDetectorCount; i++) {
-								
-								data = response.data[i];
-								data.b = BatteryStatus[data.b];
-								cellValues = [data.d, data.x.toFixed(1), data.y.toFixed(1), data.b, '&nbsp;'];
-								
-								// If the detector hasn't been created, we need to create it
-								// and add it to the table and the map.
-								if (!detectors[i]) {
-									detector = TMapEntity('TDetector');
-									detectors[i] = detector;
-									map.addEntity(detector);
-									row = detectorTable.insertRow(-1);
-									for (var j = 0; j < cellValues.length; j++) {
-										cell = row.insertCell(-1);
-										cell.innerHTML = cellValues[j];
-										cell.className = 'Col ' + columnNames[j];
-									}
-									
-									// If logged in, replace the last cell value with a delete button.
-									if (isLoggedIn) {
-										cell.className = columnNames[j];
-										cell.appendChild(createDeleteButton(etDetector, detectorTable, row));
-									}
-								} else {
-									detector = detectors[i];
-									row = detectorTable.rows[i];
-									for (var j = 0; j < cellValues.length; j++) {
-										cell = row.cells[j];
-										cell.innerHTML = cellValues[j];
-									}
-								}
-								
-								row.mLinkedEntity = detector;
-
-								detector.mId			= data.d;
-								detector.mX				= data.x;
-								detector.mY				= data.y;
-								detector.mBattery		= data.b;
-								detector.mLinkedRow		= row;
-								detector.mLinkedTable 	= detectorTable;
-								
-								map.invalidate();
-							}
-							break;
-						
-						case 'add-detector':
-							// Response data is the info of the added detector (id, x, y).
-							var detector, row;
-							var data = response.data;
-							data.b = BatteryStatus[data.b];
-							
-							// Check if the detector already exists.
-							for (var i = 0; i < detectors.length; i++)
-								if (detectors[i].mId == data.d) {
-									detector = detectors[i];
-									break;
-								}
-							
-							if (detector) {
-								// Modify the info of the existing detector.
-								row = detector.mLinkedRow;
-								row.cells[1].innerHTML = data.x.toFixed(1);
-								row.cells[2].innerHTML = data.y.toFixed(1);
-								detector.setPosition(data.x, data.y, map.getScale());
-							} else {
-								// Creates a new detector.
-								row = detectorTable.insertRow(-1);
-								detector = TMapEntity('TDetector');
-								
-								row.mLinkedEntity = detector;
-								
-								var j, cell;
-								var columnNames = ['Id', 'X', 'Y', 'Battery', 'More'];
-								var cellValues  = [data.d, data.x.toFixed(1), data.y.toFixed(1), data.b];
-								for (j = 0; j < cellValues.length; j++) {
-									cell = row.insertCell(-1);
-									cell.innerHTML = cellValues[j];
-									cell.className = 'Col ' + columnNames[j];
-								}
-								// The last cell value is the delete button.
-								cell = row.insertCell(-1)
-								cell.className = 'Col ' + columnNames[j];
-								cell.appendChild(createDeleteButton(etDetector, detectorTable, row));
-
-								detector.mId			= data.d;
-								detector.mX				= data.x;
-								detector.mY				= data.y;
-								detector.mBattery		= data.b;
-								detector.mLinkedRow		= row;
-								detector.mLinkedTable 	= detectorTable;
-								
-								detectors.push(detector);
-								map.addEntity(detector);
-							}
-							// Forces the info box to be repositioned.
-							map.selectEntity(null);
-							map.selectEntity(detector);
-							break;
-						
-						case 'del-detector':
-							detectorTable.deleteRow(deleteRowIndex);
-							map.removeEntity(detectors.splice(deleteRowIndex, 1)[0]);
-							deleteRowIndex = -1;
-					}
-				} catch (e) {
-					console.log(e);
-				}
-			}
+			processResponse(this, etDetector);
 		});
 		
 		function login() {
@@ -386,20 +352,15 @@
 			showStatus('Blue', 'Logging in...', false);
 			loginButton.disabled = true;
 
-			tagRequestManager.doSend('request=login&username=' + usernameTextBox.value + '&password=' + passwordTextBox.value);		
+			loginRequestManager.doSend('request=login&username=' + usernameTextBox.value + '&password=' + passwordTextBox.value);		
 		}
 		
 		function logout() {
-			tagRequestManager.doSend('request=logout');
+			loginRequestManager.doSend('request=logout');
 			updateUI(false);		
 		}
 
-				
-		/* TEntityType */
-		var etTag		= 'tag';
-		var etDetector	= 'detector';
-		var EntityTypes = [etTag, etDetector];
-		
+
 		/**
 		 *	Creates a delete button. The button can be added to the tag table or the detector table.
 		 *
@@ -407,15 +368,16 @@
 		 *	@param	linkedTable	{HTMLTableElement}	The table that owns this button.
 		 *	@param	linkedRow	{HTMLRowElement}	The row that owns this button.
 		 */
-		function createDeleteButton(entityType, linkedTable, linkedRow) {
+		function createDeleteButton(entityType, linkedRow, linkedTable) {
 			
 			function buttonClick(event) {
 				if (deleteRowIndex == -1) {
 					deleteRowIndex = this.mLinkedRow.rowIndex;
-					var t = this.mEntityType;
-					if (confirm('Delete this ' + t + ' permanently?')) {
+					var type = this.mEntityType;
+					var name = EntityNames[type];
+					if (confirm('Delete this ' + type + ' permanently?')) {
 						var mngr = this.mEntityType == etTag ? tagRequestManager : detectorRequestManager;
-						mngr.doSend('request=del-' + t + '&' + t + '-id=' + this.mLinkedRow.mLinkedEntity.mId);
+						mngr.doSend('request=del-' + name + '&' + name + '-id=' + this.mLinkedRow.mLinkedEntity.mId);
 					}
 				} else
 					showStatus('Red', 'Please wait for the current request to finish.', true);
@@ -436,38 +398,56 @@
 			if (isLoggedIn == loggedIn)
 				return;
 			
-			var tables = [tagTable.getElement(), detectorTable.getElement()];
+			var table, tables = [tagTable.getElement(), detectorTable.getElement()];
 			
-			for (var i = 0; i < tables.length; i++) {
-				var table = tables[i];
-				if (loggedIn) {
-					$('usernameLabel').innerHTML = 'Hi <strong style="color: blue;">' + usernameTextBox.value + '</strong>';
-					loggedInDialog.style.display = SBlock;
-					loginDialog.style.display = SNone;
-					usernameTextBox.value = '';
-					passwordTextBox.value = '';
-					
+			if (loggedIn) {
+				$('greetingLabel').innerHTML = 'Hi <strong style="color: blue;">' + usernameTextBox.value + '</strong>';
+				loggedInDialog.style.display = SBlock;
+				loginDialog.style.display = SNone;
+				usernameTextBox.value = '';
+				passwordTextBox.value = '';
+				
+				for (var i = 0; i < tables.length; i++) {
+					table = tables[i];
 					for (var j = 0, row; j < table.rows.length; j++) {
 						row = table.rows[j];
 						row.lastChild.innerHTML = '';
-						row.lastChild.appendChild(createDeleteButton(EntityTypes[i], table, row));
+						row.lastChild.appendChild(createDeleteButton(i, row, table));	// i = entityType
 					}
-				} else {
-					loginDialog.style.display = SBlock;
-					loggedInDialog.style.display = SNone;
-					
+				}
+			} else {
+				loginDialog.style.display = SBlock;
+				loggedInDialog.style.display = SNone;
+				
+				for (var i = 0; i < tables.length; i++) {
+					table = tables[i];
 					for (var j = 0; j < table.rows.length; j++)
 						table.rows[j].lastChild.innerHTML = '&nbsp;';
 				}
 			}
+			
 			//TODO: Generate the dialog dynamically.
-			addModifyDetectorDialog.style.display = loggedIn ? SBlock : SNone;
+			$('addModifyDetectorDialog').style.display = loggedIn ? SBlock : SNone;
 			
 			isLoggedIn = loggedIn;
 		}
 		
 		function TMapEntity(className) {
 
+			function set(info, linkedRow, linkedTable) {
+				this.mId = info.i;
+				this.mX	 = info.x;
+				this.mY	 = info.y;
+				this.mBattery		= info.b;
+				this.mLinkedRow		= linkedRow;
+				this.mLinkedTable	= linkedTable;
+				// For tag only
+				if (info.a) {
+					this.mTimestamp = info.s;
+					this.mAssetId	= info.a;
+				}
+			}
+			
 			function setPosition(x, y, scale) {
 				this.mX = x;
 				this.mY = y;
@@ -501,6 +481,7 @@
 			// Add the marker icon.
 			entity.appendChild(newElement(SDiv, className));
 			
+			entity.set = set;
 			entity.setPosition = setPosition;
 			entity.onScaleChange = scaleChange;
 			
@@ -512,7 +493,7 @@
 			return entity;
 		}
 		
-		function updateAssetInfo() {
+		function requestTagsInfo() {
 			tagRequestManager.doSend('request=get-tags');
 		}
 
@@ -593,10 +574,10 @@
 				map.setMapImage(this, 120);
 			}
 
-			//assetInfoUpdateTimer = new TTimer(5000, updateAssetInfo);
+			//assetInfoUpdateTimer = new TTimer(5000, requestTagsInfo);
 			//assetInfoUpdateTimer.setEnabled(true);
 			
-			updateAssetInfo();
+			requestTagsInfo();
 			detectorRequestManager.doSend('request=get-detectors');
 
 			/*------------------------------------*/
@@ -690,7 +671,7 @@
 					<div><button id="loginButton" onclick="login();">Log in</button><label id="statusLabel" style="margin-left: 35px; opacity: 0;"></label></div>
 				</fieldset>
 				<div id="loggedInDialog" style="display: none;">
-					<label id="usernameLabel" style="padding: 0 1em 0 0;"></label>
+					<label id="greetingLabel" style="padding: 0 1em 0 0;"></label>
 					<a id="logOutLink" href="javascript:logout();" style="padding: 0 1em; border-left: 1px solid #CCC;">Log out</a>
 				</div>
 				<br />
