@@ -261,12 +261,12 @@
 							
 							detectors.length = newDetectorCount;
 							
-							var row, detector, detectorData, cellValues;
+							var row, detector, data, cellValues, cell;
 							for (var i = 0; i < newDetectorCount; i++) {
 								
-								detectorData = response.data[i];
-								detectorData.b = BatteryStatus[detectorData.b];
-								cellValues = [detectorData.d, detectorData.x.toFixed(1), detectorData.y.toFixed(1), detectorData.b, '&nbsp;'];
+								data = response.data[i];
+								data.b = BatteryStatus[data.b];
+								cellValues = [data.d, data.x.toFixed(1), data.y.toFixed(1), data.b, '&nbsp;'];
 								
 								// If the detector hasn't been created, we need to create it
 								// and add it to the table and the map.
@@ -276,25 +276,31 @@
 									map.addEntity(detector);
 									row = detectorTable.insertRow(-1);
 									for (var j = 0; j < cellValues.length; j++) {
-										var cell = row.insertCell(-1);
+										cell = row.insertCell(-1);
 										cell.innerHTML = cellValues[j];
 										cell.className = 'Col ' + columnNames[j];
-									}									
+									}
+									
+									// If logged in, replace the last cell value with a delete button.
+									if (isLoggedIn) {
+										cell.className = columnNames[j];
+										cell.appendChild(createDeleteButton(etDetector, detectorTable, row));
+									}
 								} else {
 									detector = detectors[i];
 									row = detectorTable.rows[i];
 									for (var j = 0; j < cellValues.length; j++) {
-										var cell = row.cells[j];
+										cell = row.cells[j];
 										cell.innerHTML = cellValues[j];
 									}
 								}
 								
 								row.mLinkedEntity = detector;
 
-								detector.mId			= detectorData.d;
-								detector.mX				= detectorData.x;
-								detector.mY				= detectorData.y;
-								detector.mBattery		= detectorData.b;
+								detector.mId			= data.d;
+								detector.mX				= data.x;
+								detector.mY				= data.y;
+								detector.mBattery		= data.b;
 								detector.mLinkedRow		= row;
 								detector.mLinkedTable 	= detectorTable;
 								
@@ -303,7 +309,57 @@
 							break;
 						
 						case 'add-detector':
+							// Response data is the info of the added detector (id, x, y).
+							var detector, row;
+							var data = response.data;
+							data.b = BatteryStatus[data.b];
 							
+							// Check if the detector already exists.
+							for (var i = 0; i < detectors.length; i++)
+								if (detectors[i].mId == data.d) {
+									detector = detectors[i];
+									break;
+								}
+							
+							if (detector) {
+								// Modify the info of the existing detector.
+								row = detector.mLinkedRow;
+								row.cells[1].innerHTML = data.x.toFixed(1);
+								row.cells[2].innerHTML = data.y.toFixed(1);
+								detector.setPosition(data.x, data.y, map.getScale());
+							} else {
+								// Creates a new detector.
+								row = detectorTable.insertRow(-1);
+								detector = TMapEntity('TDetector');
+								
+								row.mLinkedEntity = detector;
+								
+								var j, cell;
+								var columnNames = ['Id', 'X', 'Y', 'Battery', 'More'];
+								var cellValues  = [data.d, data.x.toFixed(1), data.y.toFixed(1), data.b];
+								for (j = 0; j < cellValues.length; j++) {
+									cell = row.insertCell(-1);
+									cell.innerHTML = cellValues[j];
+									cell.className = 'Col ' + columnNames[j];
+								}
+								// The last cell value is the delete button.
+								cell = row.insertCell(-1)
+								cell.className = 'Col ' + columnNames[j];
+								cell.appendChild(createDeleteButton(etDetector, detectorTable, row));
+
+								detector.mId			= data.d;
+								detector.mX				= data.x;
+								detector.mY				= data.y;
+								detector.mBattery		= data.b;
+								detector.mLinkedRow		= row;
+								detector.mLinkedTable 	= detectorTable;
+								
+								detectors.push(detector);
+								map.addEntity(detector);
+							}
+							// Forces the info box to be repositioned.
+							map.selectEntity(null);
+							map.selectEntity(detector);
 							break;
 						
 						case 'del-detector':
@@ -345,13 +401,13 @@
 		var EntityTypes = [etTag, etDetector];
 		
 		/**
-		 *	Creates a remove button. The button can be added to the tag table or the detector table.
+		 *	Creates a delete button. The button can be added to the tag table or the detector table.
 		 *
 		 *	@param	entityType	{TEntityType}
 		 *	@param	linkedTable	{HTMLTableElement}	The table that owns this button.
 		 *	@param	linkedRow	{HTMLRowElement}	The row that owns this button.
 		 */
-		function createRemoveButton(entityType, linkedTable, linkedRow) {
+		function createDeleteButton(entityType, linkedTable, linkedRow) {
 			
 			function buttonClick(event) {
 				if (deleteRowIndex == -1) {
@@ -394,7 +450,7 @@
 					for (var j = 0, row; j < table.rows.length; j++) {
 						row = table.rows[j];
 						row.lastChild.innerHTML = '';
-						row.lastChild.appendChild(createRemoveButton(EntityTypes[i], table, row));
+						row.lastChild.appendChild(createDeleteButton(EntityTypes[i], table, row));
 					}
 				} else {
 					loginDialog.style.display = SBlock;
@@ -404,13 +460,21 @@
 						table.rows[j].lastChild.innerHTML = '&nbsp;';
 				}
 			}
+			//TODO: Generate the dialog dynamically.
+			addModifyDetectorDialog.style.display = loggedIn ? SBlock : SNone;
 			
 			isLoggedIn = loggedIn;
 		}
 		
 		function TMapEntity(className) {
 
-			function entityScaleChange(scale) {
+			function setPosition(x, y, scale) {
+				this.mX = x;
+				this.mY = y;
+				this.onScaleChange(scale);
+			}
+			
+			function scaleChange(scale) {
 				// First child is the marker icon.
 				this.style.left = (this.mX * scale - this.firstChild.offsetWidth * 0.5) + SPixel;
 				this.style.top  = (this.mY * scale - this.offsetHeight) + SPixel;
@@ -437,7 +501,8 @@
 			// Add the marker icon.
 			entity.appendChild(newElement(SDiv, className));
 			
-			entity.onScaleChange = entityScaleChange;
+			entity.setPosition = setPosition;
+			entity.onScaleChange = scaleChange;
 			
 			if (className == 'TTag')
 				entity.getInfo = assetInfo;
@@ -518,8 +583,8 @@
 				activeTable.setSelectedIndex(idx);
 			}
 			map.onClick = function (x, y) {
-				$('detectorX').value = x.toFixed(1);
-				$('detectorY').value = y.toFixed(1);
+				$('detectorXTextBox').value = x.toFixed(1);
+				$('detectorYTextBox').value = y.toFixed(1);
 			}
 			
 			mapImage = new Image();
@@ -589,6 +654,10 @@
 			}
 
 			onresize();
+			
+			$('addDetectorButton').onclick = function () {
+				detectorRequestManager.doSend('request=add-detector&detector-id=' + detectorIdTextBox.value + '&x=' + detectorXTextBox.value + '&y=' + detectorYTextBox.value);
+			}
 		}
 	</script>
 	<link href="TIUTracking.css" rel="stylesheet" type="text/css"/>
@@ -606,7 +675,7 @@
 		Asset Tracking System
 	</div>
 	<button id="showHideTabPanelButton" class="TextIcon" title="Hide panel" style="position: absolute; z-index: 4; padding: 0 4px 2px;">«</button>
-	<div id="tabPanel" class="TTabPanel TCastShadow" style="	position: relative; left: 0; top: 0; margin: 0; padding: 0; z-index: 2; background-color: #FFF; width: 350px;">		
+	<div id="tabPanel" class="TTabPanel TCastShadow" style="position: relative; left: 0; top: 0; margin: 0; padding: 0; z-index: 2; background-color: #FFF; width: 360px;">		
 		<ul class="TTabNamePanel">
 			<li class="TTabName">Welcome</li>
 			<li class="TTabName">&nbsp;&nbsp;Assets&nbsp;&nbsp;&nbsp;</li>
@@ -637,11 +706,19 @@
 				<div class="TableHeader"><div class="Col Id">ID</div><div class="Col AssetId">Asset ID</div><div class="Col X">X</div><div class="Col Y">Y</div><div class="Col Battery">Battery</div><div class="Col More"></div></div>
 			</div>
 			<div id="detectorsTab" class="TTabContent">
-				<fieldset>
-					<legend>Add new detector</legend>
-					<label>X :</label><input type="textbox" id="detectorX" style="width: 30px; text-align: right;" /><br />
+				<fieldset id="addModifyDetectorDialog" style="display: none;">
+					<legend>Add/Modify Detector</legend>
+					<table>
+						<tr><td>ID</td><td>X</td><td>Y</td></tr>
+						<tr><td><input type="textbox" id="detectorIdTextBox" style="width: 38px; text-align: right;" /></td><td><input type="textbox" id="detectorXTextBox" style="width: 38px; text-align: right;" /></td><td><input type="textbox" id="detectorYTextBox" style="width: 38px; text-align: right;" /></td></tr>
+						<tr><td><button id="addDetectorButton" style="width: 50px;">Add</button></td><td>&nbsp;</td><td>&nbsp;</td></tr>
+					</table>
+					<!--
+					<label>X :</label><input type="textbox" id="detectorX" style="width: 30px; text-align: right;" />
 					<label>Y :</label><input type="textbox" id="detectorY" style="width: 30px; text-align: right;" /><br />
 					<label>Click on the map to place the detector</label>
+					<button id="addDetectorButton">Add</button><button id="cancelButton" style="width: 50px;">Cancel</button>
+					-->
 				</fieldset>
 				<br/>
 				<input type="textbox" id="detectorSearchBox" class="TSearchBox" placeholder="Search for a detector"/>
