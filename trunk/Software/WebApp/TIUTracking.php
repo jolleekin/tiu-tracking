@@ -153,7 +153,7 @@ switch ($request)
 						if (is_numeric($x) && is_numeric($y))
 						{
 							mysql_query("INSERT INTO Detectors VALUE ($detectorId, $x, $y) ON DUPLICATE KEY UPDATE X = $x, Y = $y");
-							printResponse(rsOK, $detectorId);
+							printResponse(rsOK, "{d:$detectorId,x:$x,y:$y,b:0}");	// Returns the added detector
 						}
 						else
 							printResponse(rsError, "'Invalid (x, y): ($x, $y)'");
@@ -167,7 +167,8 @@ switch ($request)
 					mysql_query("DELETE FROM Detectors WHERE DetectorID = $detectorId");
 					printResponse(rsOK, $detectorId);
 			}
-		}
+		} else
+			printResponse(rsError, "'Permission denied'");
 }
 
 mysql_close($connection);
