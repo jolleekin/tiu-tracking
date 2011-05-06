@@ -82,17 +82,6 @@ body {
 	overflow: auto;
 }
 
-.TFlexTable {
-	cursor: default;
-	clear: both;
-	display: block;
-	overflow: auto;
-	max-height: 500px;
-	text-align: left;
-	vertical-align: middle;
-	border-collapse: collapse;
-}
-
 .TableHeader {
 	color: #FFF;
 	font-weight: bold;
@@ -111,6 +100,17 @@ body {
 	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#6db3f2), color-stop(50%,#54a3ee), color-stop(51%,#3690f0), color-stop(100%,#1e69de)); /* webkit */
 	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#6db3f2', endColorstr='#1e69de',GradientType=0 ); /* ie */
 	background: -o-linear-gradient(top, #6db3f2 0%,#54a3ee 50%,#3690f0 51%,#1e69de 100%); /* opera */
+}
+
+.TFlexTable {
+	cursor: default;
+	clear: both;
+	display: block;
+	overflow: auto;
+	text-align: left;
+	max-height: 260px;
+	vertical-align: middle;
+	border-collapse: collapse;
 }
 
 tr {
