@@ -28,7 +28,7 @@ function createSalt()
 
 function getTagInfo()
 {
-	$result = mysql_query('SELECT * FROM Tags') or die();
+	$result = mysql_query('SELECT * FROM Tags') or return '';
 	$tags = array();
 	
 	while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
@@ -40,7 +40,7 @@ function getTagInfo()
 	$info = '[';
 	foreach ($tags as $tagId => $assetId)
 	{
-		$result = mysql_query("SELECT * FROM TagInfo WHERE TagID = $tagId ORDER BY `Timestamp` DESC LIMIT 1") or die(mysql_error());
+		$result = mysql_query("SELECT * FROM TagInfo WHERE TagID = $tagId ORDER BY `Timestamp` DESC LIMIT 1") or return '';
 		if ($row = mysql_fetch_array($result, MYSQL_ASSOC))
 			$info .= sprintf("{s:'%s',t:%d,a:'%s',x:%0.1f,y:%0.1f,b:%d},", $row['Timestamp'], $row['TagID'], $assetId, $row['X'], $row['Y'], $row['Battery']);
 		mysql_free_result($result);
@@ -51,7 +51,7 @@ function getTagInfo()
 
 function getDetectorInfo()
 {
-	$result = mysql_query('SELECT * FROM Detectors') or die();
+	$result = mysql_query('SELECT * FROM Detectors') or return '';
 	
 	$info = '[';
 	while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
