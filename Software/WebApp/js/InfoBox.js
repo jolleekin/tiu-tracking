@@ -50,6 +50,11 @@ function TInfoBox() {
 		this.style.top  = (this.mY * scale + this.mOffsetY - this.offsetHeight) + SPixel;
 	}
 	
+	box.onclick = function (event) {
+		event.preventDefault();
+		event.stopPropagation();
+	}
+	
 	box.mX = 0;
 	box.mY = 0;
 	

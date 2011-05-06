@@ -19,15 +19,15 @@
 			 *
 			 *	@param	params	{String}	Params to send along, e.g. 'username=abc&password=123'
 			 */
-			function _doSend(params) {
+			function doSend(params) {
 				try {
-					if (this.method == 'POST') {
-						this.open(this.method, this.mUrl, true);
+					if (this.mMethod == 'POST') {
+						this.open(this.mMethod, this.mUrl, true);
 						this.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
 						this.send(params);
 					} else {
 
-						this.open(this.method, this.mUrl + '?' + params, true);
+						this.open(this.mMethod, this.mUrl + '?' + params, true);
 						this.send();
 					}
 				} catch (e) {
@@ -39,97 +39,29 @@
 			xhr.mMethod = method;
 			xhr.mUrl = url;
 			xhr.onreadystatechange = callback;
-			xhr.doSend = _doSend;
+			xhr.doSend = doSend;
 
 			return xhr;
 		}
-		
-		var Host = 'TIUTracking.php';
-		
+				
 		var headerPanel;
 		var tabControl;
-		var elTabPanel;
+		var tabPanel;
 		
 		var map;
-		var elMapImage;
-		var elMapToolbar;
+		var mapImage;
+		var mapToolbar;
 		
-		var toolTip;
-		var assets = [];
-		var assetTable;
+		var tags = [];
+		var tagTable;
 		
 		var detectors = [];
 		var detectorTable;
-
+		
 		/**
-		 *	An AJAX object for asset related requests, i.e. adding/changing/deleting an asset and getting all assets' info.
+		 *	The table that has a row selected, either @tagTable or @detectorTable, exclusively.
 		 */
-		var assetAjax = AJAX('POST', Host, function () {
-			if (this.readyState == 4 && this.status == 200) {
-				/*
-					Data returned are in JSON format.
-					[
-						{
-							s: String	// 'yyyy-mm-dd hh:ii:ss'
-							t: Integer,	// Tag ID
-							a: String,	// Asset ID
-							x: Double,	// x location
-							y: Double,	// y location
-							b: Integer	// battery, 0 = normal
-						},
-						...
-						{}	// Empty object
-					]
-				*/
-				var data = eval(this.responseText);
-				assets.length = data.length - 1;
-				for (var i = 0, a, b; i < assets.length; i++) {
-					if (!assets[i])
-						assets[i] = TMapEntity();
-					a = assets[i];
-					b = data[i];
-					a.mTimestamp = b.s;
-					a.mTagId	= b.t;
-					a.mAssetId	= b.a;
-					a.mX		= b.x;
-					a.mY		= b.y;
-					a.mBattery	= b.b;
-				}
-			}
-		});
-
-		/**
-		 *	An AJAX object for detector related requests, i.e. adding/changing/deleting an detector and getting all detectors' info.
-		 */
-		var detectorAjax = AJAX('POST', Host, function () {
-			if (this.readyState == 4 && this.status == 200) {
-				/*
-					Data returned are in JSON format.
-					[
-						{
-							d: Integer,	// Detector ID
-							x: Double,	// x location
-							y: Double,	// y location
-							b: Integer	// battery, 0 = normal
-						},
-						...
-						{}	// Empty object
-					]
-				*/
-				var data = eval(this.responseText);
-				detectors.length = data.length - 1;
-				for (var i = 0, a, b; i < detector.length; i++) {
-					if (!detectors[i])
-						detectors[i] = TMapEntity();
-					a = detectors[i];
-					b = data[i];
-					a.mDetectorId = b.t;
-					a.mX		= b.x;
-					a.mY		= b.y;
-					a.mBattery	= b.b;
-				}
-			}
-		});
+		var activeTable;
 		
 		var assetInfoUpdateTimer;
 		
@@ -137,7 +69,7 @@
 		var usernameTextBox;
 		var passwordTextBox;
 		var loginButton;
-		var loginStatusLabel;
+		var statusLabel;
 		var loggedInDialog;
 		
 		var isLoggedIn = false;
@@ -166,7 +98,7 @@
 			fadeOut: true,
 			onfinish: function () {
 				if (statusLabelAnimationParams.to == 0)
-					statusLabelAnimationParams.to = 1000;
+					statusLabelAnimationParams.to = 100;
 				else if (statusLabelAnimationParams.fadeOut) {
 					statusLabelAnimationParams.to = 0;
 					statusLabelAnimationParams.timerHandle = setTimeout(this.fxRun, 2000);
@@ -174,272 +106,446 @@
 			}
 		};
 		
-		function logInOut(isLogIn) {
-			
-			/**
-			 *	@param	keep	{Boolean}	true means keep the status label visible.
-			 *								false means hide the status label after 2secs.
-			 *								Default is false.
-			 */
-			function showLoginStatus(color, text, keep) {
-				clearTimeout(statusLabelAnimationParams.timerHandle);
-				if (statusLabelAnimationParams.to == 0)
-					statusLabelAnimationParams.to = 100;
-				statusLabelAnimationParams.fadeOut = !keep;
-				loginStatusLabel.style.color = color;
-				loginStatusLabel.innerHTML = text;
-				loginStatusLabel.fxRun();
-			}
-			
-			if (isLogIn) {
-				if (usernameTextBox.value == '') {
-					showLoginStatus('Red', 'Please enter the username.');
-					return;
-				}
-				if (passwordTextBox.value == '') {
-					showLoginStatus('Red', 'Please enter the password.');
-					return;
-				}
-				
-				showLoginStatus('Blue', 'Logging in...', true);
-				loginButton.disabled = true;
-
-				AJAX(SPost, 'TIUTracking.php', 'q=login&username=' + usernameTextBox.value + '&password=' + passwordTextBox.value, function () {
-						if (this.readyState == 4 && this.status == 200) {
-							if (this.responseText == 'OK') {
-								showLoginStatus('Blue', '');
-								isLoggedIn = true;
-								updateUI();
-							} else
-								showLoginStatus('Red', this.responseText);
-						} else
-							showLoginStatus('Red', 'Error connecting to server.');
-						loginButton.disabled = false;
-					}, null
-				);
-			} else {
-				AJAX(SPost, 'TIUTracking.php', 'q=logout', null);
-				isLoggedIn = false;
-				updateUI();
-			}
-		}
-		currentRowIndex = -1;
 		
-		function updateUI() {
-			var assetTableElement = assetTable.getElement();
-			if (isLoggedIn) {
-				$('usernameLabel').innerHTML = 'Hi <strong style="color: blue;">' + usernameTextBox.value + '</strong>';
-				loggedInDialog.style.display = SBlock;
-				loginDialog.style.display = SNone;
-				usernameTextBox.value = '';
-				passwordTextBox.value = '';
-				
-				for (var i = 0, row; i < assetTableElement.rows.length; i++) {
-					row = assetTableElement.rows[i];
+		/**
+		 *	@param	fadeOut	{Boolean}	true means keep the status label visible.
+		 *								false means hide the status label after 2secs.
+		 *								Default is false.
+		 */
+		function showStatus(color, text, fadeOut) {
+			clearTimeout(statusLabelAnimationParams.timerHandle);
+			if (statusLabelAnimationParams.to == 0)
+				statusLabelAnimationParams.to = 100;
+			statusLabelAnimationParams.fadeOut = fadeOut;
+			statusLabel.style.color = color;
+			statusLabel.innerHTML = text;
+			statusLabel.fxRun();
+		}
 
-					var removeButton = newElement('div', 'DeleteButton');
-					removeButton.linkedRow = row;
-					removeButton.title = 'Delete this asset';
-					removeButton.onclick = function (event) {
-						if (currentRowIndex == -1) {
-							currentRowIndex = this.linkedRow.rowIndex;
-							if (confirm("You're about to delete this asset permanently.")) {
-								AJAX(SPost, 'TIUTracking.php', 'q=del_asset&tagId=' + this.linkedRow.cells[0].innerHTML, function () {
-									if (this.readyState == 4 && this.status == 200) {
-										// The server returns the id of the deleted tag or 0 if none.
-										var tagId = parseInt(this.responseText);
-										if (tagId > 0) {
-											var idx = currentRowIndex;
-											assetTable.deleteRow(idx);
-											assets.splice(idx, 1);
-											map.removeEntity(idx);
-										} else
-											alert('Could not delete this asset. Please try again.');
-										currentRowIndex = -1;
-									}
-								});
-							}
-						} else
-							alert('Please wait for the current request to finish.');
-						event.stopPropagation();
+		var BatteryStatus = ['Normal', 'Low!'];
+
+		var deleteRowIndex = -1;
+
+		/**
+		 *	An AJAX object responsible for communicating with the server.
+		 */
+		var tagRequestManager = AJAX('POST', 'TIUTracking.php', function () {
+			if (this.readyState == 4 && this.status == 200) {
+				/*
+					Data returned are in JSON format.
+				{	
+					request: String,			// 'login', 'get-tags', 'add-tag', 'del-tag', 'get-detectors', 'add-detector', 'del-detector'
+					status:	Integer,			// 0 for no error
+					data: RequestSpecificData	// The returned data, if status <> 0, this will be an error message.
+				}
+				*/
+				loginButton.disabled = false;
+				try {
+					var response = eval(this.responseText);
+					
+					if (!response)
+						return;
+					
+					if (response.status != 0) {
+						showStatus('Red', response.data, true);
+						return;
 					}
-					row.lastChild.innerHTML = '';
-					row.lastChild.appendChild(removeButton);
+					
+					switch (response.request) {
+						case 'login':
+							showStatus('Blue', '', true);
+							updateUI(true);
+							break;
+						
+						case 'get-tags':
+							var columnNames = ['Id', 'AssetId', 'X', 'Y', 'Battery', 'More'];
+							var newTagCount = response.data.length - 1;
+							var curTagCount = tags.length;
+							
+							// Someone else might have deleted some tags.
+							if (newTagCount < curTagCount) {
+								for (var i = curTagCount - 1; i >= newTagCount; i--) {
+									map.removeEntity(tags[i]);
+									tagTable.deleteRow(-1);
+									tags[i] = null;
+								}
+							}
+							
+							tags.length = newTagCount;
+							
+							var row, tag, tagData, cellValues;
+							for (var i = 0; i < newTagCount; i++) {
+								
+								tagData = response.data[i];
+								tagData.b = BatteryStatus[tagData.b];
+								cellValues = [tagData.t, tagData.a, tagData.x.toFixed(1), tagData.y.toFixed(1), tagData.b, '&nbsp;'];
+								
+								// If the tag hasn't been created, we need to create it
+								// and add it to the table and the map.
+								if (!tags[i]) {
+									tag = TMapEntity('TTag');
+									tags[i] = tag;
+									map.addEntity(tag);
+									row = tagTable.insertRow(-1);
+									for (var j = 0; j < cellValues.length; j++) {
+										var cell = row.insertCell(-1);
+										cell.innerHTML = cellValues[j];
+										cell.className = 'Col ' + columnNames[j];
+									}									
+								} else {
+									tag = tags[i];
+									row = tagTable.rows[i];
+									for (var j = 0; j < cellValues.length; j++) {
+										var cell = row.cells[j];
+										cell.innerHTML = cellValues[j];
+									}
+								}
+								
+								row.mLinkedEntity = tag;
+
+								tag.mTimestamp	= tagData.s;
+								tag.mId			= tagData.t;
+								tag.mAssetId	= tagData.a;
+								tag.mX			= tagData.x;
+								tag.mY			= tagData.y;
+								tag.mBattery	= tagData.b;
+								tag.mLinkedRow	= row;
+								tag.mLinkedTable = tagTable;
+								
+								map.invalidate();
+							}
+							break;
+						
+						case 'add-tag':
+							
+							break;
+						
+						case 'del-tag':
+							tagTable.deleteRow(deleteRowIndex);
+							map.removeEntity(tags.splice(deleteRowIndex, 1)[0]);
+							deleteRowIndex = -1;
+					}
+				} catch (e) {
+					console.log(e);
 				}
-			} else {
-				loginDialog.style.display = SBlock;
-				loggedInDialog.style.display = SNone;
-				
-				for (var i = 0; i < assetTableElement.rows.length; i++)
-					assetTableElement.rows[i].lastChild.innerHTML = '&nbsp;';
 			}
+		});
+		
+		var detectorRequestManager = AJAX('POST', 'TIUTracking.php', function () {
+			if (this.readyState == 4 && this.status == 200) {
+				try {
+					var response = eval(this.responseText);
+					
+					if (!response)
+						return;
+					
+					if (response.status != 0) {
+						showStatus('Red', response.data, true);
+						return;
+					}
+					
+					switch (response.request) {
+						case 'get-detectors':
+							var columnNames = ['Id', 'X', 'Y', 'Battery', 'More'];
+							var newDetectorCount = response.data.length - 1;
+							var curDetectorCount = detectors.length;
+							
+							// Someone else might have deleted some detectors.
+							if (newDetectorCount < curDetectorCount) {
+								for (var i = curDetectorCount - 1; i >= newDetectorCount; i--) {
+									map.removeEntity(detectors[i]);
+									detectorTable.deleteRow(-1);
+									detectors[i] = null;
+								}
+							}
+							
+							detectors.length = newDetectorCount;
+							
+							var row, detector, detectorData, cellValues;
+							for (var i = 0; i < newDetectorCount; i++) {
+								
+								detectorData = response.data[i];
+								detectorData.b = BatteryStatus[detectorData.b];
+								cellValues = [detectorData.d, detectorData.x.toFixed(1), detectorData.y.toFixed(1), detectorData.b, '&nbsp;'];
+								
+								// If the detector hasn't been created, we need to create it
+								// and add it to the table and the map.
+								if (!detectors[i]) {
+									detector = TMapEntity('TDetector');
+									detectors[i] = detector;
+									map.addEntity(detector);
+									row = detectorTable.insertRow(-1);
+									for (var j = 0; j < cellValues.length; j++) {
+										var cell = row.insertCell(-1);
+										cell.innerHTML = cellValues[j];
+										cell.className = 'Col ' + columnNames[j];
+									}									
+								} else {
+									detector = detectors[i];
+									row = detectorTable.rows[i];
+									for (var j = 0; j < cellValues.length; j++) {
+										var cell = row.cells[j];
+										cell.innerHTML = cellValues[j];
+									}
+								}
+								
+								row.mLinkedEntity = detector;
+
+								detector.mId			= detectorData.d;
+								detector.mX				= detectorData.x;
+								detector.mY				= detectorData.y;
+								detector.mBattery		= detectorData.b;
+								detector.mLinkedRow		= row;
+								detector.mLinkedTable 	= detectorTable;
+								
+								map.invalidate();
+							}
+							break;
+						
+						case 'add-detector':
+							
+							break;
+						
+						case 'del-detector':
+							detectorTable.deleteRow(deleteRowIndex);
+							map.removeEntity(detectors.splice(deleteRowIndex, 1)[0]);
+							deleteRowIndex = -1;
+					}
+				} catch (e) {
+					console.log(e);
+				}
+			}
+		});
+		
+		function login() {
+			if (usernameTextBox.value == '') {
+				showStatus('Red', 'Please enter the username.', true);
+				return;
+			}
+			if (passwordTextBox.value == '') {
+				showStatus('Red', 'Please enter the password.', true);
+				return;
+			}
+			
+			showStatus('Blue', 'Logging in...', false);
+			loginButton.disabled = true;
+
+			tagRequestManager.doSend('request=login&username=' + usernameTextBox.value + '&password=' + passwordTextBox.value);		
 		}
 		
-		function TMapEntity() {
+		function logout() {
+			tagRequestManager.doSend('request=logout');
+			updateUI(false);		
+		}
+
+				
+		/* TEntityType */
+		var etTag		= 'tag';
+		var etDetector	= 'detector';
+		var EntityTypes = [etTag, etDetector];
+		
+		/**
+		 *	Creates a remove button. The button can be added to the tag table or the detector table.
+		 *
+		 *	@param	entityType	{TEntityType}
+		 *	@param	linkedTable	{HTMLTableElement}	The table that owns this button.
+		 *	@param	linkedRow	{HTMLRowElement}	The row that owns this button.
+		 */
+		function createRemoveButton(entityType, linkedTable, linkedRow) {
+			
+			function buttonClick(event) {
+				if (deleteRowIndex == -1) {
+					deleteRowIndex = this.mLinkedRow.rowIndex;
+					var t = this.mEntityType;
+					if (confirm('Delete this ' + t + ' permanently?')) {
+						var mngr = this.mEntityType == etTag ? tagRequestManager : detectorRequestManager;
+						mngr.doSend('request=del-' + t + '&' + t + '-id=' + this.mLinkedRow.mLinkedEntity.mId);
+					}
+				} else
+					showStatus('Red', 'Please wait for the current request to finish.', true);
+				event.stopPropagation();
+			}
+			
+			var b = newElement(SDiv, 'DeleteButton');
+			b.mEntityType = entityType;
+			b.mLinkedTable = linkedTable;
+			b.mLinkedRow = linkedRow;
+			b.onclick = buttonClick;
+			b.title = 'Delete';
+			
+			return b;
+		}
+		
+		function updateUI(loggedIn) {
+			if (isLoggedIn == loggedIn)
+				return;
+			
+			var tables = [tagTable.getElement(), detectorTable.getElement()];
+			
+			for (var i = 0; i < tables.length; i++) {
+				var table = tables[i];
+				if (loggedIn) {
+					$('usernameLabel').innerHTML = 'Hi <strong style="color: blue;">' + usernameTextBox.value + '</strong>';
+					loggedInDialog.style.display = SBlock;
+					loginDialog.style.display = SNone;
+					usernameTextBox.value = '';
+					passwordTextBox.value = '';
+					
+					for (var j = 0, row; j < table.rows.length; j++) {
+						row = table.rows[j];
+						row.lastChild.innerHTML = '';
+						row.lastChild.appendChild(createRemoveButton(EntityTypes[i], table, row));
+					}
+				} else {
+					loginDialog.style.display = SBlock;
+					loggedInDialog.style.display = SNone;
+					
+					for (var j = 0; j < table.rows.length; j++)
+						table.rows[j].lastChild.innerHTML = '&nbsp;';
+				}
+			}
+			
+			isLoggedIn = loggedIn;
+		}
+		
+		function TMapEntity(className) {
 
 			function entityScaleChange(scale) {
-				this.style.left = (this.mX * scale - 12) + SPixel;
+				// First child is the marker icon.
+				this.style.left = (this.mX * scale - this.firstChild.offsetWidth * 0.5) + SPixel;
 				this.style.top  = (this.mY * scale - this.offsetHeight) + SPixel;
 			}
 			
-			function assetInfo () {
-				return	'<table cellspacing="0" style="border-collapse: collapse;">' +
-						'<tr><td>Tag ID</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mTagId + '</td></tr>' +
-						'<tr><td>Asset ID</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mAssetId + '</td></tr>' +
-						'<tr><td>Battery</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mBattery + '</td></tr></table>';
+			function assetInfo() {
+				return	'<table cellspacing="0" style="border-collapse: collapse; width: 100%;">' +
+						'<caption style="color: Red; font-weight: bold;">Tag</caption>' +
+						'<tr style="border-top: 1px solid #DFDFDF; border-bottom: none;"><td>ID</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mId + '</td></tr>' +
+						'<tr style="border: none;"><td>Asset ID</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mAssetId + '</td></tr>' +
+						'<tr style="border: none"><td>Battery</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mBattery + '</td></tr></table>';
+			}
+			
+			function detectorInfo() {
+				return	'<table cellspacing="0" style="border-collapse: collapse; width: 100%;">' +
+						'<caption style="color: Red; font-weight: bold;">Detector</caption>' +
+						'<tr style="border-top: 1px solid #DFDFDF; border-bottom: none;"><td>ID</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mId + '</td></tr>' +
+						//'<tr><td>Asset ID</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mAssetId + '</td></tr>' +
+						'<tr style="border: none"><td>Battery</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mBattery + '</td></tr></table>';
 			}
 			
 			var entity = newElement(SDiv, 'TMapEntity');
+			
+			// Add the marker icon.
+			entity.appendChild(newElement(SDiv, className));
+			
 			entity.onScaleChange = entityScaleChange;
-			entity.getInfo = assetInfo;
+			
+			if (className == 'TTag')
+				entity.getInfo = assetInfo;
+			else
+				entity.getInfo = detectorInfo;
 			
 			return entity;
 		}
 		
 		function updateAssetInfo() {
-			assetAjax.doSend('q=get_asset');
+			tagRequestManager.doSend('request=get-tags');
 		}
-		
-		function update() {
-			//ajax.open('GET', 'AssetInfo.php?id=', true);
-			//ajax.send();
-			var count = 10;
-		
-			function rowClick(event) {
-				map.selectEntity(this.linkedEntity);
-			}
-			
-			// Table header
-			cssClasses = ['TagId', 'AssetId', 'X', 'Y', 'Battery', 'More'];
-			
-			// Fake asset.
-			for (var i = 0, row, asset; i < count; i++) {
-				row = assetTable.insertRow(-1);
-				
-				//asset = newElement(SDiv, 'TMapEntity');
-				asset = TMapEntity();
-				asset.appendChild(newElement(SDiv, 'TAssetIcon'));
-				asset.mTagId = i + 1;
-				asset.mAssetId = randomId();
-				asset.mTimestamp = '2011-04-21 20:21:22';
-				asset.mX = Math.round(23 * Math.random());
-				asset.mY = Math.round(9 * Math.random());
-				asset.mBattery = 'Normal';
-				
-				// Link the asset with the corresponding row the the asset table.
-				asset.linkedTable = assetTable;
-				asset.linkedRow = row;
-				row.linkedEntity = asset;
-				//row.addEventListener('click', rowClick, false);
 
-				assets.push(asset);
-				map.addEntity(asset);
-				
-				var cellValues = [asset.mTagId, asset.mAssetId, asset.mX, asset.mY, asset.mBattery, '&nbsp;'];
-				for (var j = 0; j < cellValues.length; j++) {
-					var cell = row.insertCell(-1);
-					cell.innerHTML = cellValues[j];
-					cell.className = 'Col ' + cssClasses[j];
-				}
-			}
-
-			//assetTable.setMaxRowCount(10);
-		}
-		
-		function randomId() {
-			var result = '';
-			var hexDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
-			for (var i = 0; i < 2; i++) {
-				for (var j = 0; j < 4 + i; j++) {
-					result += hexDigits[Math.floor(Math.random() * 15)];
-				}
-				result += '-';
-			}
-			for (var j = 0; j < 6; j++) {
-				result += hexDigits[Math.floor(Math.random() * 15)];
-			}
-			return result;
-		}
-		
 		function adjusMapRect() {
-			map.setRect(elTabPanel.offsetLeft + elTabPanel.offsetWidth, headerPanel.offsetHeight, window.innerWidth, window.innerHeight);
+			map.setRect(tabPanel.offsetLeft + tabPanel.offsetWidth, headerPanel.offsetHeight, window.innerWidth, window.innerHeight);
 		}
 		
 		onresize = function () {
 			adjusMapRect();
-			elMapToolbar.style.left = (window.innerWidth - elMapToolbar.offsetWidth - 10) + SPixel;
-			elMapToolbar.style.top  = (window.innerHeight - elMapToolbar.offsetHeight - 10) + SPixel;
-			elTabPanel.style.height = (window.innerHeight - headerPanel.offsetHeight) + SPixel;
+			mapToolbar.style.left = (window.innerWidth - mapToolbar.offsetWidth - 10) + SPixel;
+			mapToolbar.style.top  = (window.innerHeight - mapToolbar.offsetHeight - 10) + SPixel;
+			tabPanel.style.height = (window.innerHeight - headerPanel.offsetHeight) + SPixel;
 		}
 		
 		onload = function () {
 			headerPanel = $('headerPanel');
 			
-			elTabPanel = $('elTabPanel');
-			$fx(elTabPanel).fxAdd(panelAnimationParams);
+			tabPanel = $('tabPanel');
+			$fx(tabPanel).fxAdd(panelAnimationParams);
 			
-			tabControl = new TTabControl(elTabPanel);
+			tabControl = new TTabControl(tabPanel);
 		
 			loginDialog = $('loginDialog');
 			usernameTextBox = $('usernameTextBox');
 			passwordTextBox = $('passwordTextBox');
 			loginButton = $('loginButton');
 			loggedInDialog = $('loggedInDialog');
-			loginStatusLabel = $('loginStatusLabel');
-			$fx(loginStatusLabel).fxAdd(statusLabelAnimationParams);
+			statusLabel = $('statusLabel');
+			$fx(statusLabel).fxAdd(statusLabelAnimationParams);
 		
-			assetTable = new TFlexTable($('assetsTab'));
-			assetTable.attachTextBox($('assetSearchBox'), 1);
-			assetTable.onSelectChange = function () {
+			function tableSelectChange() {
 				var row = this.getSelectedRow();
-				if (row)
-					map.selectEntity(row.linkedEntity);
-				else
-					map.selectEntity(null);
-			}
-			
-			detectorTable = new TFlexTable($('detectorsTab'));
-			detectorTable.attachTextBox($('detectorSearchBox'));
-			
-			elMapToolbar = $('elMapToolbar');
-			
-			map = new TMap();
-			map.onLoad = function () {
-				elMapToolbar.style.visibility = SVisible;
-			}
-			map.onSelectChange = function () {
-				var entity = this.getSelectedEntity();
-				if (entity)
-					entity.linkedTable.setSelectedIndex(entity.linkedRow.rowIndex);
-				else {
-					assetTable.setSelectedIndex(-1);
-					detectorTable.setSelectedIndex(-1);
+				if (this == activeTable || row != null) {
+					var entity = row ? row.mLinkedEntity : null;
+					map.selectEntity(entity);
 				}
 			}
 			
-			elMapImage = new Image();
-			elMapImage.src = 'images/FloorPlan.jpg';
-			elMapImage.onload = function () {
+			tagTable = new TFlexTable($('assetsTab'));
+			tagTable.attachTextBox($('assetSearchBox'), 1);
+			tagTable.onSelectChange = tableSelectChange;
+			
+			detectorTable = new TFlexTable($('detectorsTab'));
+			detectorTable.attachTextBox($('detectorSearchBox'), 0);
+			detectorTable.onSelectChange = tableSelectChange;
+			
+			// Imporant!
+			activeTable = tagTable;
+			
+			mapToolbar = $('mapToolbar');
+			
+			map = new TMap();
+			map.onLoad = function () {
+				mapToolbar.style.visibility = SVisible;
+			}
+			map.onSelectChange = function () {
+				var idx = -1;
+				var e = this.getSelectedEntity();
+				if (e) {
+					var n = e.mLinkedTable;
+					if (activeTable != n) {
+						var c = activeTable;
+						activeTable = n;
+						c.setSelectedIndex(-1);
+					}
+					idx = e.mLinkedRow.rowIndex;
+				}
+				activeTable.setSelectedIndex(idx);
+			}
+			map.onClick = function (x, y) {
+				$('detectorX').value = x.toFixed(1);
+				$('detectorY').value = y.toFixed(1);
+			}
+			
+			mapImage = new Image();
+			mapImage.src = 'images/FloorPlan.jpg';
+			mapImage.onload = function () {
 				map.setMapImage(this, 120);
 			}
 
-			assetInfoUpdateTimer = new TTimer(5000, updateAssetInfo});
-			assetInfoUpdateTimer.setEnabled(true);
+			//assetInfoUpdateTimer = new TTimer(5000, updateAssetInfo);
+			//assetInfoUpdateTimer.setEnabled(true);
 			
 			updateAssetInfo();
-			
+			detectorRequestManager.doSend('request=get-detectors');
+
 			/*------------------------------------*/
 			
 			var button = $('showHideTabPanelButton');
-			button.style.left = (elTabPanel.offsetWidth - button.offsetWidth - 3) + SPixel;
-			button.style.top  = (elTabPanel.offsetTop + 3) + SPixel;
+			button.style.left = (tabPanel.offsetWidth - button.offsetWidth - 3) + SPixel;
+			button.style.top  = (tabPanel.offsetTop + 3) + SPixel;
 			button.onclick = function () {
 				if (this.offsetLeft > 0) {
 					this.innerHTML = '»';
 					this.className = 'TextIcon TCastShadow';
 					this.title = 'Show panel';
 
-					panelAnimationParams.to = -elTabPanel.offsetWidth;
+					panelAnimationParams.to = -tabPanel.offsetWidth;
 					panelAnimationParams.onfinish = null;
 
 					buttonAnimationParams.to = 0;
@@ -453,31 +559,34 @@
 					panelAnimationParams.to = 0;
 					panelAnimationParams.onfinish = adjusMapRect;
 				
-					buttonAnimationParams.to = elTabPanel.offsetWidth - this.offsetWidth - 3;
+					buttonAnimationParams.to = tabPanel.offsetWidth - this.offsetWidth - 3;
 				}
 		
-				elTabPanel.fxRun();
 				this.fxRun();
+				tabPanel.fxRun();
 			}
 			$fx(button).fxAdd(buttonAnimationParams);
 			
+			function showEntityGroup(className, entities, visible) {
+				// Hides the info box if the selected entity is in this group.
+				var e = map.getSelectedEntity();
+				if (e && e.firstChild.className == className)
+					map.selectEntity(null);
+				
+				var v = visible ? SVisible : SHidden;
+				var i = className == 'TTag' ? 1 : 2;
+				tabControl.setTabVisible(i, visible);
+				for (var i = 0; i < entities.length; i++)
+					entities[i].style.visibility = v;				
+			}
+			
 			$('showAssetsCheckBox').onchange = function () {
-				var v = this.checked ? SVisible : SHidden;
-				tabControl.setTabVisible(1, this.checked);
-				for (var i = 0; i < assets.length; i++)
-					assets[i].style.visibility = v;
+				showEntityGroup('TTag', tags, this.checked);
 			}
 			
 			$('showDetectorsCheckBox').onchange = function () {
-				tabControl.setTabVisible(2, this.checked);
-				for (var i = 0; i < detectors.length; i++)
-					detectors[i].style.visibility = v;
+				showEntityGroup('TDetector', detectors, this.checked);
 			}
-			/*
-			$('showGridCheckBox').onchange = function () {
-				$('gridSpacingTextBox').disabled = !this.checked;
-			}
-			*/
 
 			onresize();
 		}
@@ -497,43 +606,50 @@
 		Asset Tracking System
 	</div>
 	<button id="showHideTabPanelButton" class="TextIcon" title="Hide panel" style="position: absolute; z-index: 4; padding: 0 4px 2px;">«</button>
-	<div id="elTabPanel" class="TTabPanel TCastShadow" style="	position: relative; left: 0; top: 0; margin: 0; padding: 0; z-index: 2; background-color: #FFF; width: 350px;">		
+	<div id="tabPanel" class="TTabPanel TCastShadow" style="	position: relative; left: 0; top: 0; margin: 0; padding: 0; z-index: 2; background-color: #FFF; width: 350px;">		
 		<ul class="TTabNamePanel">
-			<li class="TTabName">Settings</li>
+			<li class="TTabName">Welcome</li>
 			<li class="TTabName">&nbsp;&nbsp;Assets&nbsp;&nbsp;&nbsp;</li>
 			<li class="TTabName">Detectors</li>
 		</ul>
 		<div class="TTabContentPanel">
-			<div id="settingsTab" class="TTabContent" style="vertical-align: middle;">
-				<fieldset id="loginDialog" class="HasBorder">
-					<legend>Login</legend>
+			<div id="welcomeTab" class="TTabContent" style="vertical-align: middle;">
+				<fieldset id="loginDialog">
+					<legend>Admin</legend>
 					<div style="margin-bottom: 0.5em;"><div style="float: left; width: 80px;">Username:</div><input id="usernameTextBox" type="textbox" maxlength="30" style="width: 150px;" /><br /></div>
 					<div style="margin-bottom: 0.5em;"><div style="float: left; width: 80px;">Password:</div><input id="passwordTextBox" type="password" maxlength="30" style="width: 150px;" /><br /></div>
-					<div><button id="loginButton" onclick="logInOut(true);">Log in</button><label id="loginStatusLabel" style="margin-left: 35px; opacity: 0;"></label></div>
+					<div><button id="loginButton" onclick="login();">Log in</button><label id="statusLabel" style="margin-left: 35px; opacity: 0;"></label></div>
 				</fieldset>
 				<div id="loggedInDialog" style="display: none;">
 					<label id="usernameLabel" style="padding: 0 1em 0 0;"></label>
-					<a id="logOutLink" href="javascript:logInOut(false);" style="padding: 0 1em; border-left: 1px solid #CCC;">Log out</a>
+					<a id="logOutLink" href="javascript:logout();" style="padding: 0 1em; border-left: 1px solid #CCC;">Log out</a>
 				</div>
 				<br />
-				<fieldset class="HasBorder">
+				<fieldset>
 					<legend>Options</legend>
-					<input id="showAssetsCheckBox" type="checkbox" checked /><label for="showAssetsCheckBox">Show assets</label><br />
+					<input id="showAssetsCheckBox" type="checkbox" checked /><label for="showAssetsCheckBox">Show tags</label><br />
 					<input id="showDetectorsCheckBox" type="checkbox" checked /><label for="showDetectorsCheckBox">Show detectors</label><br />
 					<!--<input id="showGridCheckBox" type="checkbox" /><label for="showGridCheckBox">Show grid</label><div style="float: right;"><label>Grid spacing</label><input id="gridSpacingTextBox" type="textbox" value="1" disabled style="margin-left: 10px; width: 40px;" /></div><br />-->
 				</fieldset>
 			</div>
 			<div id="assetsTab" class="TTabContent">
 				<input type="textbox" id="assetSearchBox" class="TSearchBox" placeholder="Search for an asset"/>
-				<div class="TableHeader"><div class="Col TagId">Tag ID</div><div class="Col AssetId">Asset ID</div><div class="Col X">X</div><div class="Col Y">Y</div><div class="Col Battery">Battery</div><div class="Col More"></div></div>
+				<div class="TableHeader"><div class="Col Id">ID</div><div class="Col AssetId">Asset ID</div><div class="Col X">X</div><div class="Col Y">Y</div><div class="Col Battery">Battery</div><div class="Col More"></div></div>
 			</div>
 			<div id="detectorsTab" class="TTabContent">
+				<fieldset>
+					<legend>Add new detector</legend>
+					<label>X :</label><input type="textbox" id="detectorX" style="width: 30px; text-align: right;" /><br />
+					<label>Y :</label><input type="textbox" id="detectorY" style="width: 30px; text-align: right;" /><br />
+					<label>Click on the map to place the detector</label>
+				</fieldset>
+				<br/>
 				<input type="textbox" id="detectorSearchBox" class="TSearchBox" placeholder="Search for a detector"/>
-				<table id="elDetectorTable"></table>
+				<div class="TableHeader"><div class="Col Id">ID</div><div class="Col X">X</div><div class="Col Y">Y</div><div class="Col Battery">Battery</div><div class="Col More"></div></div>
 			</div>
 		</div>
 	</div>
-	<div id="elMapToolbar" class="TCastShadow">
+	<div id="mapToolbar" class="TCastShadow">
 		<button id="zoomOutButton" class="LeftPill TextIcon Translucent" title="Zoom out" onclick="map.zoom(null, 0.5);">-</button>
 		<button id="zoomFitButton" class="Middle TextIcon Translucent" title="Zoom fit" onclick="map.zoom(null, 0);">[]</button>
 		<button id="zoomInButton" class="RightPill TextIcon Translucent" title="Zoom in" onclick="map.zoom(null, 2);">+</button>
