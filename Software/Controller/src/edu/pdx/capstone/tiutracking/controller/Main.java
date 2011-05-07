@@ -384,7 +384,7 @@ public class Main {
 		panel.add(rdbtnKewtonEngine);
 		
 		txtProxyIPAddress = new JTextField();
-		txtProxyIPAddress.setText("192.168.16.3");
+		txtProxyIPAddress.setText("169.254.68.200");
 		txtProxyIPAddress.setBounds(325, 24, 86, 20);
 		pnlSettings.add(txtProxyIPAddress);
 		txtProxyIPAddress.setColumns(10);
@@ -917,11 +917,13 @@ public class Main {
 			if (in.available() > 0){
 				while (bytesRead != '$'){
 					bytesRead = in.read();
-					System.out.println("Searching for Start...");
-
+					System.out.println("Searching for Start...");					
 				}
 				System.out.println("Found Start.");
-				bytesRead = in.read(buffer,0, bufferSize);
+				bytesRead=0;
+				while (bytesRead < bufferSize){
+					bytesRead += in.read(buffer,bytesRead, bufferSize-bytesRead);
+				}
 				System.out.println("Read: " + bytesRead + " bytes");
 				for (int k = 0;k < bytesRead;k++){
 					list.add(buffer[k]);
@@ -1092,7 +1094,7 @@ public class Main {
 				Hashtable<Integer, Calendar> ttl = new Hashtable<Integer, Calendar>();
 				
 				//Get all detector Info from DB
-				Hashtable<Integer,Vector2D> detectorLocations = getDetectorInfo();
+				Hashtable<Integer,Vector2D> detectorLocations = null;//getDetectorInfo();
 				
 				ArrayList<DataPacket> calibrationData = loadCalibrationData();
 				//Create locator instance, pass in calibration data, and 
@@ -1107,7 +1109,7 @@ public class Main {
 					if (list.size() >= bufferSize){						
 						parseRawSample(list, rawSample);						
 						//printSample(newSample);						
-						int key = rawSample.tagId + rawSample.messageId;
+						int key = ((rawSample.tagId &0xff)<<8) + (rawSample.messageId & 0xff);
 						saveRawSample(key, rawSampleTable, rawSample);						
 						//Start a new time window, and associate with key, if key has not been seen.
 						if (!ttl.containsKey(key)){
@@ -1124,7 +1126,7 @@ public class Main {
 							//Getting all RawSamples associated with TagId+MsgId key
 							ArrayList<RawSample> rawSamples = rawSampleTable.get(e.getKey());
 							//TODO: don't give a DataPacket to the locator, if less then N detectors are participating
-							if (rawSamples.size() >= 5){
+							if (rawSamples.size() >= 2){
 								DataPacket dataPacket=null;
 								boolean first=true;
 								for (int s = 0;s < rawSamples.size();s++){
@@ -1172,7 +1174,7 @@ public class Main {
 								dp.add(dataPacket);
 								results.put(dataPacket.tagId,dp);
 								
-								if (results.get(dataPacket.tagId).size()>=7){
+								if (results.get(dataPacket.tagId).size()>=5){
 									//Determine which blockId was calculated most often..								
 									//First, sort by frequency of occurence of location								
 									//Hashtable<Vector2D, Integer> freqTable = new Hashtable<Vector2D, Integer>();
@@ -1210,9 +1212,9 @@ public class Main {
 										if (quantizedBlockId == current){
 											//We found one with the same location as the most frequently occuring.
 											//Store it into the DB
-											String displayString2 = String.format("Winner, with %1$d votes:\n \tBlockId=%2$d\n\t(X,Y)=(%3$f,%4$f)\n",max,quantizedBlockId,d.location.x,d.location.y);
+											String displayString2 = String.format("Tag %1$d, with %2$d votes:\n \tBlockId=%3$d\n\t(X,Y)=(%4$f,%5$f)\n",d.tagId,max,quantizedBlockId,d.location.x,d.location.y);
 											printDisplayMessage(displayString2);
-											storeResult(d);
+											//storeResult(d);
 											freqTable.clear();
 											results.clear();
 											break;
