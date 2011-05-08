@@ -16,7 +16,9 @@ import java.util.Hashtable;
  * location. These signals measured by the surrounding detector nodes.
  * 
  * changes:
- * 1. support detect aliasing blocks with threshold
+ * 1. detect aliasing blocks with threshold
+ * 2. interpolate adjacent block results
+ * 3. if two blocks are suspected as aliasing, choose the correct one based on the strongest signal strength
  */
 
 public class FingerPrint implements LocationEngine
@@ -135,10 +137,8 @@ public class FingerPrint implements LocationEngine
 		Collections.sort(refDistance);
 		// blk 2 is adjacent to blk 1 if it is one of the closest blocks (count == 2) to blk 1
 		int count = 0;
-		
 		while (true)
-		{
-			
+		{			
 			if (dis <= refDistance.get(count))
 			{
 				return true;
@@ -149,10 +149,8 @@ public class FingerPrint implements LocationEngine
 		}
 		
 		return false;
-
 	}
-	
-	
+		
 	/**
 	 * 
 	 */
@@ -162,11 +160,9 @@ public class FingerPrint implements LocationEngine
 		//this.aliasThreshold = 10;  // 10 euclidean units
 		//this.maxBlockSize = 2;    // 2m
 		//this.rssiThreshold = 10;  // 10 rssi units
-		
-		
+			
 		fingerPrintTable = table;
-		
-		
+			
 		this.fill_stat(this.statmode);
 		//this.detectorLocations = detLocs;
 		
@@ -175,10 +171,7 @@ public class FingerPrint implements LocationEngine
 		{
 			this.blockLocations.put(block.blockId, block.location);
 		}
-		
 	}
-	
-	
 	
 	/**
 	 * Locating engine, receives a transaction with unknown location. 
@@ -198,7 +191,7 @@ public class FingerPrint implements LocationEngine
 			this.statmode = mode;
 			this.fill_stat(mode);
 		}*/
-		if(t.rssiTable.size() <= 2 )
+		if(t.rssiTable.size() <= 3)
 		{
 			System.out.println(": need more detector, n = "+ t.rssiTable.size() );
 			return;
@@ -231,8 +224,9 @@ public class FingerPrint implements LocationEngine
 		}
 		Collections.sort(ED_mirror);                          // sort list to find the min value
 		                                                      // ascending order, according to the natural ordering of its elements
-		
+		// 
 		this.locateNMO(t);
+		
 		// check for aliasing, 
 		int blk_0 = ED_hashlist.get(ED_mirror.get(0));        // get the first element after sort, then get block ID from the hash table
 		int blk_1 = ED_hashlist.get(ED_mirror.get(1));
@@ -253,14 +247,11 @@ public class FingerPrint implements LocationEngine
 				t.location.x = (this.blockLocations.get(blk_0).x + this.blockLocations.get(blk_1).x) / 2;
 				t.location.y = (this.blockLocations.get(blk_0).y + this.blockLocations.get(blk_1).y) / 2;
 				// warning! not exact block, 0 or 1 ?
-				t.blockId = blk_0;
-
-				
+				t.blockId = blk_0;				
 			}
 			else
 			{
 				// no => aliasing, need to determine which is the "chosen one"
-				
 				Enumeration<Integer> dk = t.rssiTable.keys();  // get detector id list, from the transaction, not the block
 				int rssi_temp = 0;
 				int of_detector = 0;
@@ -272,10 +263,7 @@ public class FingerPrint implements LocationEngine
 					{
 						rssi_temp = (t.rssiTable.get(cdk)).get(0);
 						of_detector = cdk;
-					}
-					
-
-						
+					}						
 				}
 				
 				if (of_detector != 0) // valid detector
@@ -291,22 +279,16 @@ public class FingerPrint implements LocationEngine
 					{
 						t.blockId = blk_1;
 						t.location.set(this.blockLocations.get(blk_1));
-						System.out.println(":not adjacent blocks, determine by closest rssi..." + blk_1);
-
-					}
+						System.out.println(":not adjacent blocks, determine by closest rssi..." + blk_1);					}
 						
 				}
-				
-				
-				
 			}
 		}
 		else // no aliasing 
 		{
 			t.blockId = blk_0;
 			t.location.set(this.blockLocations.get(blk_0));
-		}
-		
+		}		
 		      
 		//t.x = this.fingerPrintTable.get(t.blockId).x;       // map to its x and y coordinates
 		//t.y = this.fingerPrintTable.get(t.blockId).y;
