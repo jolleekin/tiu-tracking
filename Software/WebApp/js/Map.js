@@ -313,7 +313,9 @@ function TMap() {
 	 *	@param	pixelsPerUnitLength	{Double}	Number of pixels equivalent to 1 unit length.		
 	 */
 	this.setMapImage = function (img, pixelsPerUnitLength) {
-		if (img) {
+		if ((fMapImage != img) && img) {
+			if (fMapImage)
+				fMapContainer.removeChild(fMapImage);
 			fPixelsPerUnitLength = pixelsPerUnitLength;
 			fMapImageCenter.x = img.width  * 0.5;
 			fMapImageCenter.y = img.height * 0.5;

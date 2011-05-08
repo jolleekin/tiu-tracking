@@ -67,25 +67,25 @@
 			}
 			
 			if (ajax.readyState == 4 && ajax.status == 200) {
-				try {
+				//try {
 					response = eval(ajax.responseText);
 					
 					if (!response)
 						return;
 					
 					if (response.request == 'login') {
-						var msg = '';
 						loginButton.disabled = false;
-						if (response.status == 0)
+						if (response.status == 0) {
 							updateUI(true);
-						else
-							msg = response.data;
-						showStatus('Red', msg, true);
+							showMessage(srInfo, 'Login successful', true);
+						} else
+							showMessage(srError, response.data, true);
 						return;
 					}
 					
 					if (response.status != 0) {
-						showStatus('Red', response.data, true);
+						deleteRowIndex = -1;
+						showMessage(srError, response.data, true);
 						return;
 					}
 					
@@ -96,9 +96,9 @@
 					else
 						doDelete();
 				
-				} catch (e) {
-					console.log(e);
-				}
+				//} catch (e) {
+				//	console.log(e);
+				//}
 			}
 			
 			function doDelete() {
@@ -108,7 +108,7 @@
 			}
 			
 			function doAdd() {
-				var entity, row;
+				var entity = null, row;
 				var info = response.data;
 				info.b = BatteryStatus[info.b];
 				
@@ -161,7 +161,7 @@
 					row.mLinkedEntity = entity;
 					entity.set(info, row, table);
 					
-					detectors.push(entity);
+					entities.push(entity);
 					map.addEntity(entity);
 				}
 				// Forces the info box to be repositioned.
@@ -233,19 +233,13 @@
 		}
 
 		
-		var headerPanel;
-		var tabControl;
-		var tabPanel;
+		var headerPanel, tabControl, tabPanel;
+		var welcomeTab, assetsTab, detectorsTab;
 		
-		var map;
-		var mapImage;
-		var mapToolbar;
+		var map, mapToolbar;
 		
-		var tags = [];
-		var tagTable;
-		
-		var detectors = [];
-		var detectorTable;
+		var tags = [], detectors = [];
+		var tagTable, detectorTable;
 		
 		/**
 		 *	The table that has a row selected, either @tagTable or @detectorTable, exclusively.
@@ -260,7 +254,7 @@
 		var usernameTextBox;
 		var passwordTextBox;
 		var loginButton;
-		var statusLabel;
+		var msgLabel;
 		var loggedInDialog;
 		
 		var isLoggedIn = false;
@@ -281,36 +275,43 @@
 			delay: 20
 		};
 
-		var statusLabelAnimationParams = {
+		var msgLabelAnimationParams = {
 			type: 'opacity',
 			to: 100,
 			step: 10,
 			delay: 25,
 			fadeOut: true,
+			fadeOutTimeOut: 4000,
 			onfinish: function () {
-				if (statusLabelAnimationParams.to == 0)
-					statusLabelAnimationParams.to = 100;
-				else if (statusLabelAnimationParams.fadeOut) {
-					statusLabelAnimationParams.to = 0;
-					statusLabelAnimationParams.timerHandle = setTimeout(this.fxRun, 2000);
+				var p = msgLabelAnimationParams;
+				if (p.to == 0)
+					p.to = 100;
+				else if (p.fadeOut) {
+					p.to = 0;
+					p.timerHandle = setTimeout(this.fxRun, p.fadeOutTimeOut);
 				}
 			}
 		};
 		
 		
+		var srInfo = 0, srError = 1;
+		var StatusColors = ['#04F', '#F40'];
+		
 		/**
+		 *	@param	color	{String}	CSS color.
+		 *	@param	text	{String}	The message to be displayed. If null, display the current message.
 		 *	@param	fadeOut	{Boolean}	true means keep the status label visible.
 		 *								false means hide the status label after 2secs.
 		 *								Default is false.
 		 */
-		function showStatus(color, text, fadeOut) {
-			clearTimeout(statusLabelAnimationParams.timerHandle);
-			if (statusLabelAnimationParams.to == 0)
-				statusLabelAnimationParams.to = 100;
-			statusLabelAnimationParams.fadeOut = fadeOut;
-			statusLabel.style.color = color;
-			statusLabel.innerHTML = text;
-			statusLabel.fxRun();
+		function showMessage(status, text, fadeOut) {
+			clearTimeout(msgLabelAnimationParams.timerHandle);
+			if (msgLabelAnimationParams.to == 0)
+				msgLabelAnimationParams.to = 100;
+			msgLabelAnimationParams.fadeOut = fadeOut;
+			msgLabel.style.color = StatusColors[status];
+			msgLabel.innerHTML = text;
+			msgLabel.fxRun();
 		}
 
 		var BatteryStatus = ['Normal', 'Low!'];
@@ -341,15 +342,15 @@
 		
 		function login() {
 			if (usernameTextBox.value == '') {
-				showStatus('Red', 'Please enter the username.', true);
+				showMessage(srError, 'Please enter the username.', true);
 				return;
 			}
 			if (passwordTextBox.value == '') {
-				showStatus('Red', 'Please enter the password.', true);
+				showMessage(srError, 'Please enter the password.', true);
 				return;
 			}
 			
-			showStatus('Blue', 'Logging in...', false);
+			showMessage(srInfo, 'Logging in...', false);
 			loginButton.disabled = true;
 
 			loginRequestManager.doSend('request=login&username=' + usernameTextBox.value + '&password=' + passwordTextBox.value);		
@@ -375,12 +376,12 @@
 					deleteRowIndex = this.mLinkedRow.rowIndex;
 					var type = this.mEntityType;
 					var name = EntityNames[type];
-					if (confirm('Delete this ' + type + ' permanently?')) {
+					if (confirm('Delete this ' + name + ' permanently?')) {
 						var mngr = this.mEntityType == etTag ? tagRequestManager : detectorRequestManager;
 						mngr.doSend('request=del-' + name + '&' + name + '-id=' + this.mLinkedRow.mLinkedEntity.mId);
 					}
 				} else
-					showStatus('Red', 'Please wait for the current request to finish.', true);
+					showMessage(srError, 'Please wait for the current request to finish.', true);
 				event.stopPropagation();
 			}
 			
@@ -415,6 +416,90 @@
 						row.lastChild.appendChild(createDeleteButton(i, row, table));	// i = entityType
 					}
 				}
+				
+				var d = document.createElement('form');
+				d.id = 'mapFileUploadForm';
+				d.method = 'post';
+				d.enctype = 'multipart/form-data';
+				d.action = 'MapUpload.php';
+				d.onsubmit = function () {
+					this.target = 'uploadTarget';
+				}
+				d.innerHTML = 
+					'<fieldset>' +
+						'<legend>Map</legend>' +
+						'<button onclick="mapFile.click(); return false;">Browse</button><input id="mapFile" name="mapFile" type="file" style="width: 0;" /><input id="fileNameTextBox" type="textbox" disabled /><br />' +
+						'<button type="submit">Upload</button><br />' +
+						'<iframe id="uploadTarget" src="" style="width: 0; height: 0; border: 0px solid #fff;" onload="if (top.changeMapImage) top.changeMapImage();"></iframe>' +
+					'</fieldset>';
+				welcomeTab.appendChild(d);
+				
+				$('mapFile').onchange = function () {
+					var v = this.value;
+					var i = v.lastIndexOf('/');
+					if (i == -1)
+						i = v.lastIndexOf('\\');
+					$('fileNameTextBox').value = v.substr(i + 1);
+				}
+				
+				
+				d = document.createElement(SDiv);
+				d.id = 'addModifyTagDialog';
+				d.setAttribute('style', 'float: left; width: 315px; background-color: #EEF; margin-top: 3px;');
+				d.innerHTML =
+					'<div style="float: left;">' +
+						'<input type="textbox" id="tTextBox" class="Col Id Cell" placeholder="ID" />' +
+						'<input type="textbox" id="aTextBox" class="Col AssetId Cell" placeholder="Asset ID" />' +
+					'</div>' +
+					'<button id="addTagButton" style="margin-left: 0.5em; width: 50px;">Add</button>';
+				assetsTab.appendChild(d);
+				
+				$('addTagButton').onclick = function () {
+					var t = $('tTextBox'),
+						a = $('aTextBox');
+					if (t.value == '')
+						showMessage(srError, 'Please enter tag ID', true);
+					else if (a.value == '')
+						showMessage(srError, 'Please enter asset ID', true);
+					else {
+						tagRequestManager.doSend('request=add-tag&tag-id=' + t.value + '&asset-id=' + a.value);
+						t.value = a.value = '';
+					}
+				}
+				
+				
+				
+				d = document.createElement(SDiv);
+				d.id = 'addModifyDetectorDialog';
+				d.title = 'Click on the map to place the detector';
+				d.setAttribute('style', 'float: left; width: 189px; background-color: #EEF; margin-top: 3px;');
+				d.innerHTML =
+					'<div style="float: left;">' +
+						'<input type="textbox" id="dTextBox" class="Col Id Cell" placeholder="ID" />' +
+						'<input type="textbox" id="xTextBox" class="Col X Cell" placeholder="X" />' +
+						'<input type="textbox" id="yTextBox" class="Col Y Cell" placeholder="Y" />' +
+					'</div>' +
+					'<button id="addDetectorButton" style="margin-left: 0.5em; width: 50px;">Add</button>';
+				detectorsTab.appendChild(d);
+				
+				$('addDetectorButton').onclick = function () {
+					var d = $('dTextBox'),
+						x = $('xTextBox'),
+						y = $('yTextBox');
+					if (d.value == '')
+						showMessage(srError, 'Please enter detector ID', true);
+					else if (x.value == '' || y.value == '')
+						showMessage(srError, 'Please enter detector\'s location', true);
+					else {
+						detectorRequestManager.doSend('request=add-detector&detector-id=' + d.value + '&x=' + x.value + '&y=' + y.value);
+						d.value = x.value = y.value = '';
+					}
+				}
+				
+				map.onClick = function (x, y) {
+					$('xTextBox').value = x.toFixed(1);
+					$('yTextBox').value = y.toFixed(1);
+				}
 			} else {
 				loginDialog.style.display = SBlock;
 				loggedInDialog.style.display = SNone;
@@ -424,10 +509,25 @@
 					for (var j = 0; j < table.rows.length; j++)
 						table.rows[j].lastChild.innerHTML = '&nbsp;';
 				}
+				
+				
+				var d = $('mapFileUploadForm');
+				if (d)
+					welcomeTab.removeChild(d);
+				
+				d = $('addModifyTagDialog');
+				if (d)
+					assetsTab.removeChild(d);
+				
+				d = $('addModifyDetectorDialog');
+				if (d)
+					detectorsTab.removeChild(d);
+				
+				map.onClick = null;
 			}
 			
 			//TODO: Generate the dialog dynamically.
-			$('addModifyDetectorDialog').style.display = loggedIn ? SBlock : SNone;
+			//$('addModifyDetectorDialog').style.display = loggedIn ? SBlock : SNone;
 			
 			isLoggedIn = loggedIn;
 		}
@@ -513,17 +613,30 @@
 			
 			tabPanel = $('tabPanel');
 			$fx(tabPanel).fxAdd(panelAnimationParams);
-			
 			tabControl = new TTabControl(tabPanel);
+			welcomeTab = $('welcomeTab');
+			assetsTab = $('assetsTab');
+			detectorsTab = $('detectorsTab');
 		
 			loginDialog = $('loginDialog');
 			usernameTextBox = $('usernameTextBox');
 			passwordTextBox = $('passwordTextBox');
 			loginButton = $('loginButton');
 			loggedInDialog = $('loggedInDialog');
-			statusLabel = $('statusLabel');
-			$fx(statusLabel).fxAdd(statusLabelAnimationParams);
+			msgLabel = $('msgLabel');
+			$fx(msgLabel).fxAdd(msgLabelAnimationParams);
 		
+			var ua = navigator.userAgent;
+			if (ua.indexOf('Chrome') == -1) {
+				var browser = null;
+				if (ua.indexOf('MSIE') > -1)
+					browser = 'Internet Explorer';
+				else if (ua.indexOf('Firefox') > -1)
+					browser = 'Mozilla Firefox';
+				if (browser != null)
+					showMessage(srInfo, 'You are using <strong>' + browser + '</strong>.<br />For the best experience, please use <a href="http://www.google.com/chrome/intl/en/make/download.html?brand=CHKZ" target="_blank" style="font-weight: bold;">Google Chrome</a>', true);
+			}
+			
 			function tableSelectChange() {
 				var row = this.getSelectedRow();
 				if (this == activeTable || row != null) {
@@ -563,12 +676,8 @@
 				}
 				activeTable.setSelectedIndex(idx);
 			}
-			map.onClick = function (x, y) {
-				$('detectorXTextBox').value = x.toFixed(1);
-				$('detectorYTextBox').value = y.toFixed(1);
-			}
 			
-			mapImage = new Image();
+			var mapImage = new Image();
 			mapImage.src = 'images/FloorPlan.jpg';
 			mapImage.onload = function () {
 				map.setMapImage(this, 120);
@@ -635,9 +744,18 @@
 			}
 
 			onresize();
-			
-			$('addDetectorButton').onclick = function () {
-				detectorRequestManager.doSend('request=add-detector&detector-id=' + detectorIdTextBox.value + '&x=' + detectorXTextBox.value + '&y=' + detectorYTextBox.value);
+		}
+
+		function changeMapImage() {
+			var responseText = frames['uploadTarget'].document.getElementsByTagName('body')[0].innerHTML;
+			if (responseText != '') {
+				var response = JSON.parse(responseText);
+				if (response) {
+					if (response.status == 0) {
+						window.location.reload(true);
+					} else
+						showMessage(srError, response.data, true);
+				}
 			}
 		}
 	</script>
@@ -653,7 +771,8 @@
 </head>
 <body>
 	<div id="headerPanel" class="TCastShadow" style="text-align: center;">
-		Asset Tracking System
+		<h1>Asset Tracking System</h1>
+		<label id="msgLabel" class="TCastShadow"></label>
 	</div>
 	<button id="showHideTabPanelButton" class="TextIcon" title="Hide panel" style="position: absolute; z-index: 4; padding: 0 4px 2px;">«</button>
 	<div id="tabPanel" class="TTabPanel TCastShadow" style="position: relative; left: 0; top: 0; margin: 0; padding: 0; z-index: 2; background-color: #FFF; width: 360px;">		
@@ -668,7 +787,7 @@
 					<legend>Admin</legend>
 					<div style="margin-bottom: 0.5em;"><div style="float: left; width: 80px;">Username:</div><input id="usernameTextBox" type="textbox" maxlength="30" style="width: 150px;" /><br /></div>
 					<div style="margin-bottom: 0.5em;"><div style="float: left; width: 80px;">Password:</div><input id="passwordTextBox" type="password" maxlength="30" style="width: 150px;" /><br /></div>
-					<div><button id="loginButton" onclick="login();">Log in</button><label id="statusLabel" style="margin-left: 35px; opacity: 0;"></label></div>
+					<div><button id="loginButton" onclick="login();">Log in</button></div>
 				</fieldset>
 				<div id="loggedInDialog" style="display: none;">
 					<label id="greetingLabel" style="padding: 0 1em 0 0;"></label>
@@ -687,20 +806,20 @@
 				<div class="TableHeader"><div class="Col Id">ID</div><div class="Col AssetId">Asset ID</div><div class="Col X">X</div><div class="Col Y">Y</div><div class="Col Battery">Battery</div><div class="Col More"></div></div>
 			</div>
 			<div id="detectorsTab" class="TTabContent">
-				<fieldset id="addModifyDetectorDialog" style="display: none;">
+				<!--<fieldset id="addModifyDetectorDialog" style="display: none;">
 					<legend>Add/Modify Detector</legend>
 					<table>
 						<tr><td>ID</td><td>X</td><td>Y</td></tr>
 						<tr><td><input type="textbox" id="detectorIdTextBox" style="width: 38px; text-align: right;" /></td><td><input type="textbox" id="detectorXTextBox" style="width: 38px; text-align: right;" /></td><td><input type="textbox" id="detectorYTextBox" style="width: 38px; text-align: right;" /></td></tr>
 						<tr><td><button id="addDetectorButton" style="width: 50px;">Add</button></td><td>&nbsp;</td><td>&nbsp;</td></tr>
 					</table>
-					<!--
+					
 					<label>X :</label><input type="textbox" id="detectorX" style="width: 30px; text-align: right;" />
 					<label>Y :</label><input type="textbox" id="detectorY" style="width: 30px; text-align: right;" /><br />
 					<label>Click on the map to place the detector</label>
 					<button id="addDetectorButton">Add</button><button id="cancelButton" style="width: 50px;">Cancel</button>
-					-->
-				</fieldset>
+					
+				</fieldset>-->
 				<br/>
 				<input type="textbox" id="detectorSearchBox" class="TSearchBox" placeholder="Search for a detector"/>
 				<div class="TableHeader"><div class="Col Id">ID</div><div class="Col X">X</div><div class="Col Y">Y</div><div class="Col Battery">Battery</div><div class="Col More"></div></div>
