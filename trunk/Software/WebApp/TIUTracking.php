@@ -41,8 +41,17 @@ function getTagsInfo()
 	foreach ($tags as $tagId => $assetId)
 	{
 		$result = mysql_query("SELECT * FROM TagInfo WHERE TagID = $tagId ORDER BY `Timestamp` DESC LIMIT 1") or die();
-		if ($row = mysql_fetch_array($result, MYSQL_ASSOC))
-			$info .= sprintf("{s:'%s',i:%d,a:'%s',x:%0.1f,y:%0.1f,b:%d},", $row['Timestamp'], $row['TagID'], $assetId, $row['X'], $row['Y'], $row['Battery']);
+		$row = mysql_fetch_array($result, MYSQL_ASSOC);
+		$x = -1;
+		$y = -1;
+		$b = 0;
+		if ($row)
+		{
+			$x = $row['X'];
+			$y = $row['Y'];
+			$b = $row['Battery'];
+		}
+		$info .= sprintf("{s:'%s',i:%d,a:'%s',x:%0.1f,y:%0.1f,b:%d},", $row['Timestamp'], $tagId, $assetId, $x, $y, $b);
 		mysql_free_result($result);
 	}
 	$info .= '{}]';
@@ -105,6 +114,10 @@ switch ($request)
 		
 	case 'logout':
 		$_SESSION = array();
+		
+		if (isset($_COOKIE[session_name()]))
+			setcookie(session_name(), '', time() - 48000, '/');
+		
 		session_destroy();
 		break;
 		
@@ -131,7 +144,8 @@ switch ($request)
 						$assetId = "'$assetId'";  // Add quotation marks since it's a string
 						mysql_query("INSERT INTO Tags VALUE ($tagId, $assetId) ON DUPLICATE KEY UPDATE AssetID = $assetId");
 						// Returns the info of the added tag.
-						printResponse(rsOK, "{i:$tagId,a:'$assetId',x:$x,y:$y,b:0}");
+						$timestamp = date('Y-m-d H:i:s');
+						printResponse(rsOK, "{s:'$timestamp',i:$tagId,a:$assetId,x:-1,y:-1,b:0}");
 					}
 					else
 						printResponse(rsError, "'Tag ID must be a positive integer: $tagIdStr'");
@@ -170,7 +184,7 @@ switch ($request)
 					printResponse(rsOK, $detectorId);
 			}
 		} else
-			printResponse(rsError, "'Permission denied'");
+			printResponse(rsError, "'Your session has expired. Please log in again.'");
 }
 
 mysql_close($connection);
