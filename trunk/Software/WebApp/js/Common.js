@@ -40,8 +40,9 @@ var csLoaded	= 1;
 /* Browser info */
 
 var browser = {
-	isChrome:	navigator.userAgent.toLowerCase().indexOf('chrome') > -1,
-	isIE:		navigator.userAgent.toLowerCase().indexOf('ie') > -1
+	isIE:		navigator.userAgent.indexOf('MSIE') > -1,
+	isChrome:	navigator.userAgent.indexOf('Chrome') > -1,
+	isFirefox:	navigator.userAgent.indexOf('Firefox') > -1
 };
 
 /* Global functions */

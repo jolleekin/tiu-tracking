@@ -613,17 +613,14 @@
 			msgLabel = $('msgLabel');
 			$fx(msgLabel).fxAdd(msgLabelAnimationParams);
 		
-			var ua = navigator.userAgent;
-			if (ua.indexOf('Chrome') == -1) {
-				var browser = null;
-				if (ua.indexOf('MSIE') > -1)
-					browser = 'Internet Explorer';
-				else if (ua.indexOf('Firefox') > -1)
-					browser = 'Mozilla Firefox';
-				if (browser != null)
-					showMessage(srInfo, 'You are using <strong>' + browser + '</strong>.<br />For the best experience, please use <a href="http://www.google.com/chrome/intl/en/make/download.html?brand=CHKZ" target="_blank" style="font-weight: bold;">Google Chrome</a>', true);
-			}
-			
+			var browserName = null;
+			if (browser.isIE)
+				browserName = 'Internet Explorer';
+			else if (browser.isFirefox)
+				browserName = 'Mozilla Firefox';
+			if (browserName != null)
+				showMessage(srInfo, 'You are using <strong>' + browserName + '</strong>.<br />For the best experience, please use <a href="http://www.google.com/chrome/intl/en/make/download.html?brand=CHKZ" target="_blank" style="font-weight: bold;">Google Chrome</a>', true);
+
 			function tableSelectChange() {
 				var row = this.getSelectedRow();
 				if (this == activeTable || row != null) {
@@ -665,7 +662,7 @@
 			}
 			
 			mapImage = new Image();
-			mapImage.src = 'images/FloorPlan.jpg';
+			mapImage.src = 'images/FloorPlan.jpg?' + (new Date()).getTime();
 			mapImage.onload = function () {
 				map.setMapImage(this, 120);
 			}
@@ -741,10 +738,14 @@
 			if (responseText != '') {
 				var response = JSON.parse(responseText);
 				if (response)
-					if (response.status == 0)
+					if (response.status == 0) {
 						// Forces the map image to be reloaded.
+						mapImage = new Image();
 						mapImage.src = 'images/FloorPlan.jpg?' + (new Date()).getTime();
-					else
+						mapImage.onload = function() {
+							map.setMapImage(this, 120);
+						}
+					} else
 						showMessage(srError, response.data, true);
 			}
 		}
@@ -792,7 +793,7 @@
 					<!--<input id="showGridCheckBox" type="checkbox" /><label for="showGridCheckBox">Show grid</label><div style="float: right;"><label>Grid spacing</label><input id="gridSpacingTextBox" type="textbox" value="1" disabled style="margin-left: 10px; width: 40px;" /></div><br />-->
 				</fieldset>
 				<br />
-				<iframe id="mapUploadFrame" src="MapUploadForm.php" style="border: none; width: 100%;"></iframe>
+				<iframe id="mapUploadFrame" src="MapUpload.php" style="border: none; width: 100%;"></iframe>
 			</div>
 			<div id="assetsTab" class="TTabContent">
 				<input type="textbox" id="assetSearchBox" class="TSearchBox" placeholder="Search for an asset"/>
