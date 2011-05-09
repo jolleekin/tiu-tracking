@@ -107,6 +107,7 @@ switch ($request)
 			{
 				session_regenerate_id (); // this is a security measure
 				$_SESSION['loggedIn'] = true;
+				setcookie('username', $username);
 				printResponse(rsOK, 0);
 			}
 		}
@@ -114,10 +115,11 @@ switch ($request)
 		
 	case 'logout':
 		$_SESSION = array();
-		
+		$expire = time() - 100000;
 		if (isset($_COOKIE[session_name()]))
-			setcookie(session_name(), '', time() - 48000, '/');
-		
+			setcookie(session_name(), '', $expire);
+		if (isset($_COOKIE['username']))
+			setcookie('username', '', $expire);
 		session_destroy();
 		break;
 		

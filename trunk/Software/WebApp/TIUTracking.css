@@ -1,13 +1,3 @@
-body {
-	margin: 0;
-	padding: 0;
-	width:  100%;
-	height: 100%;
-	overflow: hidden;
-	background-color: #D8DCE0;
-	font: normal 13px/1.8em Calibri, Sans-serif;
-}
-
 #headerPanel {
 	position: relative;
 	z-index: 2;
@@ -218,24 +208,6 @@ label {
 	-webkit-user-select: none;
 }
 
-input[type=textbox], input[type=password] {
-	height: 1.5em;
-	padding: 0 5px;
-	outline: none;
-	margin: 0;
-	border: 1px solid Gray;
-	background: #FFF; /* old browsers */
-	background: -o-linear-gradient(top, #E8E8E8 0%,#FFF 35%); /* opera */
-	background: -moz-linear-gradient(top, #E8E8E8 0%, #FFF 35%); /* firefox */
-	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#E8E8E8), color-stop(35%,#FFF)); /* webkit */
-	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#E8E8E8', endColorstr='#FFFFFF',GradientType=0 ); /* ie */
-}
-
-input[type=textbox]:hover, input[type=password]:hover {
-	border: 1px solid #0A5;
-	box-shadow: rgba(0,170,85,0.2) 0px 0px 2px 2px;
-}
-
 input[type=textbox].Cell {
 	background: none;
 	border: none;
@@ -284,31 +256,6 @@ input[type=textbox].Cell:focus, input[type=textbox].Cell:hover {
 	border-radius: 19px;
 }
 
-/*
- *	CSS3 Buttons
- *
- *	Source: http://css3buttons.michaelhenriksen.dk/
- *
- */
-button {
-	float: left;
-	margin: 0;
-	padding: 0.2em 0.3em;
-	outline: none;
-	color: #3C3C3D;
-	display: inline-block;
-	border-radius: 2px;
-	border: 1px solid #CACACA;
-	text-shadow: 1px 1px 0 #FFF;
-	text-decoration: none;
-	background: #ECECEC url('images/ButtonBackground.png') 0 0 no-repeat;
-	user-select: none;
-	-moz-user-select: none;
-	-webkit-user-select: none;
-}
-button:focus,
-button:hover { color: #FFF; border-color: #388AD4; text-decoration: none; text-shadow: -1px -1px 0 rgba(0,0,0,0.3); background-position: 0 -40px; }
-
 div.DeleteButton {
 	margin: 6px 0 5px;
 	width: 12px;
@@ -318,61 +265,4 @@ div.DeleteButton {
 
 div.DeleteButton:hover {
 	background-position: -13px 0;
-}
-
-button.Negative:focus,
-button.Negative:hover { color: #FFF; background-position: 0 -121px; background-color: #D84743; border-color: #911D1B; }
-button.Negative:active { background-position: 0 -161px; background-color: #A5211E; border-color: #911D1B; }
-
-button.Primary {
-	font-weight: bold;
-}
-
-button:hover {
-	color: #FFF;
-	border-color: #388AD4;
-	background-color: #2D7DC5;
-	background-position: 0 -40px;
-	text-shadow: -1px -1px 0 rgba(0,0,0,0.3);
-}
-
-button.Pill {
-	padding: 5px 10px;
-	border-radius: 19px;
-}
-
-button.LeftPill {
-	padding: 5px 10px;
-	border-radius: 19px 0px 0px 19px;
-}
-
-button.RightPill {
-	padding: 5px 10px;
-	border-radius: 0px 19px 19px 0px;
-}
-
-button.Middle {
-	padding: 5px 10px;
-	border-radius: 0px;
-}
-
-button.TextIcon {
-	font-weight: 900;
-	font: 1.2em "Courier New";
-}
-
-button.Translucent {
-	opacity: 0.8;
-}
-
-button.Translucent:hover {
-	opacity: 1;
-}
-
-fieldset {
-	border: 1px solid #CCC;
-}
-
-legend {
-	font-weight: bold;
 }

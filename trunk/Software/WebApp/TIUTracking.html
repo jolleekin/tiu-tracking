@@ -236,7 +236,7 @@
 		var headerPanel, tabControl, tabPanel;
 		var welcomeTab, assetsTab, detectorsTab;
 		
-		var map, mapToolbar;
+		var map, mapImage, mapToolbar;
 		
 		var tags = [], detectors = [];
 		var tagTable, detectorTable;
@@ -353,7 +353,9 @@
 			showMessage(srInfo, 'Logging in...', false);
 			loginButton.disabled = true;
 
-			loginRequestManager.doSend('request=login&username=' + usernameTextBox.value + '&password=' + passwordTextBox.value);		
+			loginRequestManager.doSend('request=login&username=' + usernameTextBox.value + '&password=' + passwordTextBox.value);
+			usernameTextBox.value = '';
+			passwordTextBox.value = '';
 		}
 		
 		function logout() {
@@ -398,15 +400,20 @@
 		function updateUI(loggedIn) {
 			if (isLoggedIn == loggedIn)
 				return;
-			
+				
+			var d = $('mapUploadFrame');
+			d.style.display = loggedIn ? SBlock : SNone;
+			if (d.contentWindow)
+				d.contentWindow.location.reload();
+			else
+				frames['mapUploadFrame'].location.reload();
+				
 			var table, tables = [tagTable.getElement(), detectorTable.getElement()];
 			
 			if (loggedIn) {
-				$('greetingLabel').innerHTML = 'Hi <strong style="color: blue;">' + usernameTextBox.value + '</strong>';
+				$('greetingLabel').innerHTML = 'Hi <strong style="color: blue;">' + getCookie('username') + '</strong>';
 				loggedInDialog.style.display = SBlock;
 				loginDialog.style.display = SNone;
-				usernameTextBox.value = '';
-				passwordTextBox.value = '';
 				
 				for (var i = 0; i < tables.length; i++) {
 					table = tables[i];
@@ -416,33 +423,8 @@
 						row.lastChild.appendChild(createDeleteButton(i, row, table));	// i = entityType
 					}
 				}
-				
-				var d = document.createElement('form');
-				d.id = 'mapFileUploadForm';
-				d.method = 'post';
-				d.enctype = 'multipart/form-data';
-				d.action = 'MapUpload.php';
-				d.onsubmit = function () {
-					this.target = 'uploadTarget';
-				}
-				d.innerHTML = 
-					'<fieldset>' +
-						'<legend>Map</legend>' +
-						'<button onclick="mapFile.click(); return false;">Browse</button><input id="mapFile" name="mapFile" type="file" style="width: 0;" /><input id="fileNameTextBox" type="textbox" disabled /><br />' +
-						'<button type="submit">Upload</button><br />' +
-						'<iframe id="uploadTarget" src="" style="width: 0; height: 0; border: 0px solid #fff;" onload="if (top.changeMapImage) top.changeMapImage();"></iframe>' +
-					'</fieldset>';
-				welcomeTab.appendChild(d);
-				
-				$('mapFile').onchange = function () {
-					var v = this.value;
-					var i = v.lastIndexOf('/');
-					if (i == -1)
-						i = v.lastIndexOf('\\');
-					$('fileNameTextBox').value = v.substr(i + 1);
-				}
-				
-				
+
+
 				d = document.createElement(SDiv);
 				d.id = 'addModifyTagDialog';
 				d.setAttribute('style', 'float: left; width: 315px; background-color: #EEF; margin-top: 3px;');
@@ -509,12 +491,7 @@
 					for (var j = 0; j < table.rows.length; j++)
 						table.rows[j].lastChild.innerHTML = '&nbsp;';
 				}
-				
-				
-				var d = $('mapFileUploadForm');
-				if (d)
-					welcomeTab.removeChild(d);
-				
+
 				d = $('addModifyTagDialog');
 				if (d)
 					assetsTab.removeChild(d);
@@ -525,10 +502,7 @@
 				
 				map.onClick = null;
 			}
-			
-			//TODO: Generate the dialog dynamically.
-			//$('addModifyDetectorDialog').style.display = loggedIn ? SBlock : SNone;
-			
+
 			isLoggedIn = loggedIn;
 		}
 		
@@ -599,6 +573,19 @@
 
 		function adjusMapRect() {
 			map.setRect(tabPanel.offsetLeft + tabPanel.offsetWidth, headerPanel.offsetHeight, window.innerWidth, window.innerHeight);
+		}
+		
+		function getCookie(aName) {
+			var i, j, name, value, pairs = document.cookie.split(';');
+			for (i = 0; i < pairs.length; i++) {
+				j = pairs[i].indexOf('=');
+				name = pairs[i].substr(0, j);
+				value = pairs[i].substr(j + 1);
+				name = name.replace(/^\s+|\s+$/g,'');
+				if (name == aName)
+					return unescape(value);
+			}
+			return null;
 		}
 		
 		onresize = function () {
@@ -677,7 +664,7 @@
 				activeTable.setSelectedIndex(idx);
 			}
 			
-			var mapImage = new Image();
+			mapImage = new Image();
 			mapImage.src = 'images/FloorPlan.jpg';
 			mapImage.onload = function () {
 				map.setMapImage(this, 120);
@@ -744,21 +731,25 @@
 			}
 
 			onresize();
+			
+			if (getCookie('username'))
+				updateUI(true);
 		}
 
 		function changeMapImage() {
-			var responseText = frames['uploadTarget'].document.getElementsByTagName('body')[0].innerHTML;
+			var responseText = $('mapUploadFrame').contentWindow.document.getElementsByTagName('label')[0].innerHTML;
 			if (responseText != '') {
 				var response = JSON.parse(responseText);
-				if (response) {
-					if (response.status == 0) {
-						window.location.reload(true);
-					} else
+				if (response)
+					if (response.status == 0)
+						// Forces the map image to be reloaded.
+						mapImage.src = 'images/FloorPlan.jpg?' + (new Date()).getTime();
+					else
 						showMessage(srError, response.data, true);
-				}
 			}
 		}
 	</script>
+	<link href="Common.css" rel="stylesheet" type="text/css"/>
 	<link href="TIUTracking.css" rel="stylesheet" type="text/css"/>
 	<script type="application/x-javascript" src="js/Common.js"></script>
 	<script type="application/x-javascript" src="js/FlexTable.js"></script>
@@ -800,6 +791,8 @@
 					<input id="showDetectorsCheckBox" type="checkbox" checked /><label for="showDetectorsCheckBox">Show detectors</label><br />
 					<!--<input id="showGridCheckBox" type="checkbox" /><label for="showGridCheckBox">Show grid</label><div style="float: right;"><label>Grid spacing</label><input id="gridSpacingTextBox" type="textbox" value="1" disabled style="margin-left: 10px; width: 40px;" /></div><br />-->
 				</fieldset>
+				<br />
+				<iframe id="mapUploadFrame" src="MapUploadForm.php" style="border: none; width: 100%;"></iframe>
 			</div>
 			<div id="assetsTab" class="TTabContent">
 				<input type="textbox" id="assetSearchBox" class="TSearchBox" placeholder="Search for an asset"/>

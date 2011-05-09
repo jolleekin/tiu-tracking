@@ -99,7 +99,7 @@ function $fx(elementRefOrIdStr) {
 		
 		if (!params.unit) {
 			for (var mask in units)
-				if ((new RegExp(mask,'i').test(params.type))) {
+				if ((new RegExp(mask, 'i').test(params.type))) {
 					params.unit = units[mask];
 					break;
 				}
@@ -140,8 +140,7 @@ function $fx(elementRefOrIdStr) {
 			
 			if (set.effectsDone > 0)
 				return elm;
-			set.onfinal = finalCallback;
-			set.onloop = loopCallback;
+
 			if(!isNaN(loops))
 				set.loopCount = loops;
 			 		
@@ -198,13 +197,13 @@ function $fx(elementRefOrIdStr) {
 		} else {
 			this[effect.type](effect.to, effect.unit);
 			set.effectsDone++;
-			if (effect.onfinish)
+			if (effect.onfinish != null)
 				effect.onfinish.call(elm);
 			
 			if (set.effects.length == set.effectsDone) {
 				set.effectsDone = 0;
 				set.loopsDone++;
-				if (set.onloop)
+				if (set.onloop != null)
 					set.onloop.call(elm, set.loopsDone);
 				if (set.loopCount == -1 || set.loopsDone < set.loopCount) {
 					for (var i = 0; i < set.effects.length; i++) {
@@ -213,7 +212,7 @@ function $fx(elementRefOrIdStr) {
 						this.animate(setIndex, i);
 					}
 				} else {
-					if (set.onfinal)
+					if (set.onfinal != null)
 						set.onfinal.call(elm);
 					set.isRunning = false;
 				}
