@@ -16,12 +16,24 @@ function TMap() {
 		The mouse velocity will be multiplied with this value to determine the target position of the map.
 	 */
 	var VelocityScale = 8;
+
 	
 	var FrameInterval		= 40;	// ms
+
 	var PositionLerpFactor	= FrameInterval * 0.005;
 	var ScaleLerpFactor		= FrameInterval * 0.006;
 	var LerpFactorFactor	= 1.05;
-
+	
+	var PanCursor = 'url(images/closedhand_8_8.cur), move';
+	
+	// A little tweak for Firefox
+	if (browser.isFirefox) {
+		VelocityScale = 2;
+		PositionLerpFactor	= FrameInterval * 0.004;
+		LerpFactorFactor	= 1.06;
+	} else if (browser.isChrome)
+		PanCursor = 'move';
+	
 /* fields */
 	var self = this;
 	var fComponentState = csLoading;
@@ -116,7 +128,7 @@ function TMap() {
 		updateMouseInfo(event, true);
 		
 		if (fMouse.isLeftButtonDown) {
-			this.style.cursor = 'url(images/closedhand_8_8.cur), move';
+			this.style.cursor = PanCursor; //'url(images/closedhand_8_8.cur), move';
 			fMapTransform.targetPosition.add(fMouse.velocity);
 			fMapTransform.position.assign(fMapTransform.targetPosition);
 			//self.invalidate();
