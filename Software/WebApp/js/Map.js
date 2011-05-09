@@ -116,7 +116,7 @@ function TMap() {
 		updateMouseInfo(event, true);
 		
 		if (fMouse.isLeftButtonDown) {
-			this.style.cursor = 'move';//'url(images/closedhand_8_8.cur), move';
+			this.style.cursor = 'url(images/closedhand_8_8.cur), move';
 			fMapTransform.targetPosition.add(fMouse.velocity);
 			fMapTransform.position.assign(fMapTransform.targetPosition);
 			//self.invalidate();
@@ -320,6 +320,7 @@ function TMap() {
 			fMapImageCenter.x = img.width  * 0.5;
 			fMapImageCenter.y = img.height * 0.5;
 			img.style.position = 'absolute';
+			img.style.boxShadow = 'rgba(0,0,0,0.3) 0 0 4px 4px';
 			fMapContainer.insertBefore(img, fMapContainer.firstChild);
 			fMapImage = img;
 			recalculateScales();
