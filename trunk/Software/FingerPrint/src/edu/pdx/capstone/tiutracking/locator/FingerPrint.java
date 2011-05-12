@@ -287,8 +287,7 @@ public class FingerPrint implements LocationEngine
 		                                                      // ascending order, according to the natural ordering of its elements
 		
 		// check for aliasing, 
-		// this.locateNMO(t);
-		
+				
 		int blk_0 = ED_hashlist.get(ED_mirror.get(0));        // get the first element after sort, then get block ID from the hash table
 		int blk_1 = ED_hashlist.get(ED_mirror.get(1));
 		double adjustedAliasThreshold = this.aliasThreshold;
@@ -376,7 +375,7 @@ public class FingerPrint implements LocationEngine
 	 * + there are n-1 detectors in use for the euclidean distance calculation
 	 * + since there are less detector used but circulated, prediction from this model will likely to:
 	 *    - support the main prediction when it is unsure about a prediction( use goodPrediction and aliasing Threshold) 
-	 *    - detector bad data from single detector
+	 *    - detect bad data from single detector
 	 * + prediction from this model can be used to interpolate block location (double interpolate possible) 
 	 * + if the main prediction is solid, the NMO might not be helpful anymore, hence avoid 
 	 * 
