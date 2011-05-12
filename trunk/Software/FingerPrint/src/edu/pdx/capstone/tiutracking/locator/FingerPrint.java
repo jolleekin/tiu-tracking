@@ -15,8 +15,23 @@ import java.util.Hashtable;
  * RSSIs (received signal strength indicator) from a tag placed inside the 
  * location. These signals measured by the surrounding detector nodes.
  * 
- * changes:
- * 1. support detect aliasing blocks with threshold
+ * Changes:
+ * 1. detect aliasing blocks with threshold
+ * 2. interpolate between adjacent blocks
+ * 3. pick the closest if possible when aliasing happens
+ * 4. N-1 vote model support main algorithm to justify the output location
+ * 
+ * The improved algorithm susgests the following calibration process: 
+ * - rule of thumb : calibration points (CB) should be chosen in way to maximize the 
+ * area covered an uniformity
+ * - requires real location of CB 
+ * - CB should be on the same plane
+ * - CB should be distributed evenly in the area, 1.5-2m away from each other is recommended
+ * - tag should be placed firmly with antenna up the normal line
+ * - if possible , place tag at location with less blocking (toward detectors)
+ *   so that it could represent the whole area nearby
+ * 
+ * Tuning parametters are provided to maximize yeild for a certain area
  */
 
 public class FingerPrint implements LocationEngine
@@ -77,7 +92,7 @@ public class FingerPrint implements LocationEngine
 	private int                                              adjacentBlocks;
 	
 	/**
-	 * rate for (n-1) vote model, 75% is default
+	 * rate for (n-1) vote model, 100% is default
 	 */
 	private double                                           NMOvoteRate;
 	
@@ -118,13 +133,13 @@ public class FingerPrint implements LocationEngine
 	{
 		this.statmode = StatisticMode.MEDIAN;
 		this.dirty    = false;
-		this.aliasThreshold = 15; // 
-		this.maxBlockSize = 2;    // 2m
-		this.rssiThreshold = 10;  // 
+		this.aliasThreshold = 15;   // 15 euclidean unit
+		this.maxBlockSize = 1.5;    // 1.5m
+		this.rssiThreshold = 10;    // 10 euclidean unit
 		this.blockLocations = new Hashtable<Integer, Vector2D>();
-		this.goodPredictionThreshold = 15;
-		this.adjacentBlocks = 2;  
-		this.NMOvoteRate = 1;
+		this.goodPredictionThreshold = 15; // euclidean unit
+		this.adjacentBlocks = 2;   
+		this.NMOvoteRate = 1;       // % votes
 		this.lastPrediction_block = new Hashtable<Integer, Integer>();
 		this.lastPrediction_location = new Hashtable<Integer, Vector2D>();
 		
@@ -280,7 +295,7 @@ public class FingerPrint implements LocationEngine
 		
 		// first sign  : large distance ( if a block has small distance to tag, this is the sign of good a prediction ) 
 		// second sign : similar signal strength
-		if (ED_mirror.get(0) > this.goodPredictionThreshold || (Math.abs(ED_mirror.get(0) - ED_mirror.get(1))) < adjustedAliasThreshold)
+		if (ED_mirror.get(0) > this.goodPredictionThreshold && (Math.abs(ED_mirror.get(0) - ED_mirror.get(1))) < adjustedAliasThreshold)
 		{			
 			// if so, check if the two blocks are adjacent
 			System.out.println(":suspect aliasing.........\n");
@@ -456,8 +471,8 @@ public class FingerPrint implements LocationEngine
 		 * 			if (vote rate == 100 % but its distance > 5*goodPredictionThreshold)
 		 * 				-> bad data, interpolate adjacent block or previous good result is recommended 
 		 * 
-		 * 2. a recommend result means the engine should double-interpolate if possible
-		 *    a confirm means the engine should not interpolate or double-interpolate 
+		 * 2. a recommend result means the engine should re-interpolate if possible
+		 *    a confirm means the engine should not interpolate or re-interpolate 
 		 */    
 		
 		Collections.sort(distListMirror);
@@ -511,11 +526,11 @@ public class FingerPrint implements LocationEngine
 					else
 					{
 						System.out.println("no best candidate: best distance recommendation, block " + nResult.get(d0));
-						t.location.x = (this.blockLocations.get(nResult.get(d0)).x + t.location.x) / 2;
-						t.location.y = (this.blockLocations.get(nResult.get(d0)).y + t.location.y) / 2;
+						t.location.x = (this.blockLocations.get(nResult.get(d0)).x + 2*t.location.x) / 3;
+						t.location.y = (this.blockLocations.get(nResult.get(d0)).y + 2*t.location.y) / 3;
 						System.out.println("no best candidate: most vote recommendation, block " + candidateBlock);	
-						t.location.x = (this.blockLocations.get(candidateBlock).x + t.location.x) / 2;
-						t.location.y = (this.blockLocations.get(candidateBlock).y + t.location.y) / 2;
+						t.location.x = (this.blockLocations.get(candidateBlock).x + 2*t.location.x) / 3;
+						t.location.y = (this.blockLocations.get(candidateBlock).y + 2*t.location.y) / 3;
 					}
 				}
 				else 
