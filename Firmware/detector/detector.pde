@@ -18,10 +18,11 @@
 
 #define FROM_TAG 		0
 #define PAYLOAD_SIZE 	        8
-#define MyID			9
+#define MyID			5
 
 #define FASTADC 1
-
+#define CACHE_SIZE              100
+#define CACHE_ENTRY_EMPTY        -1
 // defines for setting and clearing register bits
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -32,8 +33,16 @@
 
 unsigned char payload[PAYLOAD_SIZE];
 
+
+
+int msgIdCache[CACHE_SIZE];
+
 void setup () 
 {
+  //Initialize cache
+  for (int t = 0;t < CACHE_SIZE;t++){
+       msgIdCache[t]= CACHE_ENTRY_EMPTY;    
+  }
   // quote:
   // The ADC clock is 16 MHz divided by a prescale factor.
   // The prescale is set to 128 (16MHz/128 = 125 KHz) in wiring.c.
@@ -55,6 +64,20 @@ void setup ()
   rf12_initialize(2, RF12_433MHZ,33);
 }
 
+//If entryExists, then don't insert
+void insertCache(int key, int value){
+    msgIdCache[key] = value;
+}
+
+boolean entryExists(int key, int value){
+  //if(newMsgId >= 254) 
+  //   return false;
+  if (((msgIdCache[key] & 0xff) - (value & 0xff)) > 100){
+    return false;
+  }else
+    return ((msgIdCache[key] & 0xff) >= (value & 0xff));
+}
+
 void loop () 
 {      
   if (rf12_recvDone() && rf12_crc==0) 
@@ -70,7 +93,7 @@ void loop ()
     //endfor
 
     
-    if (0)//rf12_data[0] != FROM_TAG)//From Detector
+    if (rf12_data[0] != FROM_TAG)//From Detector
     {
       //payload[0] = rf12_data[0];		//Start Delimiter
       payload[0] = MyID;			//Source ID
@@ -82,10 +105,15 @@ void loop ()
       payload[6] = rf12_data[6];		//Tag Battery level
       payload[7] = rf12_data[7];                //Detector Battery level
 
-      digitalWrite(5,HIGH);
-      delay(random(200)+50);   
-      rf12_sendStart(0, payload, PAYLOAD_SIZE);                
-      digitalWrite(5,LOW);      
+      if (!entryExists(payload[1], ((payload[4] << 8) + payload[5]))){
+        insertCache(payload[1], ((payload[4] << 8) + payload[5]));
+        digitalWrite(5,HIGH);
+        delay(random(200)+50);   
+        rf12_sendStart(0, payload, PAYLOAD_SIZE);                
+        digitalWrite(5,LOW);
+      }//Else we already broadcasted, do nothing.
+      
+           
     }
     else if (rf12_data[0] == FROM_TAG)//From Tag
     {
@@ -101,7 +129,7 @@ void loop ()
       payload[7] = rf12_lowBat();                       //Detector Battery level
       
       digitalWrite(5,HIGH);
-      delay(random(200)+50);   
+      delay(random(300)+50);   
       rf12_sendStart(0, payload, PAYLOAD_SIZE);                
       digitalWrite(5,LOW);
     }  
