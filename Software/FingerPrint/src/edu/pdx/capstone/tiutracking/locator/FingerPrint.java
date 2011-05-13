@@ -34,10 +34,10 @@ import java.util.Hashtable;
  * 
  * The improved algorithm suggests the following calibration process: 
  * - rule of thumb : calibration points (CP) should be chosen in way to maximize the 
- * area covered an uniformity
- * - requires real location of CP 
- * - CP should be on the same plane
- * - CP should be distributed evenly in the area, 1.5-2m away from each other is recommended
+ * area covered and uniformity
+ * - requires real location of CPs 
+ * - CPs should be on the same plane
+ * - CPs should be distributed evenly in the area, 1.5-2m away from each other is recommended
  * - tag should be placed firmly with antenna up the normal line
  * - if possible , place tag at location with less blocking (toward detectors)
  *   so that it could represent the whole area nearby
@@ -205,11 +205,12 @@ public class FingerPrint implements LocationEngine
 	{
 		this.NMOvoteRate = t;
 	} 
+	/************************************ core methods ********************************/
 	/**
 	 * find out if blk_1 is adjacent to blk_2
 	 * @param blk_1
 	 * @param blk_2
-	 * @return
+	 * @return 
 	 */
 	public boolean isAdjacent(Integer blk_1, Integer blk_2)
 	{
@@ -251,7 +252,7 @@ public class FingerPrint implements LocationEngine
 	
 	
 	/**
-	 * 
+	 * get calibration data
 	 */
 	public void learn(ArrayList<DataPacket> table, Hashtable<Integer, Vector2D> detLocs)
 	{	
