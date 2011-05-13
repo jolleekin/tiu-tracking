@@ -20,6 +20,8 @@
 #define MyID			255
 
 #define FASTADC 1
+#define CACHE_SIZE              100
+#define CACHE_ENTRY_EMPTY        -1
 // defines for setting and clearing register bits
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -29,6 +31,22 @@
 #endif
 
 unsigned char payload[PAYLOAD_SIZE+1];
+int msgIdCache[CACHE_SIZE];
+
+//If entryExists, then don't insert
+void insertCache(int key, int value){
+    msgIdCache[key] = value;
+}
+
+boolean entryExists(int key, int value){
+  //if(newMsgId >= 254) 
+  //   return false;
+  if (((msgIdCache[key] & 0xff) - (value & 0xff)) > 100){
+    return false;
+  }else
+    return ((msgIdCache[key] & 0xff) >= (value & 0xff));
+}
+
 
 //
 void setup () 
@@ -86,15 +104,19 @@ void loop ()
         payload[6] = rf12_data[6];		//Tag battery level
         payload[7] = rf12_data[7];              //Detector battery level
       
-        Serial.print("$");
-        Serial.print(payload[0],BYTE);
-        Serial.print(payload[1],BYTE);
-        Serial.print(payload[2],BYTE);
-        Serial.print(payload[3],BYTE);
-        Serial.print(payload[4],BYTE);
-        Serial.print(payload[5],BYTE);
-        Serial.print(payload[6],BYTE);
-        Serial.print(payload[7],BYTE);
+        //Base wants to not duplicate messages from detectors..
+        if (!entryExists(payload[1], ((payload[4] << 8) + payload[5]))){
+          insertCache(payload[1], ((payload[4] << 8) + payload[5]));
+          Serial.print("$");
+          Serial.print(payload[0],BYTE);
+          Serial.print(payload[1],BYTE);
+          Serial.print(payload[2],BYTE);
+          Serial.print(payload[3],BYTE);
+          Serial.print(payload[4],BYTE);
+          Serial.print(payload[5],BYTE);
+          Serial.print(payload[6],BYTE);
+          Serial.print(payload[7],BYTE);
+        }
       
         digitalWrite(5,LOW);
       }
