@@ -9,7 +9,7 @@ import java.util.Hashtable;
 
 /**
  * @author Le Dang Dung
- * FingerPrint class - version 2.0
+ * FingerPrint class - version 2.1
  * implements FingerPrint engine: matching tag 
  * location to sets of calibrated locations. Data used in calibrating are 
  * RSSIs (received signal strength indicator) from a tag placed inside the 
@@ -20,18 +20,29 @@ import java.util.Hashtable;
  * 2. interpolate between adjacent blocks
  * 3. pick the closest if possible when aliasing happens
  * 4. N-1 vote model support main algorithm to justify the output location
+ * 5. simple 2 states input filter, increase stickiness of prediction
+ *   states:
+ *   + stable (0)   : do locate()
+ *   + unstable (1) : return previous prediction result
+ *  
+ *  (d < sth)                     (d > sth)
+ *  - - -                       - - -
+ * |     |       (d > sth)     |     |
+ *  - -> (0) ---------------> (1)<- -  
+ *           <---------------  
+ *               (d < sth)     
  * 
- * The improved algorithm susgests the following calibration process: 
- * - rule of thumb : calibration points (CB) should be chosen in way to maximize the 
+ * The improved algorithm suggests the following calibration process: 
+ * - rule of thumb : calibration points (CP) should be chosen in way to maximize the 
  * area covered an uniformity
- * - requires real location of CB 
- * - CB should be on the same plane
- * - CB should be distributed evenly in the area, 1.5-2m away from each other is recommended
+ * - requires real location of CP 
+ * - CP should be on the same plane
+ * - CP should be distributed evenly in the area, 1.5-2m away from each other is recommended
  * - tag should be placed firmly with antenna up the normal line
  * - if possible , place tag at location with less blocking (toward detectors)
  *   so that it could represent the whole area nearby
  * 
- * Tuning parametters are provided to maximize yeild for a certain area
+ * Tuning parameters are provided to maximize yield for a certain area
  */
 
 public class FingerPrint implements LocationEngine
@@ -97,9 +108,19 @@ public class FingerPrint implements LocationEngine
 	private double                                           NMOvoteRate;
 	
 	/**
+	 * a threshold that tells whether a tag is actually moved
+	 */
+	private double                                           stickyThreshold;
+	/**
 	 * keep track of 1000 predictions
 	 */
 	private Hashtable<Integer,Hashtable<Integer,Integer>>    predictions;
+	
+	/**
+	 * temporary store last packets, use tagID
+	 * to index to hash table
+	 */
+	private Hashtable<Integer,DataPacket>                    lastPackets;
 	
 	/**
 	 * save last block where tag is at
@@ -142,6 +163,8 @@ public class FingerPrint implements LocationEngine
 		this.NMOvoteRate = 1;       // % votes
 		this.lastPrediction_block = new Hashtable<Integer, Integer>();
 		this.lastPrediction_location = new Hashtable<Integer, Vector2D>();
+		this.lastPackets = new Hashtable<Integer, DataPacket>();
+		this.stickyThreshold = 7;
 		
 	}
 	
@@ -255,119 +278,141 @@ public class FingerPrint implements LocationEngine
 	 * @return true if success, false otherwise
 	 */
 	public void locate(DataPacket t)	
-	{
-		
-		Hashtable<Double,Integer> ED_hashlist = new Hashtable<Double,Integer>(); // list of Euclidean distance
-		ArrayList<Double> ED_mirror = new ArrayList<Double>(); // mirror list of the EU_list
-		Enumeration<Integer> blockIDs = this.statTable.keys(); // get block id list
-		while(blockIDs.hasMoreElements())
+	{		 
+		if (this.isStable(t))
 		{
-			int currentBlockID = blockIDs.nextElement();       // get a block ID
-			double eu_sum = 0;
-			Enumeration<Integer> detIDs = t.rssiTable.keys();  // get detector id list, from the transaction, not the block
-			while(detIDs.hasMoreElements())
+			Hashtable<Double,Integer> ED_hashlist = new Hashtable<Double,Integer>(); // list of Euclidean distance
+			ArrayList<Double> ED_mirror = new ArrayList<Double>(); // mirror list of the EU_list
+			Enumeration<Integer> blockIDs = this.statTable.keys(); // get block id list
+			while(blockIDs.hasMoreElements())
 			{
-				int currentDetID = detIDs.nextElement();       // detectorID
-				if(this.statTable.get(currentBlockID).get(currentDetID) != null )
+				int currentBlockID = blockIDs.nextElement();       // get a block ID
+				double eu_sum = 0;
+				Enumeration<Integer> detIDs = t.rssiTable.keys();  // get detector id list, from the transaction, not the block
+				while(detIDs.hasMoreElements())
 				{
-					double calibrationValue = this.statTable.get(currentBlockID).get(currentDetID);
-					double currentValue = t.rssiTable.get(currentDetID).get(0);
-					double squaredDifference = Math.pow(calibrationValue - currentValue	, 2);
-					//double squaredDifference = calibrationValue - currentValue;//change 
-					eu_sum = (eu_sum + squaredDifference);    // do the sum first
-				}
-			}	
-			eu_sum = Math.sqrt(eu_sum);                       // take sqrt() of sum
-			//eu_sum = Math.abs(eu_sum);// change
-			System.out.println("Distance From Block " + currentBlockID + ": "+ eu_sum);
-			ED_hashlist.put(eu_sum,currentBlockID);           // put eucledean results on the list
-			ED_mirror.add(eu_sum);                            // put sum in mirror list for sorting
-		}
-		Collections.sort(ED_mirror);                          // sort list to find the min value
-		                                                      // ascending order, according to the natural ordering of its elements
-		
-		// check for aliasing, 
-				
-		int blk_0 = ED_hashlist.get(ED_mirror.get(0));        // get the first element after sort, then get block ID from the hash table
-		int blk_1 = ED_hashlist.get(ED_mirror.get(1));
-		double adjustedAliasThreshold = this.aliasThreshold;
-		
-		// first sign  : large distance ( if a block has small distance to tag, this is the sign of good a prediction ) 
-		// second sign : similar signal strength
-		if (ED_mirror.get(0) > this.goodPredictionThreshold && (Math.abs(ED_mirror.get(0) - ED_mirror.get(1))) < adjustedAliasThreshold)
-		{			
-			// if so, check if the two blocks are adjacent
-			System.out.println(":suspect aliasing.........\n");
-			if( this.isAdjacent(blk_0, blk_1) )
-			{
-				// if so,not aliasing but adjacent -> interpolate
-				System.out.println(":adjacent blocks " + blk_0 + "," + blk_1);
-				System.out.println(":adjacent blocks, interpolate. : x = "+ this.blockLocations.get(blk_0).x + ","+ this.blockLocations.get(blk_1).x );
-				System.out.println(":adjacent blocks, interpolate. : y = "+ this.blockLocations.get(blk_0).y + ","+ this.blockLocations.get(blk_1).y );
-				t.location.x = (this.blockLocations.get(blk_0).x + this.blockLocations.get(blk_1).x) / 2;
-				t.location.y = (this.blockLocations.get(blk_0).y + this.blockLocations.get(blk_1).y) / 2;
-				// warning! not exact block, 0 or 1 ?
-				t.blockId = blk_0;	
-				this.lastPrediction_block.put(t.tagId, blk_0);
-				//this.lastPrediction_location 
-				
-				this.locateNMO(t, true);
-			}
-			else // not adjacent, => aliasing, need to determine which is the "chosen one"
-			{			
-				Enumeration<Integer> dk = t.rssiTable.keys();  // get detector id list, from the transaction, not the block
-				int rssi_strongest = 0;  // for the strongest 
-				int of_detector = 0;
-
-				// get the strongest signal strength from a detector
-				while(dk.hasMoreElements())
-				{
-					int cdk = dk.nextElement();       // detectorID
-					if ( (t.rssiTable.get(cdk)).get(0) > rssi_strongest)
+					int currentDetID = detIDs.nextElement();       // detectorID
+					if(this.statTable.get(currentBlockID).get(currentDetID) != null )
 					{
-						rssi_strongest = (t.rssiTable.get(cdk)).get(0);
-						of_detector = cdk;
+						double calibrationValue = this.statTable.get(currentBlockID).get(currentDetID);
+						double currentValue = t.rssiTable.get(currentDetID).get(0);
+						double squaredDifference = Math.pow(calibrationValue - currentValue	, 2);
+						//double squaredDifference = calibrationValue - currentValue;//change 
+						eu_sum = (eu_sum + squaredDifference);    // do the sum first
 					}
-				}
-				if (of_detector != 0 && this.statTable.get(blk_0).get(of_detector)!=null) // valid detector
+				}	
+				eu_sum = Math.sqrt(eu_sum);                       // take sqrt() of sum
+				//eu_sum = Math.abs(eu_sum);// change
+				System.out.println("Distance From Block " + currentBlockID + ": "+ eu_sum);
+				ED_hashlist.put(eu_sum,currentBlockID);           // put eucledean results on the list
+				ED_mirror.add(eu_sum);                            // put sum in mirror list for sorting
+			}
+			Collections.sort(ED_mirror);                          // sort list to find the min value
+			// ascending order, according to the natural ordering of its elements
+
+			// check for aliasing, 
+
+			int blk_0 = ED_hashlist.get(ED_mirror.get(0));        // get the first element after sort, then get block ID from the hash table
+			int blk_1 = ED_hashlist.get(ED_mirror.get(1));
+			double adjustedAliasThreshold = this.aliasThreshold;
+
+			// first sign  : large distance ( if a block has small distance to tag, this is the sign of good a prediction ) 
+			// second sign : similar signal strength
+			if (ED_mirror.get(0) > this.goodPredictionThreshold && (Math.abs(ED_mirror.get(0) - ED_mirror.get(1))) < adjustedAliasThreshold)
+			{			
+				// if so, check if the two blocks are adjacent
+				System.out.println(":suspect aliasing.........\n");
+				if( this.isAdjacent(blk_0, blk_1) )
 				{
-					// the non-aliasing block should has similar rssi 
-					if (Math.abs(this.statTable.get(blk_0).get(of_detector) - rssi_strongest) < this.rssiThreshold)
+					// if so,not aliasing but adjacent -> interpolate
+					System.out.println(":adjacent blocks " + blk_0 + "," + blk_1);
+					System.out.println(":adjacent blocks, interpolate. : x = "+ this.blockLocations.get(blk_0).x + ","+ this.blockLocations.get(blk_1).x );
+					System.out.println(":adjacent blocks, interpolate. : y = "+ this.blockLocations.get(blk_0).y + ","+ this.blockLocations.get(blk_1).y );
+					t.location.x = (this.blockLocations.get(blk_0).x + this.blockLocations.get(blk_1).x) / 2;
+					t.location.y = (this.blockLocations.get(blk_0).y + this.blockLocations.get(blk_1).y) / 2;
+					// warning! not exact block, 0 or 1 ?
+					t.blockId = blk_0;	
+					this.lastPrediction_block.put(t.tagId, blk_0);
+					//this.lastPrediction_location 
+
+					this.locateNMO(t, true);
+				}
+				else // not adjacent, => aliasing, need to determine which is the "chosen one"
+				{			
+					Enumeration<Integer> dk = t.rssiTable.keys();  // get detector id list, from the transaction, not the block
+					int rssi_strongest = 0;  // for the strongest 
+					int of_detector = 0;
+
+					// get the strongest signal strength from a detector
+					while(dk.hasMoreElements())
 					{
-						t.blockId = blk_0;
-						this.lastPrediction_block.put(t.tagId, blk_0);
-						t.location.set(this.blockLocations.get(blk_0));
-						System.out.println(":not adjacent blocks, determine by closest rssi... : " + blk_0);
+						int cdk = dk.nextElement();       // detectorID
+						if ( (t.rssiTable.get(cdk)).get(0) > rssi_strongest)
+						{
+							rssi_strongest = (t.rssiTable.get(cdk)).get(0);
+							of_detector = cdk;
+						}
+					}
+					if (of_detector != 0 && this.statTable.get(blk_0).get(of_detector)!=null) // valid detector
+					{
+						// the non-aliasing block should has similar rssi 
+						if (Math.abs(this.statTable.get(blk_0).get(of_detector) - rssi_strongest) < this.rssiThreshold)
+						{
+							t.blockId = blk_0;
+							this.lastPrediction_block.put(t.tagId, blk_0);
+							t.location.set(this.blockLocations.get(blk_0));
+							System.out.println(":not adjacent blocks, determine by closest rssi... : " + blk_0);
+						}
+						else
+						{
+							t.blockId = blk_1;
+							this.lastPrediction_block.put(t.tagId, blk_1);
+							t.location.set(this.blockLocations.get(blk_1));
+							System.out.println(":not adjacent blocks, determine by closest rssi..." + blk_1);
+						}
 					}
 					else
 					{
 						t.blockId = blk_1;
-						this.lastPrediction_block.put(t.tagId, blk_1);
 						t.location.set(this.blockLocations.get(blk_1));
+						this.lastPrediction_block.put(t.tagId, blk_1);
 						System.out.println(":not adjacent blocks, determine by closest rssi..." + blk_1);
 					}
+					this.locateNMO(t,false);
 				}
-				else
-				{
-					t.blockId = blk_1;
-					t.location.set(this.blockLocations.get(blk_1));
-					this.lastPrediction_block.put(t.tagId, blk_1);
-					System.out.println(":not adjacent blocks, determine by closest rssi..." + blk_1);
-				}
-				this.locateNMO(t,false);
+			}		
+			else // no aliasing 
+			{
+				t.blockId = blk_0;
+				t.location.set(this.blockLocations.get(blk_0));
+				this.lastPrediction_block.put(t.tagId, blk_0);
+				this.locateNMO(t, false);
 			}
-			
-			
+			System.out.println("--------------------end locating ----------------------------\n");
+		
 		}		
-		else // no aliasing 
-		{
-			t.blockId = blk_0;
-			t.location.set(this.blockLocations.get(blk_0));
-			this.lastPrediction_block.put(t.tagId, blk_0);
+		else
+		{			
+			t.location.set(this.lastPackets.get(t.tagId).location);
+			t.blockId = this.lastPackets.get(t.tagId).blockId;
+			System.out.println("return last packet tag=" + t.tagId + "  location x=" + t.location.x + "  y=" + t.location.y);
 		}
-		System.out.println("--------------------end locating ----------------------------\n");
 		
-		
+		// save current packet for later reference
+		DataPacket clone_t = new DataPacket(t.blockId,t.tagId,null);
+		clone_t.location.x = t.location.x;
+		clone_t.location.y = t.location.y;
+		clone_t.timestamp = t.timestamp;
+		clone_t.battery = t.battery;
+		Enumeration<Integer> cloneKeys = t.rssiTable.keys();  // get detector id list, from the transaction, not the block
+		while(cloneKeys.hasMoreElements())
+		{
+			int currentCloneKey = cloneKeys.nextElement();       // detectorID
+			ArrayList<Integer> cloneList = new ArrayList<Integer>();
+			cloneList.add(t.rssiTable.get(currentCloneKey).get(0)); 
+			clone_t.rssiTable.put(currentCloneKey, cloneList);
+		}
+		this.lastPackets.put(clone_t.tagId, clone_t);
 
 	}
 	/**
@@ -413,13 +458,11 @@ public class FingerPrint implements LocationEngine
 						double calibrationValue = this.statTable.get(currentBlockID).get(currentDetID);
 						double currentValue = t.rssiTable.get(currentDetID).get(0);
 						double squaredDifference = Math.pow(calibrationValue - currentValue	, 2);
-						//double squaredDifference = calibrationValue - currentValue;//change 
 						eu_sum = (eu_sum + squaredDifference);    // do the sum first
 					}
 				}	
 				eu_sum = Math.sqrt(eu_sum);                       // take sqrt() of sum
-				//eu_sum = Math.abs(eu_sum);// change
-				System.out.println("NMO: Distance From Block " + currentBlockID + ": "+ eu_sum);
+				//System.out.println("NMO: Distance From Block " + currentBlockID + ": "+ eu_sum);
 				ED_hashlist.put(eu_sum,currentBlockID);           // put eucledean results on the list
 				ED_mirror.add(eu_sum);                            // put sum in mirror list for sorting
 			}
@@ -468,7 +511,7 @@ public class FingerPrint implements LocationEngine
 		 * 				else if there are NO obvious gap between one distance and the rest
 		 * 					-> no best candidate, the most voted with smallest distance is recommended 
 		 * 			if (vote rate == 100 % but its distance > 5*goodPredictionThreshold)
-		 * 				-> bad data, interpolate adjacent block or previous good result is recommended 
+		 * 				-> ???, interpolate adjacent block or previous good result is recommended 
 		 * 
 		 * 2. a recommend result means the engine should re-interpolate if possible
 		 *    a confirm means the engine should not interpolate or re-interpolate 
@@ -534,7 +577,7 @@ public class FingerPrint implements LocationEngine
 				}
 				else 
 				{
-					System.out.println("bad data, prediction: 3rd recommendation, block " + nResult.get(d0));	
+					System.out.println("I'm confused, prediction: 3rd recommendation, block " + nResult.get(d0));	
 					t.location.x = (this.blockLocations.get(candidateBlock).x + 2*t.location.x) / 3;
 					t.location.y = (this.blockLocations.get(candidateBlock).y + 2*t.location.y) / 3;
 					System.out.println("compare to last prediction:" + this.lastPrediction_block.get(t.tagId));
@@ -544,6 +587,41 @@ public class FingerPrint implements LocationEngine
 		
 		System.out.println("--------------------end NMO analysis----------------------------\n");						
 
+		
+	}
+	/**
+	 * simple 2 states input filter, increase stickiness of prediction
+	 * - this would help the engine tolerates to noised inputs
+	 * - calculate the current packet rssi with previous packet rssi (di) and
+	 *   compare with the stickythreshold sth                   
+	 */
+	private boolean isStable(DataPacket t)
+	{
+		DataPacket currentPacket = t;		
+		if(this.lastPackets.get(currentPacket.tagId) != null) //check if previous packet presents, or fresh restart
+		{
+			DataPacket lastPacket = this.lastPackets.get(currentPacket.tagId);
+			// if so, check if there are significant rssi changes in the packet
+			Enumeration<Integer> detIDs = currentPacket.rssiTable.keys();  // get detector id list, from the transaction
+			while(detIDs.hasMoreElements())
+			{
+				int currentDetID = detIDs.nextElement();       // detectorID
+				if(lastPacket.rssiTable.get(currentDetID) != null)
+				{
+					if (Math.abs(lastPacket.rssiTable.get(currentDetID).get(0) - currentPacket.rssiTable.get(currentDetID).get(0)) > this.stickyThreshold)
+					{
+						System.out.println("\n sticky : tag " + currentPacket.tagId + "'s rssi unstable.......\n");
+						//this.lastPackets.put(currentPacket.tagId, currentPacket);
+						return false;
+					}
+				}
+			}	
+			System.out.println("\n sticky : packet from tag " + currentPacket.tagId + "'s stable.......\n");
+		}
+				
+		// save current packet in buffer
+		// this.lastPackets.put(currentPacket.tagId, currentPacket);
+		return true;
 		
 	}
 	/**
@@ -641,3 +719,5 @@ public class FingerPrint implements LocationEngine
 	}
 	
 }
+
+
