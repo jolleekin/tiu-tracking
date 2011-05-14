@@ -9,7 +9,7 @@ import java.util.Hashtable;
 
 /**
  * @author Le Dang Dung
- * FingerPrint class - version 2.1
+ * FingerPrint class - version 2.2
  * implements FingerPrint engine: matching tag 
  * location to sets of calibrated locations. Data used in calibrating are 
  * RSSIs (received signal strength indicator) from a tag placed inside the 
@@ -31,6 +31,10 @@ import java.util.Hashtable;
  *  - -> (0) ---------------> (1)<- -  
  *           <---------------  
  *               (d < sth)     
+ * 6. fix the mismatched issue on the core algorithm: on the stats table, fill the empty slots
+ * on each block with the minimum RSSI of the table. The empty slots exist due to the fact that
+ * the radio chip drops weak-signal messages, observed at around 150 (not zero !), this is normal 
+ * since it needs to make sure good data are reported.  
  * 
  * The improved algorithm suggests the following calibration process: 
  * - rule of thumb : calibration points (CP) should be chosen in way to maximize the 
@@ -47,6 +51,7 @@ import java.util.Hashtable;
 
 public class FingerPrint implements LocationEngine
 {	
+	/************************************* FINGERPRINT BASICS ***********************************/
 	/**
 	 * ID of this FingerPrint pattern, associated with the tag that used for calibration 
 	 */
@@ -66,6 +71,7 @@ public class FingerPrint implements LocationEngine
 	 */
 	private Hashtable<Integer,Hashtable<Integer,Integer>>    statTable;	 
 	
+	/************************* TUNING PARAMETTERS **************************************/
 	/** 
 	 * current stats mode used in locating engine
 	 */
@@ -76,17 +82,17 @@ public class FingerPrint implements LocationEngine
 	 * if distance gap between one block to other is greater than the aliasThreshold,
 	 * the engine has clue that there is no aliasing.
 	 */
-	private double                                           aliasThreshold;
+	public double                                           aliasThreshold;
+	
 	/**
 	 * threshold for determine adjacent blocks, unit: meter
 	 */
-	private double                                           maxBlockSize;
+	public double                                           maxBlockSize;
 	
     /**
      * threshold for finding closest detector, uses rssi unit
      */
-	private int                                              rssiThreshold;
-	
+	public int                                              rssiThreshold;	
 	
 	/**
 	 * threshold to determine good prediction, uses euclidean unit
@@ -95,25 +101,35 @@ public class FingerPrint implements LocationEngine
 	 * 10-20 is good or normal	  
 	 * 
 	 */
-	private double                                           goodPredictionThreshold;
+	public double                                           goodPredictionThreshold;
 	
 	/**
 	 * reference for an approximate number of adjacent block, normally a block should has 2-3 adjacent blocks 
 	 */
-	private int                                              adjacentBlocks;
+	public int                                              adjacentBlocks;
 	
 	/**
 	 * rate for (n-1) vote model, 100% is default
 	 */
-	private double                                           NMOvoteRate;
+	public double                                           NMOvoteRate;
 	
 	/**
 	 * a threshold that tells whether a tag is actually moved
 	 */
-	private double                                           stickyThreshold;
+	
+	public double                                           stickyThreshold;
 	/**
 	 * keep track of 1000 predictions
 	 */
+	
+	/**
+	 * cut-off rssi threshold, this will be used to fill the empty slots on the stats table
+	 * ( we can not ignore the empty slot, this causes adjacent cell aliasing due to 
+	 * "mismatched euclidean calculation", or use zero since the chip drops weak-signal
+	 * message at this threshold instead of zero)
+	 */
+	public int                                              cutOffRSSI;
+	/************************************ HEURISTIC VARIABLES *******************************/
 	private Hashtable<Integer,Hashtable<Integer,Integer>>    predictions;
 	
 	/**
@@ -145,6 +161,8 @@ public class FingerPrint implements LocationEngine
 	 
 	private Hashtable<Integer, Vector2D>                     blockLocations;
 	
+	
+	/***************************** CORE METHODS ********************************************/	
 	/**
 	 * Create class instance with fingerPrintTable passed in
 	 * This must be done before calling the locate() method.  
@@ -154,58 +172,21 @@ public class FingerPrint implements LocationEngine
 	{
 		this.statmode = StatisticMode.MEDIAN;
 		this.dirty    = false;
-		this.aliasThreshold = 15;   // 15 euclidean unit
-		this.maxBlockSize = 1.5;    // 1.5m
-		this.rssiThreshold = 10;    // 10 euclidean unit
+		this.aliasThreshold = 10;   // 15 euclidean unit
+		this.maxBlockSize = 2;    // 1.5m
+		this.rssiThreshold = 15;    // 10 euclidean unit
 		this.blockLocations = new Hashtable<Integer, Vector2D>();
 		this.goodPredictionThreshold = 15; // euclidean unit
-		this.adjacentBlocks = 2;   
+		this.adjacentBlocks = 3;   
 		this.NMOvoteRate = 1;       // % votes
 		this.lastPrediction_block = new Hashtable<Integer, Integer>();
 		this.lastPrediction_location = new Hashtable<Integer, Vector2D>();
 		this.lastPackets = new Hashtable<Integer, DataPacket>();
-		this.stickyThreshold = 7;
+		this.stickyThreshold = 10;
 		
 	}
 	
-	/**
-	 * set the threshold of aliasing
-	 * @param t
-	 */
-	public void setAliasThreshold(double t)
-	{
-		this.aliasThreshold = t;
-	}  
 	
-	public void setRssiThreshold(int t)
-	{
-		this.rssiThreshold = t;
-	} 
-	/**
-	 * set the maximum size of blocks
-	 * @param t
-	 */
-	public void setMaxBlockSize(double t)
-	{
-		this.maxBlockSize = t;
-	}  
-	/**
-	 * set the maximum number of adjacent blocks
-	 * @param t
-	 */
-	public void setAdjacentBlocks(int t)
-	{
-		this.adjacentBlocks = t;
-	}  
-	/**
-	 * set the minimum rate for (n-1) vote model
-	 * @param t
-	 */
-	public void setNMOVoteRate(double t)
-	{
-		this.NMOvoteRate = t;
-	} 
-	/************************************ core methods ********************************/
 	/**
 	 * find out if blk_1 is adjacent to blk_2
 	 * @param blk_1
@@ -256,7 +237,7 @@ public class FingerPrint implements LocationEngine
 	 */
 	public void learn(ArrayList<DataPacket> table, Hashtable<Integer, Vector2D> detLocs)
 	{	
-		fingerPrintTable = table;		
+		fingerPrintTable = table;		// need to do this before calling fill_stat
 		this.fill_stat(this.statmode);
 	
 		for(DataPacket block : this.fingerPrintTable)                            // the table is a list of blocks
@@ -684,19 +665,37 @@ public class FingerPrint implements LocationEngine
 	{
 		return this.dirty;
 	}
+	
 	/**
-	 * Fill the internal statsTable with stats value processed from raw data table
+	 * Fill the internal statTable with stats value processed from raw data table
+	 * empty slot( due to weak signal ) will be filled with cut-off rssi threshold
 	 * @param mode - stats mode : "mean", "median", "mode"
 	 */
 	private void fill_stat(StatisticMode mode)
 	{
+		// get detector list ( all detectors on the fingerprint table. )
+		ArrayList<Integer> detList = new ArrayList<Integer>();		
+		for (DataPacket b : this.fingerPrintTable)
+		{			
+			Enumeration<Integer> dkeys = b.rssiTable.keys();
+			while(dkeys.hasMoreElements())
+			{
+				int dkey = dkeys.nextElement();                           // detectorID
+				if(!detList.contains(dkey))                               // if not exist on the list
+				{
+					detList.add(dkey);
+				}
+			}
+		}		
+		// fill the statTable with the existed values
 		this.statTable = new Hashtable<Integer, Hashtable<Integer,Integer>>();
-		for(DataPacket block : this.fingerPrintTable)                            // the table is a list of blocks
+		
+		for(DataPacket block : this.fingerPrintTable)                             // the table is a list of blocks
 		{
 			this.statTable.put(block.blockId, new Hashtable<Integer, Integer>()); // create block pattern, with ID from input Block
 			Enumeration<Integer> mykeys = block.rssiTable.keys();                 // mykeys = detector id list
 			while(mykeys.hasMoreElements())
-			{
+			{				
 				int current_key = mykeys.nextElement();                           // current_key ; detectorID
 				ArrayList<Integer> current_list = (ArrayList<Integer>)block.rssiTable.get(current_key);
 				if(!current_list.isEmpty())
@@ -705,6 +704,38 @@ public class FingerPrint implements LocationEngine
 				}
 			}
 		}
+		// what is the minimum rssi in the statTable?
+		Enumeration<Integer> bks = this.statTable.keys();                 // block id list
+		this.cutOffRSSI = 512;                                                // warning, code specific initiate
+		while(bks.hasMoreElements())
+		{				
+			int bk = bks.nextElement();
+			Enumeration<Integer> dks = this.statTable.get(bk).keys();    // det id list
+			while(dks.hasMoreElements())
+			{
+				int dk = dks.nextElement();
+				if (this.statTable.get(bk).get(dk) < this.cutOffRSSI)
+				{
+					this.cutOffRSSI = this.statTable.get(bk).get(dk);
+				}
+			}
+		}	
+		// adjust the cutoff RSSI
+		this.cutOffRSSI = this.cutOffRSSI - 20;
+		// refill with minRSSI on empty slots
+		bks = this.statTable.keys();
+		while(bks.hasMoreElements())
+		{
+			int bk = bks.nextElement();
+			for (int det : detList)
+			{
+				if(!this.statTable.get(bk).containsKey(det))      // if the current block does not have info from this det
+				{
+					this.statTable.get(bk).put(det, this.cutOffRSSI);
+				}
+			}
+		}
+		System.out.println("min RSSI:" + this.cutOffRSSI);
 	}
 
 	@Override
