@@ -245,6 +245,34 @@ public class Main {
 	private void storeCalibrationData(int tagId, int blockId, DataPacket dataPacket)
 			throws ClassNotFoundException, SQLException, IOException {
 		//TODO: make cal data directory and data file configurable.
+		
+		
+		/*for(DataPacket d: calibrationData){
+			for (Map.Entry<Integer,ArrayList<Integer>> e: d.rssiTable.entrySet()){
+				double stdev = Statistics.stdDev(e.getValue());
+				System.out.println(String.format("StdDev for Detector %1$d: %2$f",e.getKey(),stdev));
+			}
+		}*/
+		
+		
+		for (Map.Entry<Integer,ArrayList<Integer>> e: dataPacket.rssiTable.entrySet()){
+			double stdev = Statistics.stdDev(e.getValue());
+			System.out.println(String.format("StdDev for Detector %1$d: %2$f",e.getKey(),stdev));
+			int median = Statistics.median(e.getValue());
+			for (int i = 0;i < e.getValue().size();i++){
+				int value = e.getValue().get(i);
+				if (value <  Math.floor(median-stdev) || value > Math.floor(median+stdev)){
+					//This must be an outlier; remove it.
+					e.getValue().remove(i);
+					System.out.println(String.format("Removing outlier %1$d from Detector's %2$d set",value,e.getKey()));
+					i=0;
+				}
+			}
+			dataPacket.rssiTable.put(e.getKey(), e.getValue());
+		}
+		
+		
+		
 		ArrayList<DataPacket> calibrationData=null;			
 		File calFile = new File("calibrationdata.dat");
 		if (calFile.exists()){				
@@ -384,7 +412,7 @@ public class Main {
 		panel.add(rdbtnKewtonEngine);
 		
 		txtProxyIPAddress = new JTextField();
-		txtProxyIPAddress.setText("169.254.68.200");
+		txtProxyIPAddress.setText("192.168.16.3");
 		txtProxyIPAddress.setBounds(325, 24, 86, 20);
 		pnlSettings.add(txtProxyIPAddress);
 		txtProxyIPAddress.setColumns(10);
@@ -1097,6 +1125,9 @@ public class Main {
 				Hashtable<Integer,Vector2D> detectorLocations = null;//getDetectorInfo();
 				
 				ArrayList<DataPacket> calibrationData = loadCalibrationData();
+				
+				
+				
 				//Create locator instance, pass in calibration data, and 
 				//information about detector locations				
 				LocationEngine locator = Main.createLocator(locatorChoice);
@@ -1110,11 +1141,12 @@ public class Main {
 						parseRawSample(list, rawSample);						
 						//printSample(newSample);						
 						int key = ((rawSample.tagId &0xff)<<8) + (rawSample.messageId & 0xff);
+						System.out.println(String.format("Saving Key: %1$d",key));
 						saveRawSample(key, rawSampleTable, rawSample);						
 						//Start a new time window, and associate with key, if key has not been seen.
 						if (!ttl.containsKey(key)){
 							Calendar currentMoment = Calendar.getInstance();
-							currentMoment.add(Calendar.SECOND, 10);
+							currentMoment.add(Calendar.SECOND, 3);
 							ttl.put(key, currentMoment);						
 						}
 					}				
@@ -1126,7 +1158,7 @@ public class Main {
 							//Getting all RawSamples associated with TagId+MsgId key
 							ArrayList<RawSample> rawSamples = rawSampleTable.get(e.getKey());
 							//TODO: don't give a DataPacket to the locator, if less then N detectors are participating
-							if (rawSamples.size() >= 2){
+							if (rawSamples.size() >= 6){
 								DataPacket dataPacket=null;
 								boolean first=true;
 								for (int s = 0;s < rawSamples.size();s++){
@@ -1167,14 +1199,14 @@ public class Main {
 								//Then, put the mode into the DB.
 								
 								//Save results..
-								if (!results.containsKey(dataPacket.tagId)){
+								/*if (!results.containsKey(dataPacket.tagId)){
 									results.put(dataPacket.tagId, new ArrayList<DataPacket>());
 								}
 								ArrayList<DataPacket> dp = results.get(dataPacket.tagId);
 								dp.add(dataPacket);
 								results.put(dataPacket.tagId,dp);
 								
-								if (results.get(dataPacket.tagId).size()>=5){
+								if (results.get(dataPacket.tagId).size()>=3){
 									//Determine which blockId was calculated most often..								
 									//First, sort by frequency of occurence of location								
 									//Hashtable<Vector2D, Integer> freqTable = new Hashtable<Vector2D, Integer>();
@@ -1220,11 +1252,12 @@ public class Main {
 											break;
 										}
 									}							
-								}
+								}*/
 								//storeResult(dataPacket);
 								///////////////////////////////////////////////////////////////							
 							}else{								
-								printDisplayMessage("Dropping samples, they came in too slow.\n");
+								printDisplayMessage(String.format("Not Enough Samples: %1$d.\n",rawSamples.size() ));
+								rawSampleTable.remove(e.getKey());
 							}
 							//Expire Transaction
 							expiredItems.add(e.getKey());							

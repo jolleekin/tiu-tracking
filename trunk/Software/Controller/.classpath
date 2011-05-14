@@ -10,7 +10,7 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="C:/Users/Daniel/workspace/Software/Controller/MySQLModules/mysql-connector-java-5.1.15-bin.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Daniel/workspace/Software/Common/jar/common.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Daniel/workspace/Software/FingerPrint/jar/fingerprint.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Daniel/workspace/Software/FingerPrint_original/jar/fingerprint.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Daniel/workspace/Software/KEngine/jar/kengine.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Daniel/workspace/Software/GammaEngine/jar/gammaengine.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Daniel/workspace/Software/GammaEngine/jar/neuroph.jar"/>
