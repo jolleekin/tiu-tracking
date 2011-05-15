@@ -29,7 +29,7 @@ import edu.pdx.capstone.tiutracking.common.*;
 import edu.pdx.capstone.tiutracking.gammaengine.BetaEngine;
 import edu.pdx.capstone.tiutracking.gammaengine.GammaEngine;
 import edu.pdx.capstone.tiutracking.kengine.KEngine;
-import edu.pdx.capstone.tiutracking.locator.FingerPrint;
+//import edu.pdx.capstone.tiutracking.locator.FingerPrint;
 
 import java.awt.EventQueue;
 import java.awt.Font;
@@ -151,6 +151,8 @@ public class Main {
 	private final ButtonGroup buttonGroup = new ButtonGroup();
 	JRadioButton rdbtnSerial;
 	JRadioButton rdbtnTcpip;
+	private JTextField txtActualX;
+	private JTextField txtActualY;
 	/**
 	 * Launch the application.
 	 */
@@ -642,6 +644,18 @@ public class Main {
 		JLabel lblMinimumSamplesPer = new JLabel("Minimum samples per Broadcast");
 		lblMinimumSamplesPer.setBounds(10, 58, 160, 14);
 		pnlLocate.add(lblMinimumSamplesPer);
+		
+		txtActualX = new JTextField();
+		txtActualX.setText("0");
+		txtActualX.setBounds(231, 55, 86, 20);
+		pnlLocate.add(txtActualX);
+		txtActualX.setColumns(10);
+		
+		txtActualY = new JTextField();
+		txtActualY.setText("0");
+		txtActualY.setBounds(345, 55, 86, 20);
+		pnlLocate.add(txtActualY);
+		txtActualY.setColumns(10);
 		btnStartLocating.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {				
 				try {					
@@ -936,7 +950,7 @@ public class Main {
 			for (int r = 0;r < 8;r++)
 				list.remove(0);
 			
-			System.out.println("Parsing Sample From " + newSample.detectorId);
+			//System.out.println("Parsing Sample From " + newSample.detectorId);
 		}
 		protected void readPort(ArrayList<Byte> list, int bufferSize)
 				throws IOException {
@@ -945,14 +959,14 @@ public class Main {
 			if (in.available() > 0){
 				while (bytesRead != '$'){
 					bytesRead = in.read();
-					System.out.println("Searching for Start...");					
+					//System.out.println("Searching for Start...");					
 				}
-				System.out.println("Found Start.");
+				//System.out.println("Found Start.");
 				bytesRead=0;
 				while (bytesRead < bufferSize){
 					bytesRead += in.read(buffer,bytesRead, bufferSize-bytesRead);
 				}
-				System.out.println("Read: " + bytesRead + " bytes");
+				//System.out.println("Read: " + bytesRead + " bytes");
 				for (int k = 0;k < bytesRead;k++){
 					list.add(buffer[k]);
 				}
@@ -1141,12 +1155,12 @@ public class Main {
 						parseRawSample(list, rawSample);						
 						//printSample(newSample);						
 						int key = ((rawSample.tagId &0xff)<<8) + (rawSample.messageId & 0xff);
-						System.out.println(String.format("Saving Key: %1$d",key));
+						//System.out.println(String.format("Saving Key: %1$d",key));
 						saveRawSample(key, rawSampleTable, rawSample);						
 						//Start a new time window, and associate with key, if key has not been seen.
 						if (!ttl.containsKey(key)){
 							Calendar currentMoment = Calendar.getInstance();
-							currentMoment.add(Calendar.SECOND, 3);
+							currentMoment.add(Calendar.SECOND, 5);
 							ttl.put(key, currentMoment);						
 						}
 					}				
@@ -1158,7 +1172,8 @@ public class Main {
 							//Getting all RawSamples associated with TagId+MsgId key
 							ArrayList<RawSample> rawSamples = rawSampleTable.get(e.getKey());
 							//TODO: don't give a DataPacket to the locator, if less then N detectors are participating
-							if (rawSamples.size() >= 6){
+							System.out.println(String.format("rawSamples.size()==%1$d",rawSamples.size()) );
+							if (rawSamples.size() >= 4){
 								DataPacket dataPacket=null;
 								boolean first=true;
 								for (int s = 0;s < rawSamples.size();s++){
@@ -1170,6 +1185,7 @@ public class Main {
 									rssiSingle.add(rawSamples.get(s).rssi);//Only one
 									dataPacket.rssiTable.put(rawSamples.get(s).detectorId,rssiSingle );
 								}
+								
 								String displayString;
 								//A Transaction is ready to give to the Locator...but first..
 								//Location Calculations
@@ -1190,9 +1206,10 @@ public class Main {
 								locator.locate(dataPacket);
 								
 								//Print to txtOutput
-								/*displayString = String.format("Rx'd From Locator: TagId=%1$d at (%2$f, %3$f), Block=%4$d\n", dataPacket.tagId, dataPacket.location.x, dataPacket.location.y, dataPacket.blockId);
+								displayString = String.format("Rx'd From Locator: TagId=%1$d at (%2$f, %3$f)(%4$f), Block=%5$d\n", dataPacket.tagId, dataPacket.location.x, dataPacket.location.y, Math.sqrt(Math.pow(dataPacket.location.x - Float.parseFloat(txtActualX.getText()),2)+Math.pow(dataPacket.location.y - Float.parseFloat(txtActualY.getText()),2)),dataPacket.blockId);
 								txtOutput.append(displayString);
-								txtOutput.setCaretPosition(txtOutput.getDocument().getLength());*/
+								txtOutput.setCaretPosition(txtOutput.getDocument().getLength());
+								
 								///////////////////////////////////////////////////////////////
 								//After a locator, for a given tag, has calculated a location 5 times. 
 								//find the mode of the results..
@@ -1253,7 +1270,7 @@ public class Main {
 										}
 									}							
 								}*/
-								//storeResult(dataPacket);
+								storeResult(dataPacket);
 								///////////////////////////////////////////////////////////////							
 							}else{								
 								printDisplayMessage(String.format("Not Enough Samples: %1$d.\n",rawSamples.size() ));
@@ -1303,7 +1320,7 @@ public class Main {
 											  dataPacket.location.x, 
 											  dataPacket.location.y, 
 											  dataPacket.battery);
-				System.out.println(query1);
+				//System.out.println(query1);
 				statement.executeUpdate(query1);
 				statement.close();
 				connect.close();
@@ -1361,6 +1378,7 @@ public class Main {
 		 *  which DataPacket it will be associated with. 		 * 
 		 */
 		protected void saveRawSample(int key, Hashtable<Integer, ArrayList<RawSample>> rawDataTable, RawSample rawSample) {
+			System.out.println(String.format("Saving raw sample: D:%1$d T:%2$d  M:%3$d",rawSample.detectorId, rawSample.tagId, rawSample.messageId));
 			//Hash incoming data based on key
 			ArrayList<RawSample> samples = null;
 			if (rawDataTable.containsKey(key)){
