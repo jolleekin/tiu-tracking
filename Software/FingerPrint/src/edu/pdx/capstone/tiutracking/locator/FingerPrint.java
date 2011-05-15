@@ -6,10 +6,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Queue;
 
 /**
  * @author Le Dang Dung
- * FingerPrint class - version 2.2
+ * FingerPrint class - version 2.3
  * implements FingerPrint engine: matching tag 
  * location to sets of calibrated locations. Data used in calibrating are 
  * RSSIs (received signal strength indicator) from a tag placed inside the 
@@ -45,8 +48,10 @@ import java.util.Hashtable;
  * - tag should be placed firmly with antenna up the normal line
  * - if possible , place tag at location with less blocking (toward detectors)
  *   so that it could represent the whole area nearby
- * 
+ *   
+ * 7. simple averaging output filter 
  * Tuning parameters are provided to maximize yield for a certain area
+ * 
  */
 
 public class FingerPrint implements LocationEngine
@@ -129,6 +134,8 @@ public class FingerPrint implements LocationEngine
 	 * message at this threshold instead of zero)
 	 */
 	public int                                              cutOffRSSI;
+	
+	public int                                              outputQueueSize;
 	/************************************ HEURISTIC VARIABLES *******************************/
 	private Hashtable<Integer,Hashtable<Integer,Integer>>    predictions;
 	
@@ -146,7 +153,7 @@ public class FingerPrint implements LocationEngine
 	/**
 	 * save last location where tag is at
 	 */
-	private  Hashtable<Integer,Vector2D>                     lastPrediction_location;
+	private  Queue<Vector2D>                                  lastPrediction_location;
 	/**
 	 * detector location 
 	 * key - ID
@@ -180,9 +187,10 @@ public class FingerPrint implements LocationEngine
 		this.adjacentBlocks = 3;   
 		this.NMOvoteRate = 1;       // % votes
 		this.lastPrediction_block = new Hashtable<Integer, Integer>();
-		this.lastPrediction_location = new Hashtable<Integer, Vector2D>();
+		this.lastPrediction_location = new LinkedList<Vector2D>();
 		this.lastPackets = new Hashtable<Integer, DataPacket>();
 		this.stickyThreshold = 10;
+		this.outputQueueSize = 3;
 		
 	}
 	
@@ -395,6 +403,30 @@ public class FingerPrint implements LocationEngine
 			clone_t.rssiTable.put(currentCloneKey, cloneList);
 		}
 		this.lastPackets.put(clone_t.tagId, clone_t);
+		
+		// simple average output filter
+		if(this.lastPrediction_location.size() == this.outputQueueSize)
+		{
+			this.lastPrediction_location.remove();
+			Vector2D temp = new Vector2D();
+			temp.x = t.location.x;
+			temp.y = t.location.y;
+			this.lastPrediction_location.add(temp);
+			Iterator<Vector2D> it = this.lastPrediction_location.iterator();
+			double tx = 0;
+			double ty = 0;
+			int tcount = 0;
+			while(it.hasNext())
+			{
+				Vector2D current = it.next();
+				tx = tx + current.x;
+				ty = ty + current.y;
+				tcount++;
+			}
+			t.location.x = tx/tcount;
+			t.location.y = ty/tcount;
+		}
+		
 
 	}
 	/**
