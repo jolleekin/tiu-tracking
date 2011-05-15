@@ -141,8 +141,8 @@ public class Main {
 	private JTextField txtModifyBlockId;
 	private JTextField txtModifyDetectorId;
 	private JTextField txtModifyRSSIIndex;
-	private JTextField textField;
-	private JTextField textField_1;
+	private JTextField txtTimeout;
+	private JTextField txtMinimumDetectors;
 	private JTextField txtModifyNewValue;
 	private JLabel lblNewValue;
 	private JScrollPane scrollPane_1;
@@ -625,37 +625,45 @@ public class Main {
 		pnlLocate.add(btnStartLocating);
 		btnStartLocating.setToolTipText("Passes collected data to the Locating engine");
 		
-		textField = new JTextField();
-		textField.setText("5");
-		textField.setBounds(10, 27, 86, 20);
-		pnlLocate.add(textField);
-		textField.setColumns(10);
+		txtTimeout = new JTextField();
+		txtTimeout.setText("5");
+		txtTimeout.setBounds(10, 27, 86, 20);
+		pnlLocate.add(txtTimeout);
+		txtTimeout.setColumns(10);
 		
-		JLabel lblTimeout = new JLabel("Broadcast Window Timeout");
+		JLabel lblTimeout = new JLabel("Message Collection Time");
 		lblTimeout.setBounds(10, 13, 160, 14);
 		pnlLocate.add(lblTimeout);
 		
-		textField_1 = new JTextField();
-		textField_1.setText("4");
-		textField_1.setBounds(10, 71, 86, 20);
-		pnlLocate.add(textField_1);
-		textField_1.setColumns(10);
+		txtMinimumDetectors = new JTextField();
+		txtMinimumDetectors.setText("4");
+		txtMinimumDetectors.setBounds(10, 71, 86, 20);
+		pnlLocate.add(txtMinimumDetectors);
+		txtMinimumDetectors.setColumns(10);
 		
-		JLabel lblMinimumSamplesPer = new JLabel("Minimum samples per Broadcast");
+		JLabel lblMinimumSamplesPer = new JLabel("Minimum Detector Participants");
 		lblMinimumSamplesPer.setBounds(10, 58, 160, 14);
 		pnlLocate.add(lblMinimumSamplesPer);
 		
 		txtActualX = new JTextField();
 		txtActualX.setText("0");
-		txtActualX.setBounds(231, 55, 86, 20);
+		txtActualX.setBounds(249, 71, 86, 20);
 		pnlLocate.add(txtActualX);
 		txtActualX.setColumns(10);
 		
 		txtActualY = new JTextField();
 		txtActualY.setText("0");
-		txtActualY.setBounds(345, 55, 86, 20);
+		txtActualY.setBounds(345, 71, 86, 20);
 		pnlLocate.add(txtActualY);
 		txtActualY.setColumns(10);
+		
+		JLabel lblActualX = new JLabel("Actual X");
+		lblActualX.setBounds(249, 58, 46, 14);
+		pnlLocate.add(lblActualX);
+		
+		JLabel lblActualY = new JLabel("Actual Y");
+		lblActualY.setBounds(345, 58, 46, 14);
+		pnlLocate.add(lblActualY);
 		btnStartLocating.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {				
 				try {					
@@ -1133,7 +1141,7 @@ public class Main {
 				this.done=false;
 				ArrayList<Byte> list = new ArrayList<Byte>();
 				Hashtable<Integer, ArrayList<RawSample>> rawSampleTable = new Hashtable<Integer, ArrayList<RawSample>>();
-				Hashtable<Integer, Calendar> ttl = new Hashtable<Integer, Calendar>();
+				Hashtable<Integer, Calendar> timeout = new Hashtable<Integer, Calendar>();
 				
 				//Get all detector Info from DB
 				Hashtable<Integer,Vector2D> detectorLocations = null;//getDetectorInfo();
@@ -1154,42 +1162,42 @@ public class Main {
 					if (list.size() >= bufferSize){						
 						parseRawSample(list, rawSample);						
 						//printSample(newSample);						
-						int key = ((rawSample.tagId &0xff)<<8) + (rawSample.messageId & 0xff);
+						int key = rawSample.tagId;//((rawSample.detectorId &0xff)<<8) + (rawSample.tagId & 0xff);
 						//System.out.println(String.format("Saving Key: %1$d",key));
 						saveRawSample(key, rawSampleTable, rawSample);						
 						//Start a new time window, and associate with key, if key has not been seen.
-						if (!ttl.containsKey(key)){
+						if (!timeout.containsKey(key)){
 							Calendar currentMoment = Calendar.getInstance();
-							currentMoment.add(Calendar.SECOND, 5);
-							ttl.put(key, currentMoment);						
+							currentMoment.add(Calendar.SECOND, Integer.parseInt(txtTimeout.getText()));
+							timeout.put(key, currentMoment);						
 						}
-					}				
+					}	
 					ArrayList<Integer> expiredItems = new ArrayList<Integer>();
-					//key = TagId + MsgId;
-					for (Map.Entry<Integer, Calendar> e: ttl.entrySet()){
+					for (Map.Entry<Integer, Calendar> e: timeout.entrySet()){
 						Calendar savedMoment = e.getValue();
 						if (savedMoment.before(Calendar.getInstance())){
-							//Getting all RawSamples associated with TagId+MsgId key
 							ArrayList<RawSample> rawSamples = rawSampleTable.get(e.getKey());
-							//TODO: don't give a DataPacket to the locator, if less then N detectors are participating
-							System.out.println(String.format("rawSamples.size()==%1$d",rawSamples.size()) );
-							if (rawSamples.size() >= 4){
-								DataPacket dataPacket=null;
-								boolean first=true;
-								for (int s = 0;s < rawSamples.size();s++){
-									if (first){									
-										dataPacket = new DataPacket(-1,rawSamples.get(0).tagId,null);
-										first =false;
-									}
-									ArrayList<Integer> rssiSingle =  new ArrayList<Integer>();
-									rssiSingle.add(rawSamples.get(s).rssi);//Only one
-									dataPacket.rssiTable.put(rawSamples.get(s).detectorId,rssiSingle );
+
+							DataPacket dataPacket=null;
+							boolean first=true;
+							 
+							for (int s = 0;s < rawSamples.size();s++){
+								if (first){									
+									dataPacket = new DataPacket(-1,rawSamples.get(0).tagId,null);
+									first =false;
 								}
 								
-								String displayString;
-								//A Transaction is ready to give to the Locator...but first..
-								//Location Calculations
-								/*displayString = String.format("Frame prepared for Locator:\n");
+								
+								ArrayList<Integer> rawRSSI = dataPacket.rssiTable.get(rawSamples.get(s).detectorId);
+								if (rawRSSI == null){
+									rawRSSI = new ArrayList<Integer>();
+								}
+								rawRSSI.add(rawSamples.get(s).rssi);
+								dataPacket.rssiTable.put(rawSamples.get(s).detectorId,rawRSSI);
+							}
+							if (dataPacket.rssiTable.keySet().size() >= Integer.parseInt(txtMinimumDetectors.getText())){
+							
+								String displayString = String.format("Frame prepared for Locator:\n");
 								printDisplayMessage(displayString);
 								//System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagId, t.blockId));
 								printDisplayMessage(String.format("\tTagID=%1$d, BlockNumber=%2$d\n",dataPacket.tagId, dataPacket.blockId));
@@ -1202,90 +1210,30 @@ public class Main {
 									}
 									//System.out.println();
 									printDisplayMessage("\n");
-								}*/
+								}
 								locator.locate(dataPacket);
-								
 								//Print to txtOutput
 								displayString = String.format("Rx'd From Locator: TagId=%1$d at (%2$f, %3$f)(%4$f), Block=%5$d\n", dataPacket.tagId, dataPacket.location.x, dataPacket.location.y, Math.sqrt(Math.pow(dataPacket.location.x - Float.parseFloat(txtActualX.getText()),2)+Math.pow(dataPacket.location.y - Float.parseFloat(txtActualY.getText()),2)),dataPacket.blockId);
 								txtOutput.append(displayString);
 								txtOutput.setCaretPosition(txtOutput.getDocument().getLength());
-								
-								///////////////////////////////////////////////////////////////
-								//After a locator, for a given tag, has calculated a location 5 times. 
-								//find the mode of the results..
-								//Then, put the mode into the DB.
-								
-								//Save results..
-								/*if (!results.containsKey(dataPacket.tagId)){
-									results.put(dataPacket.tagId, new ArrayList<DataPacket>());
-								}
-								ArrayList<DataPacket> dp = results.get(dataPacket.tagId);
-								dp.add(dataPacket);
-								results.put(dataPacket.tagId,dp);
-								
-								if (results.get(dataPacket.tagId).size()>=3){
-									//Determine which blockId was calculated most often..								
-									//First, sort by frequency of occurence of location								
-									//Hashtable<Vector2D, Integer> freqTable = new Hashtable<Vector2D, Integer>();
-									Hashtable<Integer, Integer> freqTable = new Hashtable<Integer, Integer>();
-									
-									for (DataPacket d: results.get(dataPacket.tagId)){
-										int quantizedBlockId = d.blockId/100;
-										quantizedBlockId = quantizedBlockId*100;
-										if (!freqTable.containsKey(quantizedBlockId)){
-											freqTable.put(quantizedBlockId, 0);
-										}
-										int freq = freqTable.get(quantizedBlockId);
-										freq++;
-										printDisplayMessage(String.format("Group %1$d(%2$d) has %3$d votes\n",quantizedBlockId,d.blockId,freq));
-										freqTable.put(quantizedBlockId, freq);
-									}								
-									//Now, tally the occurences up
-									//pick the most frequent
-									int max=-1;
-									//Vector2D current=null;
-									int current=-1;
-									for(Map.Entry<Integer, Integer> f:freqTable.entrySet()){
-										if (f.getValue() > max){
-											max = f.getValue();
-											current = f.getKey();
-										}
-									}								
-									//Then, go back into the the list of previous location results, and pick the first one
-									//that has the same location as the most frequently occuring..
-									//since they are all the same tag, tagId, and battery should be the same regardless of which
-									//old DataPacket we choose.
-									for (DataPacket d:results.get(dataPacket.tagId)){
-										int quantizedBlockId = d.blockId/100;
-										quantizedBlockId = quantizedBlockId*100;
-										if (quantizedBlockId == current){
-											//We found one with the same location as the most frequently occuring.
-											//Store it into the DB
-											String displayString2 = String.format("Tag %1$d, with %2$d votes:\n \tBlockId=%3$d\n\t(X,Y)=(%4$f,%5$f)\n",d.tagId,max,quantizedBlockId,d.location.x,d.location.y);
-											printDisplayMessage(displayString2);
-											//storeResult(d);
-											freqTable.clear();
-											results.clear();
-											break;
-										}
-									}							
-								}*/
-								storeResult(dataPacket);
-								///////////////////////////////////////////////////////////////							
-							}else{								
-								printDisplayMessage(String.format("Not Enough Samples: %1$d.\n",rawSamples.size() ));
-								rawSampleTable.remove(e.getKey());
-							}
-							//Expire Transaction
-							expiredItems.add(e.getKey());							
-						}
-					}					
+								//Expire Transaction
+								expiredItems.add(e.getKey());								
+								storeResult(dataPacket);	
+							}else{
+								printDisplayMessage(String.format("Not Enough Detectors participated: %1$d.\n",dataPacket.rssiTable.keySet().size() ));
+								expiredItems.add(e.getKey());
+								break;
+							}						
+						}						
+					}
 					//Remove expired items.
 					for (Integer key:expiredItems){
 						rawSampleTable.remove(key);
-						ttl.remove(key);
-					}
+						timeout.remove(key);
+					}			
+					
 				}
+
 			
 			}catch (IOException e){
 				e.printStackTrace();
