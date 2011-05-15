@@ -153,7 +153,7 @@ public class FingerPrint implements LocationEngine
 	/**
 	 * save last location where tag is at
 	 */
-	private  Queue<Vector2D>                                  lastPrediction_location;
+	private  Hashtable<Integer,Queue<Vector2D>>              lastPrediction_location;
 	/**
 	 * detector location 
 	 * key - ID
@@ -187,7 +187,7 @@ public class FingerPrint implements LocationEngine
 		this.adjacentBlocks = 3;   
 		this.NMOvoteRate = 1;       // % votes
 		this.lastPrediction_block = new Hashtable<Integer, Integer>();
-		this.lastPrediction_location = new LinkedList<Vector2D>();
+		this.lastPrediction_location = new Hashtable<Integer, Queue<Vector2D>>();
 		this.lastPackets = new Hashtable<Integer, DataPacket>();
 		this.stickyThreshold = 10;
 		this.outputQueueSize = 3;
@@ -405,14 +405,25 @@ public class FingerPrint implements LocationEngine
 		this.lastPackets.put(clone_t.tagId, clone_t);
 		
 		// simple average output filter
+		// current prediction
 		Vector2D temp = new Vector2D();
 		temp.x = t.location.x;
 		temp.y = t.location.y;
-		this.lastPrediction_location.add(temp);
+		System.out.println("\ncurrent prediction x = " + temp.x + " y = " + temp.y +"\n");
+		// create queue for specific tag if need
+		if (this.lastPrediction_location.get(t.tagId) == null)
+		{
+			Queue<Vector2D> q = new LinkedList<Vector2D>();
+			this.lastPrediction_location.put(t.tagId, q);
+		}
+		// add new prediction to the queue related to the tag id
+		this.lastPrediction_location.get(t.tagId).add(temp);
+		//this.lastPrediction_location.add(temp);
 		
-		if(this.lastPrediction_location.size() == this.outputQueueSize)
+		// if the queue reaches the sufficient amount of size, we can give the filtered prediction
+		if(this.lastPrediction_location.get(t.tagId).size() == this.outputQueueSize)
 		{						
-			Iterator<Vector2D> it = this.lastPrediction_location.iterator();
+			Iterator<Vector2D> it = this.lastPrediction_location.get(t.tagId).iterator();
 			double tx = 0;
 			double ty = 0;
 			int tcount = 0;
@@ -425,10 +436,10 @@ public class FingerPrint implements LocationEngine
 			}
 			t.location.x = tx/tcount;
 			t.location.y = ty/tcount;			
-			this.lastPrediction_location.remove();
+			this.lastPrediction_location.get(t.tagId).remove();
+			System.out.println("averaged prediction x = " + t.location.x + " y = " + t.location.y + "\n");
+			
 		}
-		
-
 	}
 	/**
 	 * locating algorithm using n-1 model:
