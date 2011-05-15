@@ -405,13 +405,13 @@ public class FingerPrint implements LocationEngine
 		this.lastPackets.put(clone_t.tagId, clone_t);
 		
 		// simple average output filter
+		Vector2D temp = new Vector2D();
+		temp.x = t.location.x;
+		temp.y = t.location.y;
+		this.lastPrediction_location.add(temp);
+		
 		if(this.lastPrediction_location.size() == this.outputQueueSize)
-		{
-			this.lastPrediction_location.remove();
-			Vector2D temp = new Vector2D();
-			temp.x = t.location.x;
-			temp.y = t.location.y;
-			this.lastPrediction_location.add(temp);
+		{						
 			Iterator<Vector2D> it = this.lastPrediction_location.iterator();
 			double tx = 0;
 			double ty = 0;
@@ -424,7 +424,8 @@ public class FingerPrint implements LocationEngine
 				tcount++;
 			}
 			t.location.x = tx/tcount;
-			t.location.y = ty/tcount;
+			t.location.y = ty/tcount;			
+			this.lastPrediction_location.remove();
 		}
 		
 
