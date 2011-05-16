@@ -50,10 +50,13 @@ function TInfoBox() {
 		this.style.top  = (this.mY * scale + this.mOffsetY - this.offsetHeight) + SPixel;
 	}
 	
-	box.onclick = function (event) {
-		event.preventDefault();
+	// Prevent the map from receiving events but still allow users to select the content.
+	
+	function stopEvent(event) {
 		event.stopPropagation();
 	}
+	var c = box.childNodes[0];
+	c.onclick = c.ondblclick = c.onmousedown = c.onmousemove = c.onmouseup = c.onmousewheel = stopEvent;
 	
 	box.mX = 0;
 	box.mY = 0;
