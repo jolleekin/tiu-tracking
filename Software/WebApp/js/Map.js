@@ -101,16 +101,16 @@ function TMap() {
 		}
 	};
 		
-	var fFocusedEntityInfoBox = TInfoBox();
-	fFocusedEntityInfoBox.style.zIndex	= 101;
-	fFocusedEntityInfoBox.style.opacity	= 0;
-	fFocusedEntityInfoBox.style.color	= '#0860B6';
-	fMapContainer.appendChild(fFocusedEntityInfoBox);
-	$fx(fFocusedEntityInfoBox).fxAdd(FadeInFadeOutAnimationParams);
+	var fFocusedInfoBox = TInfoBox();
+	fFocusedInfoBox.style.zIndex	= 101;
+	fFocusedInfoBox.style.opacity	= 0;
+	fFocusedInfoBox.style.color	= '#0860B6';
+	fMapContainer.appendChild(fFocusedInfoBox);
+	$fx(fFocusedInfoBox).fxAdd(FadeInFadeOutAnimationParams);
 	
-	var fSelectedEntityInfoBox = TInfoBox();
-	fSelectedEntityInfoBox.style.zIndex = 100;
-	fMapContainer.appendChild(fSelectedEntityInfoBox);
+	var fSelectedInfoBox = TInfoBox();
+	fSelectedInfoBox.style.zIndex = 100;
+	fMapContainer.appendChild(fSelectedInfoBox);
 	
 	fMapCenter.x = fMap.offsetWidth * 0.5;
 	fMapCenter.y = fMap.offsetHeight * 0.5;
@@ -208,17 +208,17 @@ function TMap() {
 	
 	function entityMouseOver() {
 		if (this != fSelectedEntity) {
-			fFocusedEntityInfoBox.setContent(this.getInfo());
-			fFocusedEntityInfoBox.setPosition(this.mX, this.mY, 0, -this.offsetHeight, fMapTransform.totalScale);
-			fFocusedEntityInfoBox.style.visibility = SVisible;
+			fFocusedInfoBox.setContent(this.getInfo());
+			fFocusedInfoBox.setPosition(this.mX, this.mY, 0, -this.offsetHeight, fMapTransform.totalScale);
+			fFocusedInfoBox.style.visibility = SVisible;
 			FadeInFadeOutAnimationParams.to = 100;
-			fFocusedEntityInfoBox.fxRun();
+			fFocusedInfoBox.fxRun();
 		}
 	}
 	
 	function entityMouseOut() {
 		FadeInFadeOutAnimationParams.to = 0;
-		fFocusedEntityInfoBox.fxRun();
+		fFocusedInfoBox.fxRun();
 	}
 	
 	function entityClick(event) {
@@ -286,8 +286,8 @@ function TMap() {
 			fMapTransform.scale += ds * fCurrentLerpFactor;
 			fMapTransform.totalScale = fMapTransform.scale * fPixelsPerUnitLength;
 			scaleMap();
-			fFocusedEntityInfoBox.onScaleChange(fMapTransform.totalScale);
-			fSelectedEntityInfoBox.onScaleChange(fMapTransform.totalScale);
+			fFocusedInfoBox.onScaleChange(fMapTransform.totalScale);
+			fSelectedInfoBox.onScaleChange(fMapTransform.totalScale);
 			for (var i = 0; i < fEntities.length; i++)
 				fEntities[i].onScaleChange(fMapTransform.totalScale);
 		}
@@ -469,20 +469,20 @@ function TMap() {
 	this.selectEntity = function (entity) {
 		if (entity != fSelectedEntity) {
 			if (entity) {
-				fFocusedEntityInfoBox.style.visibility = SHidden;
-				fSelectedEntityInfoBox.setContent(entity.getInfo());
-				fSelectedEntityInfoBox.setPosition(entity.mX , entity.mY, 0, -entity.offsetHeight, fMapTransform.totalScale);
-				fSelectedEntityInfoBox.style.visibility = SVisible;
+				fFocusedInfoBox.style.visibility = SHidden;
+				fSelectedInfoBox.setContent(entity.getInfo());
+				fSelectedInfoBox.setPosition(entity.mX , entity.mY, 0, -entity.offsetHeight, fMapTransform.totalScale);
+				fSelectedInfoBox.style.visibility = SVisible;
 				
 				var el = entity.offsetLeft,
 					et = entity.offsetTop,
 					er = entity.offsetWidth + el,
 					eb = entity.offsetHeight + et,
 					
-					bl = fSelectedEntityInfoBox.offsetLeft,
-					bt = fSelectedEntityInfoBox.offsetTop,
-					br = fSelectedEntityInfoBox.offsetWidth + bl,
-					bb = fSelectedEntityInfoBox.offsetHeight + bt,
+					bl = fSelectedInfoBox.offsetLeft,
+					bt = fSelectedInfoBox.offsetTop,
+					br = fSelectedInfoBox.offsetWidth + bl,
+					bb = fSelectedInfoBox.offsetHeight + bt,
 				
 					l = Math.min(el, bl) + fMapContainer.offsetLeft,
 					t = Math.min(et, bt) + fMapContainer.offsetTop,
@@ -492,7 +492,7 @@ function TMap() {
 				if ( (l < 0) || (t < 0) || (r > fMap.offsetWidth) || (b > fMap.offsetHeight) )
 					self.bringToCenter(entity);
 			} else
-				fSelectedEntityInfoBox.style.visibility = SHidden;
+				fSelectedInfoBox.style.visibility = SHidden;
 			fSelectedEntity = entity;
 			if (self.onSelectChange)
 				self.onSelectChange();
