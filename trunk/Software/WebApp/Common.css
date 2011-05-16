@@ -14,11 +14,11 @@ input[type=textbox], input[type=password] {
 	outline: none;
 	margin: 0;
 	border: 1px solid Gray;
-	background: #FFF; /* old browsers */
-	background: -o-linear-gradient(top, #E8E8E8 0%,#FFF 35%); /* opera */
-	background: -moz-linear-gradient(top, #E8E8E8 0%, #FFF 35%); /* firefox */
-	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#E8E8E8), color-stop(35%,#FFF)); /* webkit */
-	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#E8E8E8', endColorstr='#FFFFFF',GradientType=0 ); /* ie */
+	background: #FFF;
+	background: -o-linear-gradient(top, #E8E8E8 0%,#FFF 35%);
+	background: -moz-linear-gradient(top, #E8E8E8 0%, #FFF 35%);
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#E8E8E8), color-stop(35%,#FFF));
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#F8F8F8', endColorstr='#FFFFFF', GradientType=0 );
 }
 
 input[type=textbox]:hover, input[type=password]:hover {
