@@ -16,8 +16,9 @@ const DBPassword	= 'c@p2011$#tT';
 const DBName		= 'hoangman';
 
 /* Response Status */
-const	rsOK		= 0;
-const	rsError		= -1;
+const rsOK					= 0;
+const rsSessionEnd			= 1;
+const rsInvalidArgument		= 2;
 
 /* Creates a 3 character sequence */
 function createSalt()
@@ -26,9 +27,20 @@ function createSalt()
 	return substr($s, 0, 3);
 }
 
+function invalidateUser()
+{
+	$_SESSION = array();
+	$expire = time() - 100000;
+	if (isset($_COOKIE[session_name()]))
+		setcookie(session_name(), '', $expire);
+	if (isset($_COOKIE['username']))
+		setcookie('username', '', $expire);
+	session_destroy();
+}
+
 function getTagsInfo()
 {
-	$result = mysql_query('SELECT * FROM Tags') or die();
+	$result = mysql_query('SELECT * FROM Tags ORDER BY TagID') or die();
 	$tags = array();
 	
 	while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
@@ -60,7 +72,7 @@ function getTagsInfo()
 
 function getDetectorsInfo()
 {
-	$result = mysql_query('SELECT * FROM Detectors') or die();
+	$result = mysql_query('SELECT * FROM Detectors ORDER BY DetectorID') or die();
 	
 	$info = '[';
 	while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
@@ -95,14 +107,14 @@ switch ($request)
 		$result = mysql_query($query);
 		
 		if(mysql_num_rows($result) < 1) // no such user exists
-			printResponse(rsError, "'Invalid username'");
+			printResponse(rsInvalidArgument, "'Invalid username'");
 		else
 		{
 			$userData = mysql_fetch_array($result, MYSQL_ASSOC);
 			$givenPassword = hash('sha256', $userData['salt'] . hash('sha256', $password));
 			
 			if($givenPassword != $userData['password']) // incorrect password
-				printResponse(rsError, "'Invalid password'");
+				printResponse(rsInvalidArgument, "'Invalid password'");
 			else
 			{
 				session_regenerate_id (); // this is a security measure
@@ -114,13 +126,7 @@ switch ($request)
 		break;
 		
 	case 'logout':
-		$_SESSION = array();
-		$expire = time() - 100000;
-		if (isset($_COOKIE[session_name()]))
-			setcookie(session_name(), '', $expire);
-		if (isset($_COOKIE['username']))
-			setcookie('username', '', $expire);
-		session_destroy();
+		invalidateUser();
 		break;
 		
 	case 'get-tags':
@@ -150,7 +156,7 @@ switch ($request)
 						printResponse(rsOK, "{s:'$timestamp',i:$tagId,a:$assetId,x:-1,y:-1,b:0}");
 					}
 					else
-						printResponse(rsError, "'Tag ID must be a positive integer: $tagIdStr'");
+						printResponse(rsInvalidArgument, "'Tag ID must be a positive integer: $tagIdStr'");
 					break;
 					
 				case 'del-tag':
@@ -174,10 +180,10 @@ switch ($request)
 							printResponse(rsOK, "{i:$detectorId,x:$x,y:$y,b:0}");
 						}
 						else
-							printResponse(rsError, "'Invalid location: ($x, $y)'");
+							printResponse(rsInvalidArgument, "'Invalid location: ($x, $y)'");
 					}
 					else
-						printResponse(rsError, "'Detector ID must be a positive integer: $detectorId'");
+						printResponse(rsInvalidArgument, "'Detector ID must be a positive integer: $detectorId'");
 					break;
 					
 				case 'del-detector':
@@ -185,8 +191,12 @@ switch ($request)
 					mysql_query("DELETE FROM Detectors WHERE DetectorID = $detectorId");
 					printResponse(rsOK, $detectorId);
 			}
-		} else
-			printResponse(rsError, "'Your session has expired. Please log in again.'");
+		}
+		else
+		{
+			invalidateUser();
+			printResponse(rsSessionEnd, "'Your session has expired. Please log in again.'");
+		}
 }
 
 mysql_close($connection);
