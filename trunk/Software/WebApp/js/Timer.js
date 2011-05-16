@@ -1,1 +1,0 @@
-function TTimer(a,d){var e;var c=false;var b=d;var f=a;this.setInterval=function(g){if(f!=g){f=g;if(c){clearInterval(e);e=setInterval(b,f)}}};this.setEnabled=function(g){if(c!=g){if(g){e=setInterval(b,f)}else{clearInterval(e)}c=g}}};
