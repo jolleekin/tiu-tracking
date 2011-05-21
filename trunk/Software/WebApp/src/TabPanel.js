@@ -13,12 +13,12 @@ function TTabPanel() {
 
 	var TTabName = 'TTabName';
 	
-	var self = this;
-	var fTabCount = 0;
-	var fSelectedIndex = -1;
-	var fElement = newElement('div', 'TTabPanel');
-	var fNamePanel = newElement('ul', 'TTabNamePanel');
-	var fContentPanel = newElement('div', 'TTabContentPanel');
+	var self = this,
+		fTabCount = 0,
+		fSelectedIndex = -1,
+		fElement = newElement('div', 'TTabPanel'),
+		fNamePanel = newElement('ul', 'TTabNamePanel'),
+		fContentPanel = newElement('div', 'TTabContentPanel');
 	
 	fElement.appendChild(fNamePanel);
 	fElement.appendChild(fContentPanel);

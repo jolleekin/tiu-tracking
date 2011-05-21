@@ -20,9 +20,9 @@ function TMap() {
 	
 	var FrameInterval		= 40;	// ms
 
-	var PositionLerpFactor	= FrameInterval * 0.005;
-	var ScaleLerpFactor		= FrameInterval * 0.006;
-	var LerpFactorFactor	= 1.05;
+	var PositionLerpFactor	= FrameInterval * 0.005,
+		ScaleLerpFactor		= FrameInterval * 0.006,
+		LerpFactorFactor	= 1.05;
 	
 	var PanCursor = 'url(images/closedhand_8_8.cur), move';
 	
@@ -85,9 +85,9 @@ function TMap() {
 	fMap.setAttribute('style', 'position: absolute; z-index: 0; overflow: hidden; background-color: rgba(255, 255, 255, 0);');
 	document.body.appendChild(fMap);
 	
-	var fMapContainer = document.createElement(SDiv);
-	fMapContainer.style.position = 'absolute';
-	fMap.appendChild(fMapContainer);
+	var fContainer = document.createElement(SDiv);
+	fContainer.style.position = 'absolute';
+	fMap.appendChild(fContainer);
 
 	var FadeInFadeOutAnimationParams = {
 		type: 'opacity',
@@ -104,18 +104,17 @@ function TMap() {
 	var fFocusedInfoBox = TInfoBox();
 	fFocusedInfoBox.style.zIndex	= 101;
 	fFocusedInfoBox.style.opacity	= 0;
-	fFocusedInfoBox.style.color	= '#0860B6';
-	fMapContainer.appendChild(fFocusedInfoBox);
+	fContainer.appendChild(fFocusedInfoBox);
 	$fx(fFocusedInfoBox).fxAdd(FadeInFadeOutAnimationParams);
 	
 	var fSelectedInfoBox = TInfoBox();
 	fSelectedInfoBox.style.zIndex = 100;
-	fMapContainer.appendChild(fSelectedInfoBox);
+	fContainer.appendChild(fSelectedInfoBox);
 	
 	fMapCenter.x = fMap.offsetWidth * 0.5;
 	fMapCenter.y = fMap.offsetHeight * 0.5;
 	
-	mapMouseDown = function (event) {
+	function mapMouseDown(event) {
 		if (event.button == 0) {
 			fTimer.setEnabled(false);
 			fMouse.isLeftButtonDown = true;
@@ -124,7 +123,7 @@ function TMap() {
 		}
 	}
 	
-	mapMouseMove = function (event) {
+	function mapMouseMove(event) {
 		updateMouseInfo(event, true);
 		
 		if (fMouse.isLeftButtonDown) {
@@ -137,7 +136,7 @@ function TMap() {
 		}
 	}
 	
-	mapMouseUp = function (event) {
+	function mapMouseUp(event) {
 		if (event.button == 0) {
 			this.style.cursor = 'default';
 			fMouse.isLeftButtonDown = false;
@@ -160,7 +159,7 @@ function TMap() {
 		}
 	}
 	
-	mapMouseWheel = function (event) {
+	function mapMouseWheel(event) {
 		/*var delta = event.detail ? -event.detail * 0.1 : event.wheelDelta * 0.0025;
 		var factor = 1 + delta;
 		if (delta < 0)
@@ -175,7 +174,7 @@ function TMap() {
 		event.preventDefault();
 	}
 
-	mapDoubleClick = function (event) {
+	function mapDoubleClick(event) {
 		self.zoom(event, 2);
 		event.preventDefault();
 	}
@@ -327,13 +326,13 @@ function TMap() {
 	this.setMapImage = function (img, pixelsPerUnitLength) {
 		if ((fMapImage != img) && img) {
 			if (fMapImage)
-				fMapContainer.removeChild(fMapImage);
+				fContainer.removeChild(fMapImage);
 			fPixelsPerUnitLength = pixelsPerUnitLength;
 			fMapImageCenter.x = img.width  * 0.5;
 			fMapImageCenter.y = img.height * 0.5;
 			img.style.position = 'absolute';
 			img.style.boxShadow = 'rgba(0,0,0,0.3) 0 0 4px 4px';
-			fMapContainer.insertBefore(img, fMapContainer.firstChild);
+			fContainer.insertBefore(img, fContainer.firstChild);
 			fMapImage = img;
 			recalculateScales();
 			show();
@@ -351,8 +350,8 @@ function TMap() {
 	}
 	
 	function moveMap() {
-		fMapContainer.style.left = fMapTransform.position.x + SPixel;
-		fMapContainer.style.top  = fMapTransform.position.y + SPixel;
+		fContainer.style.left = fMapTransform.position.x + SPixel;
+		fContainer.style.top  = fMapTransform.position.y + SPixel;
 	}
 	
 	function scaleMap() {
@@ -436,7 +435,7 @@ function TMap() {
 	 *	@param	entity	{HTMLElement.TMapEntity}	The entity to be moved.
 	 */
 	this.bringToCenter = function (entity) {
-		if (entity && (entity.parentNode == fMapContainer)) {
+		if (entity && (entity.parentNode == fContainer)) {
 			// Don't rely on entity.offsetLeft and entity.offsetTop
 			fMapTransform.targetPosition.x = fMapCenter.x - entity.mX * fMapTransform.totalScale;
 			fMapTransform.targetPosition.y = fMapCenter.y - entity.mY * fMapTransform.totalScale;
@@ -451,12 +450,12 @@ function TMap() {
 	 *	@param	entity	{HTMLElement TMapEntity}	A DOM element that has mX, mY, getInfo(), and onScaleChange() attributes.
 	 */
 	this.addEntity = function (entity) {
-		if (entity && (entity.parentNode != fMapContainer)) {
+		if (entity && (entity.parentNode != fContainer)) {
 			entity.addEventListener(SClick, entityClick, false);
 			entity.addEventListener(SMouseOut, entityMouseOut, false);
 			entity.addEventListener(SMouseOver, entityMouseOver, false);
 			fEntities.push(entity);
-			fMapContainer.appendChild(entity);
+			fContainer.appendChild(entity);
 			entity.onScaleChange(fMapTransform.totalScale);
 		}
 	}
@@ -479,18 +478,38 @@ function TMap() {
 					er = entity.offsetWidth + el,
 					eb = entity.offsetHeight + et,
 					
+					// 
 					bl = fSelectedInfoBox.offsetLeft,
 					bt = fSelectedInfoBox.offsetTop,
 					br = fSelectedInfoBox.offsetWidth + bl,
 					bb = fSelectedInfoBox.offsetHeight + bt,
-				
-					l = Math.min(el, bl) + fMapContainer.offsetLeft,
-					t = Math.min(et, bt) + fMapContainer.offsetTop,
-					r = Math.max(er, br) + fMapContainer.offsetLeft,
-					b = Math.max(eb, bb) + fMapContainer.offsetTop;
+					
+					// The rect that contains both the entity and the info box.
+					l = Math.min(el, bl) + fContainer.offsetLeft,
+					t = Math.min(et, bt) + fContainer.offsetTop,
+					r = Math.max(er, br) + fContainer.offsetLeft,
+					b = Math.max(eb, bb) + fContainer.offsetTop;
 
-				if ( (l < 0) || (t < 0) || (r > fMap.offsetWidth) || (b > fMap.offsetHeight) )
-					self.bringToCenter(entity);
+				var dx = 0, dy = 0;
+				
+				if (l < 0)
+					dx = 20 - l;
+				else if (r > fMap.offsetWidth)
+					dx = fMap.offsetWidth - r - 20;
+				
+				if (t < 0)
+					dy = 20 - t;
+				else if (b > fMap.offsetHeight)
+					dy = fMap.offsetHeight - b - 20;
+
+				// If part of the rect is out of range, move the map so that the entire
+				// rect can be seen. 20 in the above lines is the margin.
+				if (dx || dy) {
+					fMapTransform.targetPosition.x = fMapTransform.position.x + dx;
+					fMapTransform.targetPosition.y = fMapTransform.position.y + dy;
+					fCurrentLerpFactor = PositionLerpFactor;
+					fTimer.setEnabled(true);
+				}
 			} else
 				fSelectedInfoBox.style.visibility = SHidden;
 			fSelectedEntity = entity;
@@ -503,7 +522,7 @@ function TMap() {
 		entity.removeEventListener(SClick, entityClick, false);
 		entity.removeEventListener(SMouseOut, entityMouseOut, false);
 		entity.removeEventListener(SMouseOver, entityMouseOver, false);
-		fMapContainer.removeChild(entity);	
+		fContainer.removeChild(entity);	
 	}
 	
 	/**

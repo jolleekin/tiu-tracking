@@ -39,8 +39,8 @@ TVector2D.prototype = {
 	},
 
 	distanceTo: function (other) {
-		var dx = this.x - other.x;
-		var dy = this.y - other.y;
+		var dx = this.x - other.x,
+			dy = this.y - other.y;
 		return Math.sqrt(dx*dx + dy*dy);
 	},
 
@@ -75,4 +75,4 @@ TVector2D.prototype = {
 
 /* Global constants */
 
-ZeroVector2D = new TVector2D();
+var ZeroVector2D = new TVector2D();

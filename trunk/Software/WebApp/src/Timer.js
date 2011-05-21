@@ -6,10 +6,10 @@
  *	@param	callBack	{Function}	Timer callback function.
  */
 function TTimer(interval, callBack) {
-	var fHandle;
-	var fEnabled = false;
-	var fOnTimer = callBack;
-	var fInterval = interval;
+	var fHandle,
+		fEnabled = false,
+		fOnTimer = callBack,
+		fInterval = interval;
 	
 	/**
 	 *	Sets timer interval.

@@ -54,8 +54,7 @@ function $fx(elementRefOrIdStr) {
 		},
 		
 		backgroundy: function (value, unit) {
-			var x = 0, y = 0;
-			var matches = (new RegExp('^(-?\\d+)[^\\d\\-]+(-?\\d+)')).exec(elm.style.backgroundPosition);
+			var x = 0, y = 0, matches = (new RegExp('^(-?\\d+)[^\\d\\-]+(-?\\d+)')).exec(elm.style.backgroundPosition);
 			if (matches) {
 				x = parseInt(matches[1]);
 				y = parseInt(matches[2]);
@@ -182,11 +181,12 @@ function $fx(elementRefOrIdStr) {
 		if(!set || !set.isRunning)
 			return;
 		
-		var effect = set.effects[effectIndex];
-		var param = this[effect.type](null, null);
-		var step = Math.abs(effect.step);
-		var h = param + step;
-		var l = param - step;
+		var effect = set.effects[effectIndex],
+			param = this[effect.type](null, null),
+			step = Math.abs(effect.step),
+			h = param + step,
+			l = param - step;
+		
 		if ((h < effect.to) || (l > effect.to)) {
 			if (h < effect.to)
 				this[effect.type](h, effect.unit);

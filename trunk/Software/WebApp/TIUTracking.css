@@ -173,19 +173,30 @@ div.Col {float: left;}
 
 .TInfoBoxContent {
 	cursor: default;
-	min-width: 150px;
+	min-width: 140px;
 	white-space: nowrap;
 	padding: 5px 10px;
 	position: relative;
 	border-radius: 5px;
 	border: 1px solid grey;
 	background-color: #FFF;
-	box-shadow: rgba(0, 0, 0, 0.4) 10px 10px 4px 4px;
+	/*box-shadow: rgba(0, 0, 0, 0.4) 10px 10px 4px 4px;*/
 }
 
 .TPink {
 	position: relative;
 	top: -1px;
+}
+
+.TInfoBoxContent table {
+	border-collapse: collapse;
+	line-height: 1.4em;
+	width: 100%;
+}
+
+.TInfoBoxContent table caption {
+	font-weight: bold;
+	color: #1F75CC;
 }
 
 .TCastShadow {
