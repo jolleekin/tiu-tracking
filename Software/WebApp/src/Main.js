@@ -1,12 +1,8 @@
-/* TEntityType, also z-index */
-var etDetector	= 0;
-var etTag		= 1;
-
-/* EntityNames: array[TEntityType] of String */
-var EntityNames = ['detector', 'tag'];
-
-/* EntityClassNames: array[TEntityType] of String */
-var EntityClassNames = ['TDetector', 'TTag'];
+ï»¿/* TEntityType, also z-index */
+var etDetector	= 0,
+	etTag		= 1,
+	EntityNames = ['detector', 'tag'],
+	EntityClassNames = ['TDetector', 'TTag'];
 
 /**
  *	Creates an AJAX object with 3 custom attributes (mMethod, mUrl, and doSend()).
@@ -48,15 +44,14 @@ function AJAX(method, url, callback) {
 }
 
 /* Response Status */
-var rsOK					= 0;
-var rsSessionEnd			= 1;
-var rsInvalidArgument		= 2;
+var rsOK			= 0,
+	rsSessionEnd	= 1;
 
 function processResponse(ajax, entityType) {
 
-	var response;
-	var table = tagTable;
-	var entities = tags;
+	var response,
+		table = tagTable,
+		entities = tags;
 	if (entityType == etDetector) {
 		table = detectorTable;
 		entities = detectors;
@@ -172,8 +167,8 @@ function processResponse(ajax, entityType) {
 		if (entityType == etTag)
 			columnNames.splice(1, 0, 'AssetId');
 		
-		var newEntityCount = response.data.length - 1;
-		var curEntityCount = entities.length;
+		var newEntityCount = response.data.length - 1,
+			curEntityCount = entities.length;
 		
 		// Someone else might have deleted some entities.
 		if (newEntityCount < curEntityCount) {
@@ -231,13 +226,15 @@ function processResponse(ajax, entityType) {
 }
 
 
-var headerPanel, tabControl, tabPanel;
-var welcomeTab, assetsTab, detectorsTab;
+var headerPanel, msgLabel, tabControl, tabPanel,
+	
+	welcomeTab, assetsTab, detectorsTab,
+	
+	tags = [], detectors = [],
+	
+	tagTable, detectorTable,
 
-var map, mapImage, mapToolbar;
-
-var tags = [], detectors = [];
-var tagTable, detectorTable;
+	map, mapImage, mapToolbar;
 
 /**
  *	The table that has a row selected, either @tagTable or @detectorTable, exclusively.
@@ -248,14 +245,7 @@ var activeTable;
 
 var tagUpdateTimer;
 
-var loginDialog;
-var usernameTextBox;
-var passwordTextBox;
-var loginButton;
-var msgLabel;
-var loggedInDialog;
-
-var isLoggedIn = false;
+var loginDialog, usernameTextBox, passwordTextBox, loginButton, loggedInDialog, isLoggedIn = false;
 
 var buttonAnimationParams = {
 	type: 'left',
@@ -292,8 +282,8 @@ var msgLabelAnimationParams = {
 };
 
 
-var mtInfo = 0, mtError = 1;
-var StatusColors = ['#04F', '#F40'];
+var mtInfo = 0, mtError = 1,
+	StatusColors = ['#04F', '#F40'];
 
 /**
  *	@param	color	{String}	CSS color.
@@ -330,16 +320,16 @@ var deleteRowIndex = -1;
 }
 */
 
-var loginRequestManager = AJAX('POST', 'TIUTracking.php', function () {
+var loginRequestManager = AJAX('POST', 'Request.php', function () {
 	processResponse(this, -1);
 });
 
-var tagRequestManager = AJAX('POST', 'TIUTracking.php', function () {
+var tagRequestManager = AJAX('POST', 'Request.php', function () {
 	processResponse(this, etTag);
 });
 
 
-var detectorRequestManager = AJAX('POST', 'TIUTracking.php', function () {
+var detectorRequestManager = AJAX('POST', 'Request.php', function () {
 	processResponse(this, etDetector);
 });
 
@@ -538,16 +528,16 @@ function TMapEntity(entityType) {
 	}
 	
 	function tagInfo() {
-		return	'<table cellspacing="0" style="border-collapse: collapse; width: 100%;">' +
-				'<caption style="color: Red; font-weight: bold;">Tag</caption>' +
+		return	'<table cellspacing="0">' +
+				'<caption>Tag</caption>' +
 				'<tr style="border-top: 1px solid #DFDFDF; border-bottom: none;"><td>ID</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mId + '</td></tr>' +
 				'<tr style="border: none;"><td>Asset ID</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mAssetId + '</td></tr>' +
 				'<tr style="border: none"><td>Battery</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mBattery + '</td></tr></table>';
 	}
 	
 	function detectorInfo() {
-		return	'<table cellspacing="0" style="border-collapse: collapse; width: 100%;">' +
-				'<caption style="color: Red; font-weight: bold;">Detector</caption>' +
+		return	'<table cellspacing="0">' +
+				'<caption>Detector</caption>' +
 				'<tr style="border-top: 1px solid #DFDFDF; border-bottom: none;"><td>ID</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mId + '</td></tr>' +
 				//'<tr><td>Asset ID</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mAssetId + '</td></tr>' +
 				'<tr style="border: none"><td>Battery</td><td>&nbsp;:&nbsp;</td><td style="font-weight: bold;">' + this.mBattery + '</td></tr></table>';
@@ -664,27 +654,24 @@ onload = function () {
 		}
 		activeTable.setSelectedIndex(idx);
 	}
-	
-	mapImage = new Image();
-	mapImage.src = 'images/FloorPlan.jpg?' + (new Date()).getTime();
-	mapImage.onload = function () {
-		map.setMapImage(this, 120);
-	}
 
-	tagUpdateTimer = new TTimer(2000, requestTagsInfo);
+	// The resolution is stored in the 'resolution' label :D
+	changeMapImage( {status: 0, data: MapResolution} );
+
+	// Updates tags' info every 5 secs.
+	tagUpdateTimer = new TTimer(5000, requestTagsInfo);
 	tagUpdateTimer.setEnabled(true);
 	
 	requestTagsInfo();
 	detectorRequestManager.doSend('request=get-detectors');
 
-	/*------------------------------------*/
 	
 	var button = $('showHideTabPanelButton');
 	button.style.left = (tabPanel.offsetWidth - button.offsetWidth - 3) + SPixel;
 	button.style.top  = (tabPanel.offsetTop + 3) + SPixel;
 	button.onclick = function () {
 		if (this.offsetLeft > 0) {
-			this.innerHTML = '»';
+			this.innerHTML = 'Â»';
 			this.className = 'TextIcon TCastShadow';
 			this.title = 'Show panel';
 
@@ -695,7 +682,7 @@ onload = function () {
 
 			map.setRect(0, headerPanel.offsetHeight, window.innerWidth, window.innerHeight);
 		} else {
-			this.innerHTML = '«';
+			this.innerHTML = 'Â«';
 			this.className = 'TextIcon';
 			this.title = 'Hide panel';
 			
@@ -723,6 +710,19 @@ onload = function () {
 			entities[i].style.visibility = v;				
 	}
 	
+	
+	$('zoomOutButton').onclick = function() {
+		map.zoom(null, 0.5);
+	}
+	$('zoomFitButton').onclick = function() {
+		map.zoom(null, 0);
+	}
+	$('zoomInButton').onclick = function() {
+		map.zoom(null, 2);
+	}
+
+	$('loginButton').onclick = login;
+	
 	$('showAssetsCheckBox').onchange = function () {
 		showEntityGroup('TTag', tags, this.checked);
 	}
@@ -737,19 +737,15 @@ onload = function () {
 		updateUI(true);
 }
 
-function changeMapImage() {
-	var responseText = $('mapUploadFrame').contentWindow.document.getElementsByTagName('label')[0].innerHTML;
-	if (responseText != '') {
-		var response = JSON.parse(responseText);
-		if (response)
-			if (response.status == 0) {
-				// Forces the map image to be reloaded.
-				mapImage = new Image();
-				mapImage.src = 'images/FloorPlan.jpg?' + (new Date()).getTime();
-				mapImage.onload = function() {
-					map.setMapImage(this, 120);
-				}
-			} else
-				showMessage(mtError, response.data, true);
-	}
+function changeMapImage(response) {
+	if (response)
+		if (response.status == 0) {
+			// Forces the map image to be reloaded.
+			mapImage = new Image();
+			mapImage.src = 'images/' + MapFileName + '?' + (new Date()).getTime();
+			mapImage.onload = function() {
+				map.setMapImage(this, response.data);
+			}
+		} else
+			showMessage(mtError, response.data, true);
 }

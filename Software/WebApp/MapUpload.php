@@ -6,8 +6,9 @@
 	<meta http-Equiv="Cache-Control" Content="no-cache">
 	<link href="Common.css" rel="stylesheet" type="text/css"/>
 </head>
-<body onload="if (top.changeMapImage) top.changeMapImage();" style="background: none;">
 <?php
+
+include 'Consts.php';
 
 session_start();
 
@@ -67,6 +68,75 @@ function upload($fileId, $folder = '', $fileName = '', $types = '')
 
 $loggedIn = isset($_SESSION['loggedIn']);
 
+$hasParams = false;
+$onload = '';
+$status = rsOK;
+$data = 0;
+
+
+$resolution = $_POST['resolution'];
+if ($resolution)
+{
+	$hasParams = true;
+	if (loggedIn)
+	{
+		$resolution = intval($resolution);
+		if ($resolution > 0)
+		{
+			$handle = fopen(MapResolutionFileName, 'w');
+			fwrite($handle, $resolution);
+			fclose($handle);
+			$data = $resolution;
+		}
+		else
+		{
+			$status = rsInvalidArgument;
+			$data = "'Invalid resolution: $resolution'";
+			$lines = file(MapResolutionFileName, FILE_IGNORE_NEW_LINES);
+			$resolution = $lines[0];
+		}
+	}
+	else
+	{
+		$status = rsSessionEnd;
+		$data	= "'Your session has expried. Please log in again.'";
+	}
+}
+else
+{
+	$lines = file(MapResolutionFileName, FILE_IGNORE_NEW_LINES);
+	$data = $resolution = $lines[0];
+}
+
+// If the user has specified an image, try upload it.
+if ($_FILES['mapFile']['name'])
+{
+	$hasParams = true;
+	if ($loggedIn)
+	{
+		list($name, $error) = upload('mapFile', 'images', MapImageFileName, 'jpg,jpeg,gif,png');
+
+		if ($error)
+		{
+			$status = rsInvalidArgument;
+			$data = $error;
+		}
+		$data = "'" . addslashes($data) . "'";
+	}
+	else
+	{
+		$status = rsSessionEnd;
+		$data	= "'Your session has expried. Please log in again.'";
+	}
+}
+
+// Only calls top.changeMapImage if the uses has specified the resolution and/or the map image.
+if ($hasParams)
+	$onload = "onload=\" if (top.changeMapImage) top.changeMapImage({status:$status,data:$data});\"";
+
+echo "<body $onload style=\"background: none;\">";
+
+
 // Display the upload form if the user has logged in.
 if ($loggedIn)
 {
@@ -74,6 +144,7 @@ if ($loggedIn)
 	<form method="post" enctype="multipart/form-data">
 		<fieldset>
 			<legend>Map</legend>
+			<div style="margin-bottom: 0.5em;" title="Number of pixels per unit length"><label for="resolution" style="margin-right: 7px;">Resolution:</label><input id="resolution" name="resolution" type="textbox" value="$resolution" style="width: 30px;" /><label>&nbsp;pixels per unit length</label></div>
 			<div style="margin-bottom: 0.5em;">
 				<button onclick="mapFile.click(); return false;">Browse</button>
 				<input id="mapFile" name="mapFile" type="file" style="width: 0; height: 0; opacity: 0;"
@@ -87,34 +158,6 @@ if ($loggedIn)
 	</form>
 FORM;
 }
-
-$response = '';
-
-// If the user has specified an image, try upload it.
-if ($_FILES['mapFile']['name'])
-{
-	if ($loggedIn)
-	{
-		list($name, $error) = upload('mapFile', 'images', 'FloorPlan.jpg', 'jpg,jpeg,gif,png');
-
-		$status = 0;
-		$data = 'images/FloorPlan.jpg';
-		if ($error)
-		{
-			$status = 1;
-			$data = $error;
-		}
-	}
-	else
-	{
-		$status = 1;
-		$data	= "'Your session has expried. Please log in again.'";
-	}
-
-	$response = json_encode(array("status" =>	$status, "data" => $data));
-}
-
-echo '<label style="display: none;">' . $response . '</label>';
 ?>
 </body>
 </html>

@@ -6,7 +6,14 @@
 	<link rel="shortcut icon" href= "favicon.ico">
 	<link href="Common.css" rel="stylesheet" type="text/css"/>
 	<link href="TIUTracking.css" rel="stylesheet" type="text/css"/>
-	<script type="application/x-javascript" src="TIUTracking.js"></script>
+	<script type="application/x-javascript" src="js/Main.js"></script>
+	<script type="application/x-javascript" src="js/Common.js"></script> 
+	<script type="application/x-javascript" src="js/FlexTable.js"></script> 
+	<script type="application/x-javascript" src="js/InfoBox.js"></script> 
+	<script type="application/x-javascript" src="js/Map.js"></script> 
+	<script type="application/x-javascript" src="js/TabControl.js"></script> 
+	<script type="application/x-javascript" src="js/Timer.js"></script> 
+	<script type="application/x-javascript" src="js/Vector2D.js"></script> 
 	<script type="application/x-javascript" src="js/fx.js"></script>
 	<!--[if IE]>
 		<style type="text/css">
@@ -34,11 +41,11 @@
 					<legend>Admin</legend>
 					<div style="margin-bottom: 0.5em;"><div style="float: left; width: 80px;">Username:</div><input id="usernameTextBox" type="textbox" maxlength="30" style="width: 150px;" /><br /></div>
 					<div style="margin-bottom: 0.5em;"><div style="float: left; width: 80px;">Password:</div><input id="passwordTextBox" type="password" maxlength="30" style="width: 150px;" /><br /></div>
-					<div><button id="loginButton" onclick="login();">Log in</button></div>
+					<div><button id="loginButton">Log in</button></div>
 				</fieldset>
 				<div id="loggedInDialog" style="display: none;">
 					<label id="greetingLabel" style="padding: 0 1em 0 0;"></label>
-					<a id="logOutLink" href="javascript:logout();" style="padding: 0 1em; border-left: 1px solid #CCC;">Log out</a>
+					<a id="logOutLink" href="javascript: logout();" style="padding: 0 1em; border-left: 1px solid #CCC;">Log out</a>
 				</div>
 				<br />
 				<fieldset>
@@ -60,9 +67,9 @@
 		</div>
 	</div>
 	<div id="mapToolbar" class="TCastShadow">
-		<button id="zoomOutButton" class="LeftPill TextIcon Translucent" title="Zoom out" onclick="map.zoom(null, 0.5);">-</button>
-		<button id="zoomFitButton" class="Middle TextIcon Translucent" title="Zoom fit" onclick="map.zoom(null, 0);">[]</button>
-		<button id="zoomInButton" class="RightPill TextIcon Translucent" title="Zoom in" onclick="map.zoom(null, 2);">+</button>
+		<button id="zoomOutButton" class="LeftPill TextIcon Translucent" title="Zoom out">-</button>
+		<button id="zoomFitButton" class="Middle TextIcon Translucent" title="Zoom fit">[]</button>
+		<button id="zoomInButton" class="RightPill TextIcon Translucent" title="Zoom in">+</button>
 	</div>
 </body>
 </html>

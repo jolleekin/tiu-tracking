@@ -4,12 +4,9 @@
  */
  
  /* Class Name Constants */
-var cnTabPanel			= 'TTabPanel';
-var cnTabName			= 'TTabName';
-var cnTabNameSelected	= 'TTabName Selected';
-var cnTabNamePanel		= 'TTabNamePanel';
-var cnTabContent		= 'TTabContent';
-var cnTabContentPanel	= 'TTabContentPanel';
+var cnTabName			= 'TTabName',
+	cnTabNameSelected	= 'TTabName Selected',
+	cnTabContent		= 'TTabContent';
 
 function TTabControl(container) {
 
@@ -55,8 +52,8 @@ function TTabControl(container) {
 	 *	@return	A non-null array of matched elements.
 	 */
 	function extractElements(elements, className) {
-		var result = [];
-		var pattern = new RegExp('\\b' + className + '\\b');
+		var result = [],
+			pattern = new RegExp('\\b' + className + '\\b');
 		if (elements) {
 			for (var i = 0; i < elements.length; i++)
 				if (elements[i].className.search(pattern) > -1)

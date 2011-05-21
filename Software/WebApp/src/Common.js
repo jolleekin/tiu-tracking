@@ -1,41 +1,41 @@
 /* Global constants */
 
 // Http request methods
-var SPost		= 'POST';
-var SGet		= 'GET';
+var SPost		= 'POST',
+	SGet		= 'GET',
 
-var SDiv		= 'div';
+	SDiv		= 'div',
 
-var SUndefined	= 'undefined';
-var SIndexOutOfRange = 'Index out of range: ';
+	SUndefined	= 'undefined',
+	SIndexOutOfRange = 'Index out of range: ',
 
-var SAuto		= 'auto';
-var SPixel		= 'px';
+	SAuto		= 'auto',
+	SPixel		= 'px',
 
-var SNone		= 'none';
-var SBlock		= 'block';
-var SInline		= 'inline';
+	SNone		= 'none',
+	SBlock		= 'block',
+	SInline		= 'inline',
 
-var SHidden		= 'hidden';
-var SVisible	= 'visible';
+	SHidden		= 'hidden',
+	SVisible	= 'visible',
 
-var SFocus		= 'focus';
-var SBlur		= 'blur';
-var SKeyDown	= 'keydown';
-var SKeyUp		= 'keyup';
+	SFocus		= 'focus',
+	SBlur		= 'blur',
+	SKeyDown	= 'keydown',
+	SKeyUp		= 'keyup',
 
-var SClick		= 'click';
-var SMouseDown	= 'mousedown';
-var SMouseMove	= 'mousemove';
-var SMouseOut	= 'mouseout';
-var SMouseOver	= 'mouseover';
-var SMouseUp	= 'mouseup';
-var SMouseWheel	= 'mousewheel';
+	SClick		= 'click',
+	SMouseDown	= 'mousedown',
+	SMouseMove	= 'mousemove',
+	SMouseOut	= 'mouseout',
+	SMouseOver	= 'mouseover',
+	SMouseUp	= 'mouseup',
+	SMouseWheel	= 'mousewheel';
 
 /* TComponentState */
 
-var csLoading	= 0;
-var csLoaded	= 1;
+var csLoading	= 0,
+	csLoaded	= 1;
 
 /* Browser info */
 
