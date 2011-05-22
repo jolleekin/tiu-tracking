@@ -153,6 +153,12 @@ public class Main {
 	JRadioButton rdbtnTcpip;
 	private JTextField txtActualX;
 	private JTextField txtActualY;
+	private JTextField txtMinimumSamplesPerCalDet;
+	private JTextField txtRSSIThreshold;
+	private JTextField txtCalibrateMinDetectors;
+	private JLabel lblMinimumDetectorParticipants;
+	private JTextField txtListLenThreshold;
+	private JLabel lblDetectorExclusionList;
 	/**
 	 * Launch the application.
 	 */
@@ -246,32 +252,29 @@ public class Main {
 	@SuppressWarnings("unchecked")
 	private void storeCalibrationData(int tagId, int blockId, DataPacket dataPacket)
 			throws ClassNotFoundException, SQLException, IOException {
-		//TODO: make cal data directory and data file configurable.
+		//TODO: make cal data directory and data file configurable.	
 		
-		
-		/*for(DataPacket d: calibrationData){
-			for (Map.Entry<Integer,ArrayList<Integer>> e: d.rssiTable.entrySet()){
-				double stdev = Statistics.stdDev(e.getValue());
-				System.out.println(String.format("StdDev for Detector %1$d: %2$f",e.getKey(),stdev));
-			}
-		}*/
-		
-		
-		for (Map.Entry<Integer,ArrayList<Integer>> e: dataPacket.rssiTable.entrySet()){
+		/*for (Map.Entry<Integer,ArrayList<Integer>> e: dataPacket.rssiTable.entrySet()){
 			double stdev = Statistics.stdDev(e.getValue());
-			System.out.println(String.format("StdDev for Detector %1$d: %2$f",e.getKey(),stdev));
+			System.out.println(String.format("Calibration Data: StdDev for Detector %1$d: %2$f",e.getKey(),stdev));
 			int median = Statistics.median(e.getValue());
-			for (int i = 0;i < e.getValue().size();i++){
-				int value = e.getValue().get(i);
-				if (value <  Math.floor(median-stdev) || value > Math.floor(median+stdev)){
-					//This must be an outlier; remove it.
-					e.getValue().remove(i);
-					System.out.println(String.format("Removing outlier %1$d from Detector's %2$d set",value,e.getKey()));
-					i=0;
-				}
+			ArrayList<Integer> values = new ArrayList<Integer>();
+			if (values.size() >= 5){
+				for (int i = 0;i < e.getValue().size();i++){
+					int value = e.getValue().get(i);
+					if (value <  (median-stdev) || value > (median+stdev)){
+						//This must be an outlier; remove it.					
+						System.out.println(String.format("CalibrationData: Removing outlier %1$d from Detector's %2$d set",value,e.getKey()));					
+					}else{					
+						values.add(value);
+					}
+				}			
+				dataPacket.rssiTable.put(e.getKey(), values);
+			}else{
+				System.out.println("Not enough calibration data for detector "+e.getKey()+" to filter.");				
 			}
-			dataPacket.rssiTable.put(e.getKey(), e.getValue());
-		}
+			
+		}*/
 		
 		
 		
@@ -562,10 +565,81 @@ public class Main {
 		lblNewLabel_2 = new JLabel("TagID");
 		lblNewLabel_2.setBounds(10, 55, 46, 14);
 		pnlCalibrate.add(lblNewLabel_2);
+		
+		txtMinimumSamplesPerCalDet = new JTextField();
+		txtMinimumSamplesPerCalDet.setText("5");
+		txtMinimumSamplesPerCalDet.setBounds(285, 24, 86, 20);
+		pnlCalibrate.add(txtMinimumSamplesPerCalDet);
+		txtMinimumSamplesPerCalDet.setColumns(10);
+		
+		txtRSSIThreshold = new JTextField();
+		txtRSSIThreshold.setText("200");
+		txtRSSIThreshold.setBounds(285, 67, 86, 20);
+		pnlCalibrate.add(txtRSSIThreshold);
+		txtRSSIThreshold.setColumns(10);
+		
+		JLabel lblMinimumSamplesPer_1 = new JLabel("Minimum Samples Per Detector");
+		lblMinimumSamplesPer_1.setBounds(285, 11, 182, 14);
+		pnlCalibrate.add(lblMinimumSamplesPer_1);
+		
+		JLabel lblRssiCutoffThreshold = new JLabel("RSSI Cutoff Threshold");
+		lblRssiCutoffThreshold.setBounds(285, 52, 156, 14);
+		pnlCalibrate.add(lblRssiCutoffThreshold);
+		
+		txtCalibrateMinDetectors = new JTextField();
+		txtCalibrateMinDetectors.setText("2");
+		txtCalibrateMinDetectors.setBounds(285, 111, 86, 20);
+		pnlCalibrate.add(txtCalibrateMinDetectors);
+		txtCalibrateMinDetectors.setColumns(10);
+		
+		lblMinimumDetectorParticipants = new JLabel("Minimum Detector Participants");
+		lblMinimumDetectorParticipants.setBounds(285, 96, 144, 14);
+		pnlCalibrate.add(lblMinimumDetectorParticipants);
+		
+		txtListLenThreshold = new JTextField();
+		txtListLenThreshold.setText("15");
+		txtListLenThreshold.setBounds(285, 157, 86, 20);
+		pnlCalibrate.add(txtListLenThreshold);
+		txtListLenThreshold.setColumns(10);
+		
+		lblDetectorExclusionList = new JLabel("List Length Threshold");
+		lblDetectorExclusionList.setBounds(285, 142, 117, 14);
+		pnlCalibrate.add(lblDetectorExclusionList);
 		btnStartCalibrating.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				try {					
+				try {
 					if (btnStartCalibrating.getText() == btnStartCalibrating.getFirstTitle()){						
+						openPort();
+						InputStream in;// = serialPort.getInputStream();
+						OutputStream out;// = serialPort.getOutputStream();
+						if (rdbtnSerial.isSelected()){
+							in= serialPort.getInputStream();
+							out = serialPort.getOutputStream();
+						}else{
+							in = socketPort.getInputStream();
+							out = socketPort.getOutputStream();
+						}
+						calibratorReader = new CalibratorReader(in);						
+						readerThread = new Thread(calibratorReader);
+						
+						
+						readerThread.start();							
+						btnStartCalibrating.toggleTitle();						
+					//}else if (btnStartCalibrating.getText() == btnStartCalibrating.getSecondTitle()){
+						readerThread.join();						
+						java.awt.Toolkit.getDefaultToolkit().beep();
+						if (rdbtnSerial.isSelected()){
+							serialPort.close();
+						}else{
+							socketPort.close();
+						}
+						int oldBlockId = Integer.parseInt(txtCalibrateBlockNumber.getText());
+						oldBlockId++;
+						txtCalibrateBlockNumber.setText(String.format("%1$d",oldBlockId));
+						
+						btnStartCalibrating.toggleTitle();
+					}
+					/*if (btnStartCalibrating.getText() == btnStartCalibrating.getFirstTitle()){						
 						openPort();
 						InputStream in;// = serialPort.getInputStream();
 						OutputStream out;// = serialPort.getOutputStream();
@@ -598,7 +672,7 @@ public class Main {
 						txtCalibrateBlockNumber.setText(String.format("%1$d",oldBlockId));
 						
 						btnStartCalibrating.toggleTitle();
-					}
+					}*/
 				} catch (NoSuchPortException e) {
 					//Caused by CommPortIdentifier.getPortIdentifier
 					e.printStackTrace();
@@ -739,7 +813,7 @@ public class Main {
 					printDisplayMessage("Calibration Data:\n");
 					for(DataPacket t: calibrationData){
 						//System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagId, t.blockId));
-						printDisplayMessage(String.format("TagID=%1$d, BlockNumber=%2$d\n",t.tagId, t.blockId));
+						printDisplayMessage(String.format("TagID=%1$d, BlockNumber=%2$d(%3$f, %4$f)\n",t.tagId, t.blockId,t.location.x, t.location.y));
 						for (Map.Entry<Integer, ArrayList<Integer>> e: t.rssiTable.entrySet()){						
 							//System.out.print(String.format("\tDetectorID %1$d: ", e.getKey()));
 							printDisplayMessage(String.format("\tDetectorID %1$d: ", e.getKey()));
@@ -1034,11 +1108,62 @@ public class Main {
 							if (firstSample){								
 								dataBlock = new DataPacket(blockId, rawSample.tagId, new Vector2D(x,y));
 								firstSample = false;
-							}							
-							saveSample(dataBlock, rawSample);
+							}	
+							//Don't save RSSI that are below a threshold
+							if (rawSample.rssi >= Integer.parseInt(txtRSSIThreshold.getText())){
+								saveSample(dataBlock, rawSample);
+								//Get Max RSSI List length while considering all detectors
+								int maxRSSIListLen=0;
+								for (Map.Entry<Integer, ArrayList<Integer>> e: dataBlock.rssiTable.entrySet()){
+									if (e.getValue().size() > maxRSSIListLen){
+										maxRSSIListLen = e.getValue().size(); 
+									}								
+								}
+								
+								if (maxRSSIListLen >= Integer.parseInt(txtListLenThreshold.getText())){
+									//we're done here
+									done = true;
+								}
+								/*if (oneHasMinimumSamples(dataBlock) && hasMinimumParticipatingDetectors(dataBlock)){
+									//Get Max RSSI List length while considering all detectors
+									int maxRSSIListLen=0;
+									for (Map.Entry<Integer, ArrayList<Integer>> e: dataBlock.rssiTable.entrySet()){
+										if (e.getValue().size() > maxRSSIListLen){
+											maxRSSIListLen = e.getValue().size(); 
+										}								
+									}
+									
+									float listLenThreshold = Float.parseFloat(txtListLenThreshold.getText());
+									
+									ArrayList<Integer> keysToRemove = new ArrayList<Integer>();
+									for (Map.Entry<Integer, ArrayList<Integer>> e: dataBlock.rssiTable.entrySet()){
+										float ratio = e.getValue().size()/maxRSSIListLen;
+										if (ratio < listLenThreshold){
+											keysToRemove.add(e.getKey());
+										
+										}
+									}
+									
+									for (Integer i : keysToRemove){
+										dataBlock.rssiTable.remove(i);
+									}
+									keysToRemove.clear();
+									
+								}*/
+								
+								//Make sure all detectors have at least minimum samples
+								/*if (hasMinimumSamples(dataBlock)){
+									done = true;
+								}*/
+							}else{
+								System.out.println("RSSI= " + rawSample.rssi +" is too low");
+							
+							}
+							
 						}
 					}					
 				}
+				
 				//Serialize calibration data
 				if (dataBlock == null){
 					//System.out.println(String.format("No calibration data for Tag %1$d", targetTagId));
@@ -1055,6 +1180,39 @@ public class Main {
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
 			}
+		}
+		public boolean hasMinimumParticipatingDetectors(DataPacket dataBlock) {			
+			if (dataBlock.rssiTable.size() > Integer.parseInt(txtCalibrateMinDetectors.getText())){
+				return true;
+			}
+			return false;
+		}
+		public boolean hasMinimumSamples(DataPacket dataBlock) {
+			boolean allHaveAtLeastMinSamples=true;
+			
+			for (Map.Entry<Integer, ArrayList<Integer>> e: dataBlock.rssiTable.entrySet()){
+				if (e.getValue().size() < Integer.parseInt(txtMinimumSamplesPerCalDet.getText())){
+					allHaveAtLeastMinSamples = false;
+				}
+			}
+			if (allHaveAtLeastMinSamples == true){
+				//we're done
+				if (dataBlock.rssiTable.keySet().size() < Integer.parseInt(txtCalibrateMinDetectors.getText())){
+					txtOutput.append("NOT ENOUGH DETECTORS FOR CALIBRATION DATA");
+					txtOutput.setCaretPosition(txtOutput.getDocument().getLength());
+				}
+			}
+			return allHaveAtLeastMinSamples;
+		} 
+		public boolean oneHasMinimumSamples(DataPacket dataBlock) {
+			boolean allHaveAtLeastMinSamples=false;
+			
+			for (Map.Entry<Integer, ArrayList<Integer>> e: dataBlock.rssiTable.entrySet()){
+				if (e.getValue().size() >= Integer.parseInt(txtMinimumSamplesPerCalDet.getText())){
+					allHaveAtLeastMinSamples = true;
+				}
+			}			
+			return allHaveAtLeastMinSamples;
 		} 
 		protected void saveSample(DataPacket dataPacket, RawSample rawSample) {
 			//Hash incoming data based on detector ID
@@ -1164,12 +1322,14 @@ public class Main {
 						//printSample(newSample);						
 						int key = rawSample.tagId;//((rawSample.detectorId &0xff)<<8) + (rawSample.tagId & 0xff);
 						//System.out.println(String.format("Saving Key: %1$d",key));
-						saveRawSample(key, rawSampleTable, rawSample);						
-						//Start a new time window, and associate with key, if key has not been seen.
-						if (!timeout.containsKey(key)){
-							Calendar currentMoment = Calendar.getInstance();
-							currentMoment.add(Calendar.SECOND, Integer.parseInt(txtTimeout.getText()));
-							timeout.put(key, currentMoment);						
+						if (rawSample.rssi >= Integer.parseInt(txtRSSIThreshold.getText())){
+							saveRawSample(key, rawSampleTable, rawSample);						
+							//Start a new time window, and associate with key, if key has not been seen.
+							if (!timeout.containsKey(key)){
+								Calendar currentMoment = Calendar.getInstance();
+								currentMoment.add(Calendar.SECOND, Integer.parseInt(txtTimeout.getText()));
+								timeout.put(key, currentMoment);						
+							}
 						}
 					}	
 					ArrayList<Integer> expiredItems = new ArrayList<Integer>();
@@ -1195,10 +1355,31 @@ public class Main {
 								rawRSSI.add(rawSamples.get(s).rssi);
 								dataPacket.rssiTable.put(rawSamples.get(s).detectorId,rawRSSI);
 							}
-							if (dataPacket.rssiTable.keySet().size() >= Integer.parseInt(txtMinimumDetectors.getText())){
 							
-								String displayString = String.format("Frame prepared for Locator:\n");
-								printDisplayMessage(displayString);
+							for (Map.Entry<Integer,ArrayList<Integer>> e2: dataPacket.rssiTable.entrySet()){
+								double stdev = Statistics.stdDev(e2.getValue());
+								System.out.println(String.format("Location Data: StdDev for Detector %1$d: %2$f",e2.getKey(),stdev));
+								int median = Statistics.median(e2.getValue());
+								ArrayList<Integer> values = new ArrayList<Integer>();
+								/*for (int i = 0;i < e2.getValue().size();i++){
+									int value = e2.getValue().get(i);
+									if (value <  (median-stdev) || value > (median+stdev)){
+										//This must be an outlier; remove it.					
+										System.out.println(String.format("Location Data: Removing outlier %1$d from Detector's %2$d set",value,e2.getKey()));					
+									}else{					
+										values.add(value);
+									}
+								}*/
+								
+								values.add(median);
+								dataPacket.rssiTable.put(e2.getKey(), values);
+							}
+							
+							///////////
+							if (dataPacket.rssiTable.size() >= Integer.parseInt(txtMinimumDetectors.getText())){
+							
+								//String displayString = String.format("Frame prepared for Locator:\n");
+								//printDisplayMessage(displayString);
 								//System.out.println(String.format("TagID=%1$d, BlockNumber=%2$d",t.tagId, t.blockId));
 								printDisplayMessage(String.format("\tTagID=%1$d, BlockNumber=%2$d\n",dataPacket.tagId, dataPacket.blockId));
 								for (Map.Entry<Integer, ArrayList<Integer>> g: dataPacket.rssiTable.entrySet()){						
@@ -1213,14 +1394,14 @@ public class Main {
 								}
 								locator.locate(dataPacket);
 								//Print to txtOutput
-								displayString = String.format("Rx'd From Locator: TagId=%1$d at (%2$f, %3$f)(%4$f), Block=%5$d\n", dataPacket.tagId, dataPacket.location.x, dataPacket.location.y, Math.sqrt(Math.pow(dataPacket.location.x - Float.parseFloat(txtActualX.getText()),2)+Math.pow(dataPacket.location.y - Float.parseFloat(txtActualY.getText()),2)),dataPacket.blockId);
+								String displayString = String.format("Rx'd From Locator: TagId=%1$d at (%2$f, %3$f)(%4$f), Block=%5$d\n", dataPacket.tagId, dataPacket.location.x, dataPacket.location.y, Math.sqrt(Math.pow(dataPacket.location.x - Float.parseFloat(txtActualX.getText()),2)+Math.pow(dataPacket.location.y - Float.parseFloat(txtActualY.getText()),2)),dataPacket.blockId);
 								txtOutput.append(displayString);
 								txtOutput.setCaretPosition(txtOutput.getDocument().getLength());
 								//Expire Transaction
 								expiredItems.add(e.getKey());								
 								storeResult(dataPacket);	
 							}else{
-								printDisplayMessage(String.format("Not Enough Detectors participated: %1$d.\n",dataPacket.rssiTable.keySet().size() ));
+								printDisplayMessage(String.format("Not Enough Detectors participated in locating tag %1$d: %2$d.\n",dataPacket.tagId,dataPacket.rssiTable.keySet().size() ));
 								expiredItems.add(e.getKey());
 								break;
 							}						
