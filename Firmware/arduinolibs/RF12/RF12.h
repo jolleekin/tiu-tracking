@@ -75,7 +75,7 @@ void rf12_onOff(uint8_t value);
 void rf12_sleep(char n);
 
 // returns true of the supply voltage is below 3.1V
-char rf12_lowbat(void);
+char rf12_lowBat(void);
 
 // set up the easy tranmission mode, arg is number of seconds between packets
 void rf12_easyInit(uint8_t secs);
