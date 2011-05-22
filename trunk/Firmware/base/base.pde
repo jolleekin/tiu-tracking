@@ -31,26 +31,63 @@
 #endif
 
 unsigned char payload[PAYLOAD_SIZE+1];
-int msgIdCache[CACHE_SIZE];
+class CacheEntry{
+  public:
+  int did;
+  int tid;
+  int mid;
+};
 
-//If entryExists, then don't insert
-void insertCache(int key, int value){
-    msgIdCache[key] = value;
+CacheEntry cache[CACHE_SIZE];
+
+
+int key(int did, int tid){
+ return ((tid & 0xff)<<8)+(did & 0xff); 
 }
 
-boolean entryExists(int key, int value){
-  //if(newMsgId >= 254) 
-  //   return false;
-  if (((msgIdCache[key] & 0xff) - (value & 0xff)) > 100){
-    return false;
-  }else
-    return ((msgIdCache[key] & 0xff) >= (value & 0xff));
+
+//Returns:
+//  -1 is entryExists
+//  otherwise, return the index of the slot in the cache we can use.
+int entryExists(int did, int tid, int mid){
+  for (int index = 0;index <  CACHE_SIZE;++index){
+   if (key(did,tid) == key(cache[index].did,cache[index].tid)){
+     //This detector has sent us a message before    
+     if (abs(cache[index].mid - mid)>20){
+       // there is a large gap between message Id's, assume we need to broadcast.
+       return index;
+     }
+     else{
+      if (mid > cache[index].mid){
+        //but we have not sent a message with this mid before(Do broadcast)
+
+       return index; 
+      }else if (mid <= cache[index].mid){
+        //but we've already sent a message with this mid(don't broadcast)
+       return -1; 
+      }
+     }
+   } 
+  }
+  //We have never recieved a message from this detector before.
+  //so, find first empty slot, denoted by all -1's
+  for (int index = 0;index <  CACHE_SIZE;++index){
+    if (cache[index].did ==-1){
+        return index;//is the next available slot.
+    }
+  }
 }
-
-
+void insertCache(int index, int did, int tid, int mid){
+    cache[index].did = did;
+    cache[index].tid = tid;
+    cache[index].mid = mid; 
+}
 //
 void setup () 
 {
+  for (int i = 0;i < CACHE_SIZE;++i){
+    cache[i].did = cache[i].tid = cache[i].mid = -1;
+  }
 #if FASTADC
   // set prescale to 16
   sbi(ADCSRA,ADPS2) ;
@@ -105,8 +142,9 @@ void loop ()
         payload[7] = rf12_data[7];              //Detector battery level
       
         //Base wants to not duplicate messages from detectors..
-        if (!entryExists(payload[1], ((payload[4] << 8) + payload[5]))){
-          insertCache(payload[1], ((payload[4] << 8) + payload[5]));
+        int index = entryExists(payload[1], payload[4],payload[5]);
+        if (index != -1){
+          insertCache(index,payload[1], payload[4],payload[5]);
           Serial.print("$");
           Serial.print(payload[0],BYTE);
           Serial.print(payload[1],BYTE);
