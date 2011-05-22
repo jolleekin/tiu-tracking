@@ -658,8 +658,7 @@ onload = function () {
 	// The resolution is stored in the 'resolution' label :D
 	changeMapImage( {status: 0, data: MapResolution} );
 
-	// Updates tags' info every 5 secs.
-	tagUpdateTimer = new TTimer(5000, requestTagsInfo);
+	tagUpdateTimer = new TTimer(UpdateIntervalSecs * 1000, requestTagsInfo);
 	tagUpdateTimer.setEnabled(true);
 	
 	requestTagsInfo();

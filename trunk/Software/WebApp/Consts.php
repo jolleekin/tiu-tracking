@@ -9,6 +9,8 @@ const rsOK					= 0;
 const rsSessionEnd			= 1;
 const rsInvalidArgument		= 2;
 
+const UpdateIntervalSecs	= 5;
+
 const MapFileName			= 'FloorPlan.jpg';
 const MapResolutionFileName = 'MapResolution.txt';
 ?>

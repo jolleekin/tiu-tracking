@@ -84,6 +84,12 @@ function printResponse($status, $data)
 $connection = mysql_connect(DBURL, DBUsername, DBPassword) or die();
 mysql_select_db(DBName) or die('Could not select database');
 
+/*
+ *	Cache files
+ */
+const TagsInfoFile		= 'TagsInfo.txt';
+const DetectorsInfoFile	= 'DetectorsInfo.txt';
+
 switch ($request)
 {
 	case 'login':
@@ -119,11 +125,26 @@ switch ($request)
 		break;
 		
 	case 'get-tags':
-		printResponse(rsOK, getTagsInfo());
+		if (file_exists(TagsInfoFile) && (time() - filemtime(TagsInfoFile) < UpdateIntervalSecs))
+			$tagsInfo = file_get_contents(TagsInfoFile);
+		else
+		{
+			echo 1;
+			$tagsInfo = getTagsInfo();
+			file_put_contents(TagsInfoFile, $tagsInfo);
+		}
+		printResponse(rsOK, $tagsInfo);
 		break;
 		
 	case 'get-detectors':
-		printResponse(rsOK, getDetectorsInfo());
+		if (file_exists(DetectorsInfoFile) && (time() - filemtime(DetectorsInfoFile) < UpdateIntervalSecs))
+			$detectorsInfo = file_get_contents(DetectorsInfoFile);
+		else
+		{
+			$detectorsInfo = getDetectorsInfo();
+			file_put_contents(DetectorsInfoFile, $detectorsInfo);
+		}
+		printResponse(rsOK, $detectorsInfo);
 		break;
 		
 	default:

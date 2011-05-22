@@ -368,6 +368,8 @@ function TMap() {
 			scaleMap();
 		for (var i = 0; i < fEntities.length; i++)
 			fEntities[i].onScaleChange(fMapTransform.totalScale);
+		if (fSelectedEntity)
+			fSelectedInfoBox.setPosition(fSelectedEntity.mX , fSelectedEntity.mY, 0, -fSelectedEntity.offsetHeight, fMapTransform.totalScale);
 	}
 
 	/**
