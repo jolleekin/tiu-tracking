@@ -9,7 +9,7 @@
 		include 'Consts.php';
 		// Returns the map info
 		$lines = file(MapResolutionFileName, FILE_IGNORE_NEW_LINES);
-		echo "var MapFileName = '" . MapFileName . "', MapResolution = " . $lines[0] . ";\n";
+		echo "var UpdateIntervalSecs = " . UpdateIntervalSecs . ", MapFileName = '" . MapFileName . "', MapResolution = " . $lines[0] . ";\n";
 	?>
 	</script>
 	<link href="Common.css" rel="stylesheet" type="text/css"/>

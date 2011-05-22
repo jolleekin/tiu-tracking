@@ -144,7 +144,7 @@ if ($loggedIn)
 	<form method="post" enctype="multipart/form-data">
 		<fieldset>
 			<legend>Map</legend>
-			<div style="margin-bottom: 0.5em;" title="Number of pixels per unit length"><label for="resolution" style="margin-right: 7px;">Resolution:</label><input id="resolution" name="resolution" type="textbox" value="$resolution" style="width: 30px;" /><label>&nbsp;pixels per unit length</label></div>
+			<div style="margin-bottom: 0.5em;"><label for="resolution" style="margin-right: 7px;">Resolution:</label><input id="resolution" name="resolution" type="textbox" value="$resolution" style="width: 30px;" /><label>&nbsp;pixels per unit length</label></div>
 			<div style="margin-bottom: 0.5em;">
 				<button onclick="mapFile.click(); return false;">Browse</button>
 				<input id="mapFile" name="mapFile" type="file" style="width: 0; height: 0; opacity: 0;"
