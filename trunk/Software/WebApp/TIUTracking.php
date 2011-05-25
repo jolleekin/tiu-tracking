@@ -34,13 +34,13 @@
 <body>
 	<div id="headerPanel" class="TCastShadow" style="text-align: center;">
 		<h1>Asset Tracking System</h1>
-		<label id="msgLabel" class="TCastShadow"></label>
+		<label id="msgLabel"></label>
 	</div>
 	<button id="showHideTabPanelButton" class="TextIcon" title="Hide panel" style="position: absolute; z-index: 4; padding: 0 4px 2px;">«</button>
 	<div id="tabPanel" class="TTabPanel TCastShadow" style="position: relative; left: 0; top: 0; margin: 0; padding: 0; z-index: 2; background-color: #FFF; width: 360px;">		
 		<ul class="TTabNamePanel">
 			<li class="TTabName">Welcome</li>
-			<li class="TTabName">&nbsp;&nbsp;Assets&nbsp;&nbsp;&nbsp;</li>
+			<li class="TTabName">&nbsp;&nbsp;&nbsp;Tags&nbsp;&nbsp;&nbsp;&nbsp;</li>
 			<li class="TTabName">Detectors</li>
 		</ul>
 		<div class="TTabContentPanel">

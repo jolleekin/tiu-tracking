@@ -3,7 +3,7 @@
 	z-index: 2;
 	width: 100%;
 	white-space: nowrap;
-	padding: 0.5em 0;
+	padding: 0.25em 0;
 	/*
 	background-color: #508ACD;
 	background: -webkit-gradient(linear, left top, left bottom, from(#61A7F2), to(#508ACD));
@@ -19,7 +19,8 @@
 
 h1 {
 	color: #FFF;
-	text-shadow: -1px -1px 0 #CCC;
+	font-size: 3em;
+	text-shadow: 0px 0px 6px #000;
 }
 
 #msgLabel {
