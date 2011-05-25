@@ -347,8 +347,6 @@ function login() {
 	loginButton.disabled = true;
 
 	loginRequestManager.doSend('request=login&username=' + usernameTextBox.value + '&password=' + passwordTextBox.value);
-	usernameTextBox.value = '';
-	passwordTextBox.value = '';
 }
 
 function logout() {
@@ -407,6 +405,8 @@ function updateUI(loggedIn) {
 		$('greetingLabel').innerHTML = 'Hi <strong style="color: blue;">' + getCookie('username') + '</strong>';
 		loggedInDialog.style.display = SBlock;
 		loginDialog.style.display = SNone;
+		usernameTextBox.value = '';
+		passwordTextBox.value = '';
 		
 		for (var i = 0; i < tables.length; i++) {
 			table = tables[i];
