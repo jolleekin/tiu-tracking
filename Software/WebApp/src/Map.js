@@ -24,6 +24,8 @@ function TMap() {
 		ScaleLerpFactor		= FrameInterval * 0.006,
 		LerpFactorFactor	= 1.05;
 	
+	var InfoBoxMargin		= 40;
+	
 	var PanCursor = 'url(images/closedhand_8_8.cur), move';
 	
 	// A little tweak for Firefox
@@ -495,17 +497,17 @@ function TMap() {
 				var dx = 0, dy = 0;
 				
 				if (l < 0)
-					dx = 20 - l;
+					dx = InfoBoxMargin - l;
 				else if (r > fMap.offsetWidth)
-					dx = fMap.offsetWidth - r - 20;
+					dx = fMap.offsetWidth - r - InfoBoxMargin;
 				
 				if (t < 0)
-					dy = 20 - t;
+					dy = InfoBoxMargin - t;
 				else if (b > fMap.offsetHeight)
-					dy = fMap.offsetHeight - b - 20;
+					dy = fMap.offsetHeight - b - InfoBoxMargin;
 
 				// If part of the rect is out of range, move the map so that the entire
-				// rect can be seen. 20 in the above lines is the margin.
+				// rect can be seen.
 				if (dx || dy) {
 					fMapTransform.targetPosition.x = fMapTransform.position.x + dx;
 					fMapTransform.targetPosition.y = fMapTransform.position.y + dy;
