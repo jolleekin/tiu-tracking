@@ -7,10 +7,10 @@
 	<link href="Common.css" rel="stylesheet" type="text/css"/>
 </head>
 <?php
+session_start();
 
 include 'Consts.php';
 
-session_start();
 
 function upload($fileId, $folder = '', $fileName = '', $types = '')
 {
@@ -110,18 +110,17 @@ else
 
 // If the user has specified an image, try upload it.
 if ($_FILES['mapFile']['name'])
-{
+{	
 	$hasParams = true;
 	if ($loggedIn)
 	{
-		list($name, $error) = upload('mapFile', 'images', MapImageFileName, 'jpg,jpeg,gif,png');
+		list($name, $error) = upload('mapFile', 'images', MapFileName, 'jpg,jpeg,gif,png');
 
 		if ($error)
 		{
 			$status = rsInvalidArgument;
-			$data = $error;
+			$data = "'" . addslashes($error) . "'";
 		}
-		$data = "'" . addslashes($data) . "'";
 	}
 	else
 	{
