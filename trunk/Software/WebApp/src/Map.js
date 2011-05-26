@@ -233,7 +233,7 @@ function TMap() {
 		if (fMapImage) {
 			var sw = fMap.offsetWidth  / fMapImageCenter.x;
 			var sh = fMap.offsetHeight / fMapImageCenter.y;
-			fMinScale = Math.min(sw, sh) * 0.45;	// 90% of the actual fit scale.
+			fMinScale = Math.min(sw, sh) * 0.4;	// 80% of the actual fit scale.
 		} else
 			fMinScale = 1;
 
