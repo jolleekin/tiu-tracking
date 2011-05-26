@@ -343,7 +343,7 @@ function login() {
 		return;
 	}
 	
-	showMessage(mtInfo, 'Logging in...', false);
+	showMessage(mtInfo, null, false);
 	loginButton.disabled = true;
 
 	loginRequestManager.doSend('request=login&username=' + usernameTextBox.value + '&password=' + passwordTextBox.value);
