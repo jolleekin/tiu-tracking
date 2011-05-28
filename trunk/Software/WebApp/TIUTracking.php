@@ -6,7 +6,8 @@
 	<link rel="shortcut icon" href= "favicon.ico">
 	<script type="application/x-javascript">
 	<?php
-		include 'Consts.php';
+		session_start();
+		include 'Common.php';
 		// Returns the map info
 		$lines = file(MapResolutionFileName, FILE_IGNORE_NEW_LINES);
 		echo "var UpdateIntervalSecs = " . UpdateIntervalSecs . ", MapFileName = '" . MapFileName . "', MapResolution = " . $lines[0] . ";\n";
@@ -45,23 +46,30 @@
 		</ul>
 		<div class="TTabContentPanel">
 			<div id="welcomeTab" class="TTabContent" style="vertical-align: middle;">
-				<fieldset id="loginDialog">
-					<legend>Admin</legend>
-					<div style="margin-bottom: 0.5em;"><div style="float: left; width: 80px;">Username:</div><input id="usernameTextBox" type="textbox" maxlength="30" style="width: 150px;" /><br /></div>
-					<div style="margin-bottom: 0.5em;"><div style="float: left; width: 80px;">Password:</div><input id="passwordTextBox" type="password" maxlength="30" style="width: 150px;" /><br /></div>
-					<div><button id="loginButton">Log in</button></div>
-				</fieldset>
-				<div id="loggedInDialog" style="display: none;">
-					<label id="greetingLabel" style="padding: 0 1em 0 0;"></label>
-					<a id="logOutLink" href="javascript: logout();" style="padding: 0 1em; border-left: 1px solid #CCC;">Log out</a>
+				<div>
+					<img src="images/user.png" width=32 height=32 style="float: left;" />
+					<div class="gc" id="loginDialog">
+						<div class="gcr Caption">Admin</div>
+						<div class="gcr"><div class="gcrd1">Username:</div><input id="usernameTextBox" type="textbox" maxlength="30" /><br /></div>
+						<div class="gcr"><div class="gcrd1">Password:</div><input id="passwordTextBox" type="password" maxlength="30" /><br /></div>
+						<div><button id="loginButton">Log in</button></div>
+					</div>
+					<div class="gc" id="loggedInDialog" style="display: none;">
+						<label id="greetingLabel" style="padding: 0 1em 0 0;"></label>
+						<a id="changePwdLink" href="javascript: showChangePwdForm();" style="padding: 0 1em; border-left: 1px solid #CCC;">Change password</a>
+						<a id="logOutLink" href="javascript: logout();" style="padding: 0 1em; border-left: 1px solid #CCC;">Log out</a>
+						<br /><br />
+					</div>
 				</div>
-				<br />
-				<fieldset>
-					<legend>Options</legend>
-					<input id="showAssetsCheckBox" type="checkbox" checked /><label for="showAssetsCheckBox">Show tags</label><br />
-					<input id="showDetectorsCheckBox" type="checkbox" checked /><label for="showDetectorsCheckBox">Show detectors</label><br />
-				</fieldset>
-				<br />
+
+				<div>
+					<img src="images/options.png" width=32 height=32 style="float: left;" />
+					<div class="gc">
+						<div class="gcr Caption">Options</div>
+						<input id="showAssetsCheckBox" type="checkbox" checked /><label for="showAssetsCheckBox">Show tags</label><br />
+						<input id="showDetectorsCheckBox" type="checkbox" checked /><label for="showDetectorsCheckBox">Show detectors</label><br />
+					</div>
+				</div>
 				<iframe id="mapUploadFrame" src="MapUpload.php" style="border: none; width: 100%;"></iframe>
 			</div>
 			<div id="assetsTab" class="TTabContent">

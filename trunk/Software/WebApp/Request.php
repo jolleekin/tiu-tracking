@@ -1,30 +1,23 @@
 <?php
+session_start();
+include 'Common.php';
+
+$isLoggedIn = false;
+if (isset($_SESSION['loggedIn']))
+	$isLoggedIn = true;
 
 $request = $_POST['request'];
 
 if (!$request)
 	return;
 
-include 'Consts.php';
 
-session_start();
 
 /* Creates a 3 character sequence */
 function createSalt()
 {
 	$s = md5(uniqid(rand(), true));
 	return substr($s, 0, 3);
-}
-
-function invalidateUser()
-{
-	$_SESSION = array();
-	$expire = time() - 100000;
-	if (isset($_COOKIE[session_name()]))
-		setcookie(session_name(), '', $expire);
-	if (isset($_COOKIE['username']))
-		setcookie('username', '', $expire);
-	session_destroy();
 }
 
 function getTagsInfo()
@@ -112,9 +105,7 @@ switch ($request)
 				printResponse(rsInvalidArgument, "'Invalid password'");
 			else
 			{
-				session_regenerate_id (); // this is a security measure
-				$_SESSION['loggedIn'] = true;
-				setcookie('username', $username);
+				validateUser($username);
 				printResponse(rsOK, 0);
 			}
 		}
@@ -148,7 +139,7 @@ switch ($request)
 		break;
 		
 	default:
-		if (isset($_SESSION['loggedIn']))
+		if ($isLoggedIn)
 		{
 			switch ($request)
 			{
@@ -164,6 +155,9 @@ switch ($request)
 						// Returns the info of the added tag.
 						$timestamp = date('Y-m-d H:i:s');
 						printResponse(rsOK, "{s:'$timestamp',i:$tagId,a:$assetId,x:-1,y:-1,b:0}");
+						
+						// Refresh the cache
+						file_put_contents(TagsInfoFile, getTagsInfo());
 					}
 					else
 						printResponse(rsInvalidArgument, "'Tag ID must be a positive integer: $tagIdStr'");
@@ -174,6 +168,9 @@ switch ($request)
 					mysql_query("DELETE FROM Tags WHERE TagID = $tagId");
 					mysql_query("DELETE FROM TagInfo WHERE TagID = $tagId");
 					printResponse(rsOK, $tagId);
+
+					// Refresh the cache
+					file_put_contents(TagsInfoFile, getTagsInfo());
 					break;
 					
 				case 'add-detector':
@@ -188,6 +185,9 @@ switch ($request)
 							mysql_query("INSERT INTO Detectors VALUE ($detectorId, $x, $y) ON DUPLICATE KEY UPDATE X = $x, Y = $y");
 							// Returns the info of the added detector.
 							printResponse(rsOK, "{i:$detectorId,x:$x,y:$y,b:0}");
+						
+							// Refresh the cache
+							file_put_contents(DetectorsInfoFile, getDetectorsInfo());
 						}
 						else
 							printResponse(rsInvalidArgument, "'Invalid location: ($x, $y)'");
@@ -200,13 +200,13 @@ switch ($request)
 					$detectorId = $_POST['detector-id'];
 					mysql_query("DELETE FROM Detectors WHERE DetectorID = $detectorId");
 					printResponse(rsOK, $detectorId);
+					
+					// Refresh the cache
+					file_put_contents(DetectorsInfoFile, getDetectorsInfo());
 			}
 		}
 		else
-		{
-			invalidateUser();
 			printResponse(rsSessionEnd, "'Your session has expired. Please log in again.'");
-		}
 }
 
 mysql_close($connection);

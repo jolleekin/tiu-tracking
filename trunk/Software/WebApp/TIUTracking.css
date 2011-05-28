@@ -156,7 +156,7 @@ div.Col {float: left;}
 .Col.Id {width: 35px;}
 .Col.AssetId {width: 120px;}
 .Col.Timestamp {width: 120px;}
-.Col.X, .Col.Y {width: 25px;}
+.Col.X, .Col.Y {width: 33px;}
 .Col.Battery {width: 40px; padding-right: 0.5em;}
 .Col.More {width: 25px;}
 
@@ -235,7 +235,7 @@ input[type=textbox].Cell:focus, input[type=textbox].Cell:hover {
 
 #assetSearchBox, #detectorSearchBox {
 	margin: 0 0 1em 0;
-	width: 303px;
+	width: 319px;
 	outline: none;
 }
 
@@ -266,6 +266,10 @@ input[type=textbox].Cell:focus, input[type=textbox].Cell:hover {
 	visibility: hidden;
 	white-space: nowrap;
 	border-radius: 19px;
+}
+
+#mapToolbar button {
+	float: left;
 }
 
 div.DeleteButton {
