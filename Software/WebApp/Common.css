@@ -13,16 +13,14 @@ input[type=textbox], input[type=password] {
 	padding: 0 5px;
 	outline: none;
 	margin: 0;
-	border: 1px solid Gray;
+	border: 1px solid #CCC;
 	background: #FFF;
-	background: -o-linear-gradient(top, #E8E8E8 0%,#FFF 35%);
-	background: -moz-linear-gradient(top, #E8E8E8 0%, #FFF 35%);
-	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#E8E8E8), color-stop(35%,#FFF));
-	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#F8F8F8', endColorstr='#FFFFFF', GradientType=0 );
+	background: -o-linear-gradient(top, #F0F0F0 0%,#FFF 30%);
+	background: -moz-linear-gradient(top, #F0F0F0 0%, #FFF 30%);
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#F0F0F0), color-stop(30%,#FFF));
 }
 
 input[type=textbox]:hover, input[type=password]:hover {
-	border: 1px solid #0A5;
 	box-shadow: rgba(0,170,85,0.2) 0px 0px 2px 2px;
 }
 
@@ -33,7 +31,6 @@ input[type=textbox]:hover, input[type=password]:hover {
  *
  */
 button, .Button {
-	float: left;
 	margin: 0;
 	padding: 2px 4px;
 	outline: none;
@@ -91,11 +88,22 @@ button.Translucent:hover {
 	opacity: 1;
 }
 
-fieldset {
-	margin: 0;
-	border: 1px solid #CCC;
+.gc {
+	padding: 0 5px 15px 40px;
 }
 
-legend {
+.gcr {
+	margin-bottom: 0.5em;
+}
+
+.Caption {
 	font-weight: bold;
+	font-size: 1.3em;
+	margin: 0.2em 0 0.5em;
+	border-bottom: 1px solid #CCC;
+}
+
+.gcrd1 {
+	float: left;
+	width: 80px;
 }

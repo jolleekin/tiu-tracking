@@ -8,9 +8,11 @@
 </head>
 <?php
 session_start();
+include 'Common.php';
 
-include 'Consts.php';
-
+$isLoggedIn = false;
+if (isset($_SESSION['loggedIn']))
+	$isLoggedIn = true;
 
 function upload($fileId, $folder = '', $fileName = '', $types = '')
 {
@@ -66,8 +68,6 @@ function upload($fileId, $folder = '', $fileName = '', $types = '')
     return array($name, $result);
 }
 
-$loggedIn = isset($_SESSION['loggedIn']);
-
 $hasParams = false;
 $onload = '';
 $status = rsOK;
@@ -78,7 +78,7 @@ $resolution = $_POST['resolution'];
 if ($resolution)
 {
 	$hasParams = true;
-	if (loggedIn)
+	if ($isLoggedIn)
 	{
 		$resolution = intval($resolution);
 		if ($resolution > 0)
@@ -112,7 +112,7 @@ else
 if ($_FILES['mapFile']['name'])
 {	
 	$hasParams = true;
-	if ($loggedIn)
+	if ($isLoggedIn)
 	{
 		list($name, $error) = upload('mapFile', 'images', MapFileName, 'jpg,jpeg,gif,png');
 
@@ -137,23 +137,26 @@ echo "<body $onload style=\"background: none;\">";
 
 
 // Display the upload form if the user has logged in.
-if ($loggedIn)
+if ($isLoggedIn)
 {
 	echo <<<FORM
 	<form method="post" enctype="multipart/form-data">
-		<fieldset>
-			<legend>Map</legend>
-			<div style="margin-bottom: 0.5em;"><label for="resolution" style="margin-right: 7px;">Resolution:</label><input id="resolution" name="resolution" type="textbox" value="$resolution" style="width: 30px;" /><label>&nbsp;pixels per unit length</label></div>
-			<div style="margin-bottom: 0.5em;">
-				<button onclick="mapFile.click(); return false;">Browse</button>
-				<input id="mapFile" name="mapFile" type="file" style="width: 0; height: 0; opacity: 0;"
-					onchange="var v = this.value; var i = v.lastIndexOf('/');
+		<div id="loginDialog">
+			<img src="images/map.png" width=32 height=32 style="float: left;" />
+			<div class="gc">
+				<div class="gcr Caption">Map</div>
+				<div class="gcr" title="Number of pixels per unit length"><div style="float: left; width: 70px;">Resolution:</div><input id="resolution" name="resolution" type="textbox" value="$resolution" autocomplete="off" /></div>
+				<div class="gcr">
+					<div style="float: left; width: 70px;">Map image:</div>
+					<input id="fileNameTextBox" type="textbox" autocomplete="off" placeholder="Click here to select"  onclick="mapFile.click(); return false;"/>
+					<input id="mapFile" name="mapFile" type="file" style="width: 0; height: 0; visibility: hidden;"
+						onchange="var v = this.value; var i = v.lastIndexOf('/');
 						if (i == -1) i = v.lastIndexOf('\\\\');
 						fileNameTextBox.value = v.substr(i + 1);" />
-				<input id="fileNameTextBox" type="textbox" disabled style="margin-left: 1em;" placeholder="Map image file name"/><br />
+				</div>
+				<div><input type="submit" class="Button" value="Upload" style="width: 53px;"/></div>
 			</div>
-			<div style="margin-bottom: 0.5em;"><input type="submit" class="Button" value="Upload" style="width: 53px;"/></div>
-		</fieldset>
+		</div>
 	</form>
 FORM;
 }
