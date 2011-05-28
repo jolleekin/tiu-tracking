@@ -174,7 +174,7 @@ function processResponse(ajax, entityType) {
 		if (newEntityCount < curEntityCount) {
 			for (var i = curEntityCount - 1; i >= newEntityCount; i--) {
 				map.removeEntity(entities[i]);
-				detectorTable.deleteRow(-1);
+				table.deleteRow(-1);
 				entities[i] = null;
 			}
 		}
@@ -420,7 +420,7 @@ function updateUI(loggedIn) {
 
 		d = document.createElement(SDiv);
 		d.id = 'addModifyTagDialog';
-		d.setAttribute('style', 'float: left; width: 315px; background-color: #EEF; margin-top: 3px;');
+		d.setAttribute('style', 'float: left; width: 331px; background-color: #EEF; margin-top: 5px;');
 		d.innerHTML =
 			'<div style="float: left;">' +
 				'<input type="textbox" id="tTextBox" class="Col Id Cell" placeholder="ID" />' +
@@ -447,7 +447,7 @@ function updateUI(loggedIn) {
 		d = document.createElement(SDiv);
 		d.id = 'addModifyDetectorDialog';
 		d.title = 'Click on the map to place the detector';
-		d.setAttribute('style', 'float: left; width: 189px; background-color: #EEF; margin-top: 3px;');
+		d.setAttribute('style', 'float: left; width: 205px; background-color: #EEF; margin-top: 5px;');
 		d.innerHTML =
 			'<div style="float: left;">' +
 				'<input type="textbox" id="dTextBox" class="Col Id Cell" placeholder="ID" />' +
