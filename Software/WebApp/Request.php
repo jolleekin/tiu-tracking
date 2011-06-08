@@ -203,10 +203,27 @@ switch ($request)
 					
 					// Refresh the cache
 					file_put_contents(DetectorsInfoFile, getDetectorsInfo());
+					break;
+
+				// Users rarely change their password, so handle that case here.
+				case 'chpwd':
+					$username		= $_COOKIE['username'];
+					$curPassword	= $_POST['cp'];
+					$newPassword1	= $_POST['np1'];
+					$newPassword2	= $_POST['np2'];
+					if ($newPassword1 != $newPassword2)
+						printResponse(rsInvalidArgument, "'New password unmatched'");
+					else
+					{
+					
+					}
 			}
 		}
 		else
+		{
+			invalidateUser();
 			printResponse(rsSessionEnd, "'Your session has expired. Please log in again.'");
+		}
 }
 
 mysql_close($connection);
