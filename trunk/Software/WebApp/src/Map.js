@@ -15,7 +15,7 @@ function TMap() {
 		Upon left mouse up, if the mouse's velocity is not zero ((|x| > VelocityEpsilon) or (|y| > VelocityEpsilon)),
 		The mouse velocity will be multiplied with this value to determine the target position of the map.
 	 */
-	var VelocityScale = 8;
+	var VelocityScale = 5;
 
 	
 	var FrameInterval		= 40;	// ms
@@ -332,8 +332,7 @@ function TMap() {
 			fPixelsPerUnitLength = pixelsPerUnitLength;
 			fMapImageCenter.x = img.width  * 0.5;
 			fMapImageCenter.y = img.height * 0.5;
-			img.style.position = 'absolute';
-			img.style.boxShadow = 'rgba(0,0,0,0.3) 0 0 4px 4px';
+			img.setAttribute('style', 'position: absolute; box-shadow: rgba(0,0,0,0.3) 0 0 8px 4px; user-select: none; -moz-user-select: none; -webkit-user-select: none;');
 			fContainer.insertBefore(img, fContainer.firstChild);
 			fMapImage = img;
 			recalculateScales();
