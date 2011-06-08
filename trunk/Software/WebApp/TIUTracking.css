@@ -27,7 +27,6 @@ h1 {
 	position: absolute;
 	left: 0;
 	top: 0;
-	opacity: 0;
 	width: 350px;
 	font-size: 14px;
 	text-align: left;
@@ -157,7 +156,7 @@ div.Col {float: left;}
 .Col.AssetId {width: 120px;}
 .Col.Timestamp {width: 120px;}
 .Col.X, .Col.Y {width: 33px;}
-.Col.Battery {width: 40px; padding-right: 0.5em;}
+.Col.Battery {width: 42px; padding-right: 0.5em;}
 .Col.More {width: 25px;}
 
 .TMatchedString {
@@ -201,7 +200,7 @@ div.Col {float: left;}
 }
 
 .TCastShadow {
-	box-shadow: rgba(0, 0, 0, 0.2) 2px 2px 2px 2px;
+	box-shadow: rgba(0, 0, 0, 0.2) 2px 2px 4px 2px;
 }
 
 .TRoundedCorner {
@@ -235,7 +234,7 @@ input[type=textbox].Cell:focus, input[type=textbox].Cell:hover {
 
 #assetSearchBox, #detectorSearchBox {
 	margin: 0 0 1em 0;
-	width: 319px;
+	width: 321px;
 	outline: none;
 }
 

@@ -9,6 +9,7 @@ body {
 }
 
 input[type=textbox], input[type=password] {
+	width: 153px;
 	height: 1.5em;
 	padding: 0 5px;
 	outline: none;
