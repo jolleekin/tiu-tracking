@@ -149,7 +149,7 @@ function processResponse(ajax, entityType) {
 				cell.className = 'Col ' + columnNames[j];
 			}
 			// The last cell value is the delete button since the user is admin now.
-			cell.appendChild(createDeleteButton(entityType, row, table));
+			cell.appendChild(createDeleteButton(entityType, row));
 
 			row.mLinkedEntity = entity;
 			entity.set(info, row, table);
@@ -206,7 +206,7 @@ function processResponse(ajax, entityType) {
 				// If logged in, replace the last cell value with a delete button.
 				if (isLoggedIn) {
 					cell.innerHTML = '';
-					cell.appendChild(createDeleteButton(entityType, row, table));
+					cell.appendChild(createDeleteButton(entityType, row));
 				}
 			} else {
 				entity = entities[i];
@@ -270,6 +270,7 @@ var msgLabelAnimationParams = {
 	delay: 25,
 	fadeOut: true,
 	fadeOutTimeOut: 4000,
+	timerHandle: null,
 	onfinish: function () {
 		var p = msgLabelAnimationParams;
 		if (p.to == 0)
@@ -354,6 +355,9 @@ function logout() {
 	updateUI(false);		
 }
 
+function showChangePwdForm() {
+	showMessage(mtError, 'Feature unsupported yet!', true);
+}
 
 /**
  *	Creates a delete button. The button can be added to the tag table or the detector table.
@@ -362,14 +366,14 @@ function logout() {
  *	@param	linkedTable	{HTMLTableElement}	The table that owns this button.
  *	@param	linkedRow	{HTMLRowElement}	The row that owns this button.
  */
-function createDeleteButton(entityType, linkedRow, linkedTable) {
+function createDeleteButton(entityType, linkedRow) {
 	
 	function buttonClick(event) {
 		if (deleteRowIndex == -1) {
-			deleteRowIndex = this.mLinkedRow.rowIndex;
 			var type = this.mEntityType;
 			var name = EntityNames[type];
 			if (confirm('Delete this ' + name + ' permanently?')) {
+				deleteRowIndex = this.mLinkedRow.rowIndex;
 				var mngr = this.mEntityType == etTag ? tagRequestManager : detectorRequestManager;
 				mngr.doSend('request=del-' + name + '&' + name + '-id=' + this.mLinkedRow.mLinkedEntity.mId);
 			}
@@ -380,7 +384,6 @@ function createDeleteButton(entityType, linkedRow, linkedTable) {
 	
 	var b = newElement(SDiv, 'DeleteButton');
 	b.mEntityType = entityType;
-	b.mLinkedTable = linkedTable;
 	b.mLinkedRow = linkedRow;
 	b.onclick = buttonClick;
 	b.title = 'Delete';
@@ -399,7 +402,8 @@ function updateUI(loggedIn) {
 	else
 		frames['mapUploadFrame'].location.reload();
 		
-	var table, tables = [tagTable.getElement(), detectorTable.getElement()];
+	var table,
+		domTables = [detectorTable.getElement(), tagTable.getElement()];
 	
 	if (loggedIn) {
 		$('greetingLabel').innerHTML = 'Hi <strong style="color: blue;">' + getCookie('username') + '</strong>';
@@ -408,19 +412,19 @@ function updateUI(loggedIn) {
 		usernameTextBox.value = '';
 		passwordTextBox.value = '';
 		
-		for (var i = 0; i < tables.length; i++) {
-			table = tables[i];
+		for (var i = 0; i < domTables.length; i++) {
+			table = domTables[i];
 			for (var j = 0, row; j < table.rows.length; j++) {
 				row = table.rows[j];
 				row.lastChild.innerHTML = '';
-				row.lastChild.appendChild(createDeleteButton(i, row, table));	// i = entityType
+				row.lastChild.appendChild(createDeleteButton(i, row));	// i = entityType
 			}
 		}
 
 
 		d = document.createElement(SDiv);
 		d.id = 'addModifyTagDialog';
-		d.setAttribute('style', 'float: left; width: 331px; background-color: #EEF; margin-top: 5px;');
+		d.setAttribute('style', 'float: left; width: 333px; background-color: #EEF; margin-top: 5px;');
 		d.innerHTML =
 			'<div style="float: left;">' +
 				'<input type="textbox" id="tTextBox" class="Col Id Cell" placeholder="ID" />' +
@@ -447,7 +451,7 @@ function updateUI(loggedIn) {
 		d = document.createElement(SDiv);
 		d.id = 'addModifyDetectorDialog';
 		d.title = 'Click on the map to place the detector';
-		d.setAttribute('style', 'float: left; width: 205px; background-color: #EEF; margin-top: 5px;');
+		d.setAttribute('style', 'float: left; width: 207px; background-color: #EEF; margin-top: 5px;');
 		d.innerHTML =
 			'<div style="float: left;">' +
 				'<input type="textbox" id="dTextBox" class="Col Id Cell" placeholder="ID" />' +
@@ -479,8 +483,8 @@ function updateUI(loggedIn) {
 		loginDialog.style.display = SBlock;
 		loggedInDialog.style.display = SNone;
 		
-		for (var i = 0; i < tables.length; i++) {
-			table = tables[i];
+		for (var i = 0; i < domTables.length; i++) {
+			table = domTables[i];
 			for (var j = 0; j < table.rows.length; j++)
 				table.rows[j].lastChild.innerHTML = '&nbsp;';
 		}
@@ -605,6 +609,7 @@ onload = function () {
 	loginButton = $('loginButton');
 	loggedInDialog = $('loggedInDialog');
 	msgLabel = $('msgLabel');
+	msgLabel.style.opacity = 0;
 	$fx(msgLabel).fxAdd(msgLabelAnimationParams);
 
 	var browserName = null;
